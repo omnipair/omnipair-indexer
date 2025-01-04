@@ -68,8 +68,9 @@ async function main() {
    
   });
 
-  server.listen(80, () => {
-    console.log('Server running at http://localhost:8080/');
+  let port = process.env.PORT ?? 8080;
+  server.listen(port, () => {
+    logger.info(`Server running at ${port}`);
   });
 }
 

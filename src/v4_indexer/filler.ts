@@ -116,17 +116,24 @@ const insertSignatures = async (signatures: ConfirmedSignatureInfo[], queriedAdd
 //set latestProcessedSlot in db
 async function setLatestProcessedSlot(slot: number) {
   
-  await db.update(schema.indexers)
+  try {
+    await db.update(schema.indexers)
       .set({ latestSlotProcessed: slot.toString() })
       .where(eq(schema.indexers.name, "v0_4_amm_indexer"))
       .execute();
-    
+  } catch (e) {
+    logger.error(e, "Error setting the latest processed slot");
+  }
   
 }
 
 //set latestTxSigProcessed
 async function setLatestTxSigProcessed(signature: string) {
-  await db.update(schema.indexers).set({ latestTxSigProcessed: signature }).where(eq(schema.indexers.name, "v0_4_amm_indexer")).execute();
+  try {
+    await db.update(schema.indexers).set({ latestTxSigProcessed: signature }).where(eq(schema.indexers.name, "v0_4_amm_indexer")).execute();
+  } catch (e) {
+    logger.error(e, "Error setting the latest processed signature");
+  }
 }
 
 //get latestTxSigProcessed

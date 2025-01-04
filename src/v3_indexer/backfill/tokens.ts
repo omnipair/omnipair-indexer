@@ -46,9 +46,13 @@ async function updateMint(mintAcct: string): Promise<Error | null> {
     return err instanceof Error ? err : new Error(String(err));
   }
 
-  await db.update(schema.tokens)
+  try {
+    await db.update(schema.tokens)
       .set({ supply: storedMint.supply.toString(), updatedAt: new Date() })
       .where(eq(schema.tokens.mintAcct, mint.toString()));
+  } catch (e) {
+    logger.error(e, "Error updating the token supply");
+  }
   
   return null;
 }

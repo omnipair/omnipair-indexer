@@ -1,10 +1,9 @@
 import { backfillDaos, backfillProposals, backfillTokenSupply, backfillTransactions } from "./v3_indexer";
 import { log } from "./logger/logger";
-import { subscribeAll } from "./txLogHandler";
+import { mapLogHealth, subscribeAll } from "./txLogHandler";
 import { frontfill as v4_frontfill, backfill as v4_backfill } from "./v4_indexer/filler";
 import { CronJob } from "cron";
 import http from "http";
-import url from "url";
 import {  updatePrices } from "./priceHandler";
 
 const logger = log.child({
@@ -35,7 +34,7 @@ const healthMap = new Map<string, CronRunResult>();
 async function main() {
 
   //first lets backfill v3
- /* await backfillV3().catch((e) => {
+ await backfillV3().catch((e) => {
     logger.error(e, "Error backfilling v3");
     return e;
   });
@@ -50,7 +49,7 @@ async function main() {
     logger.error(e, "Error frontfilling v4");
     return e;
   });
-*/
+
   //lets start our crons now
   
   startCron("backfillV3", "*/10 * * * *", backfillV3);
@@ -62,14 +61,33 @@ async function main() {
   subscribeAll();
 
   const server = http.createServer((req: any, res: any) => {
-    const reqUrl = url.parse(req.url).pathname
-    if(reqUrl == "/") {
-        
+    const reqUrl = new URL(req.url, `http://${req.headers.host}`).pathname;
+    let hasError = false;
+    for (const result of healthMap.values()) {
+      if (result.error) {
+        hasError = true;
+        break;
+      }
+    }
+    let logHasError = false;
+    for (const result of mapLogHealth.values()) {
+      if (result.error) {
+        logHasError = true;
+        break;
+      }
+    }
+
+    if (reqUrl == "/") {
+      
+      let bgColor = "#357e4e";
+      if (hasError) {
+        bgColor = "#ff0000";
+      }
       res.writeHead(200, { 'Content-Type': 'text/html' });
       let style = `<style>
         body {font-family: Arial, sans-serif;}
         table {border-collapse: collapse;width:100%;margin:25px 0; min-width: 400px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);}
-        thead tr {background-color: #009879;color: #ffffff;text-align: left;font-weight: bold;}
+        thead tr {background-color: ${bgColor};color: #ffffff;text-align: left;font-weight: bold;}
         td {padding:5px;min-width:100px;border-top:1px solid grey;}
         th,td {padding:12px 15px;}
         tr:nth-child(even) {background-color: #f3f3f3;}
@@ -78,7 +96,7 @@ async function main() {
       </style>`;
       let html = "<html><body>";
       html += style;
-      html += "<h1>Health Check</h1>";
+      html += "<h1>MetaDao IndexerHealth Check</h1>";
       html += "<table>";
       html += "<thead><tr><th>Name</th><th>Message</th><th>Error</th><th>Start</th><th>End</th></tr></thead>";
       html += "<tbody>";
@@ -93,20 +111,26 @@ async function main() {
       }
       html += "</tbody>";
       html += "</table>";
+
+      html += "<h2>Log Health</h2>";
+      html += "<table>";
+      html += "<thead><tr><th>Name</th><th>Error</th><th>Last Message</th></tr></thead>";
+      html += "<tbody>";
+      for (const result of mapLogHealth.values()) {
+        html += `<tr><td>${result.name}</td><td>${result.error?.message || 'None'}</td><td>${result.lastRun.toLocaleString()}</td></tr>`;
+      }
+      html += "</tbody>";
+      html += "</table>";
+
       html += "</body></html>";
+
+
       res.end(html);
 
     }
     else if (reqUrl == "/health") {
-      let hasError = false;
-      for (const result of healthMap.values()) {
-        if (result.error) {
-          hasError = true;
-          break;
-        }
-      }
 
-      if (hasError) {
+      if (hasError || logHasError) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end("Error");
       } else {

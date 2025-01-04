@@ -26,7 +26,7 @@ const limit = pLimit(20);
  * 
  * Proposals that are missing from the database are added to the backfill list to get old historical data
  */
-export async function backfillProposals(): Promise<Error | null> {
+export async function backfillProposals(): Promise<{message:string, error: Error|undefined}> {
 
   const startTime = performance.now();
   logger.info("Backfilling proposals");
@@ -45,13 +45,13 @@ export async function backfillProposals(): Promise<Error | null> {
   );
 
   if (!protocolV0_3) {
-    return new Error("Protocol V0.3 not found");
+    return {message: "Protocol V0.3 not found", error: new Error("Protocol V0.3 not found")};
   }
 
   //get the proposals from the chain
   const onChainProposals = await protocolV0_3.autocrat.account.proposal.all();
   if (!onChainProposals || onChainProposals.length === 0) {
-    return new Error("Failed to fetch on-chain proposals");
+    return {message: "Failed to fetch on-chain proposals", error: new Error("Failed to fetch on-chain proposals")};
   }
   logger.info(`Found ${onChainProposals.length} proposals on chain`);
 
@@ -72,7 +72,14 @@ export async function backfillProposals(): Promise<Error | null> {
   }
 
   //if there are no proposals to insert, then we are done
-  if (!proposalsToInsert.length && !proposalsToUpdate.length) return null;
+  if (!proposalsToInsert.length && !proposalsToUpdate.length) {
+    const message = `No proposals to insert or update`;
+    logger.info(message);
+    return {message: message, error: undefined};
+  } 
+
+  let message = `Inserting ${proposalsToInsert.length} proposals`;
+  message += `\nUpdating ${proposalsToUpdate.length} proposals`;
 
   logger.info(`Inserting ${proposalsToInsert.length} proposals`);
   logger.info(`Updating ${proposalsToUpdate.length} proposals`);
@@ -83,8 +90,10 @@ export async function backfillProposals(): Promise<Error | null> {
   await processProposals(proposalsToUpdate, updateProposal);
 
   const endTime = performance.now()
+  message += `\nBackfilling proposals complete - took ${(endTime - startTime) / 1000} seconds`;
   logger.info(`Backfilling proposals complete - took ${(endTime - startTime) / 1000} seconds`);
-  return null;
+
+  return {message: message, error: undefined};
 }
 
 

@@ -148,32 +148,34 @@ async function getLatestTxSigProcessed() {
 
 const programIds = [V4_CONDITIONAL_VAULT_PROGRAM_ID, V4_AMM_PROGRAM_ID, V4_AUTOCRAT_PROGRAM_ID];
 
-export async function backfill(): Promise<Error | undefined> {
+export async function backfill(): Promise<{message:string, error: Error | undefined}> {
   const errors = await Promise.all(programIds.map(async (programId) => {
+    let message = "";
     try {
       const backfilledSignatures = await backfillHistoricalSignatures(programId);
-      logger.info(`backfilled ${backfilledSignatures.length} signatures for ${programId.toString()}`);
-      return null;
+      message = `backfilled ${backfilledSignatures.length} signatures for ${programId.toString()}`;
+      logger.info(message);
+      return {message: message, error: undefined};
     } catch (error) {
       logger.error(
         error instanceof Error ? 
         `Error in backfill for ${programId.toString()}: ${error.message}` : 
         `Unknown error in backfill for ${programId.toString()}`
       );
-      return error;
+      return {message: "An Error occurred", error: error};
     }
   }));
   const errorMessage = errors.filter(Boolean).join('');
-  return errorMessage ? new Error(errorMessage) : undefined;
+  return { message: "", error: errorMessage ? new Error(errorMessage) : undefined };
 }
 
-export async function frontfill(): Promise<Error | undefined> {
+export async function frontfill(): Promise<{message:string, error: Error|undefined}> {
   const errors = await Promise.all(programIds.map(async (programId) => {
     try {
       
       const newSignatures = await insertNewSignatures(programId);
       logger.info(`inserted up to ${newSignatures.length} new signatures for ${programId.toString()}`);
-      return null;
+      return {message: `inserted up to ${newSignatures.length} new signatures for ${programId.toString()}`};
       
     } catch (error) {
       logger.error(
@@ -181,9 +183,9 @@ export async function frontfill(): Promise<Error | undefined> {
         `Error in backfill for ${programId.toString()}: ${error.message}` : 
         `Unknown error in backfill for ${programId.toString()}`
       );
-      return error;
+      return {message: "An Error occurred", error: error};
     }
   }));
   const errorMessage = errors.filter(Boolean).join('');
-  return errorMessage ? new Error(errorMessage) : undefined;
+  return { message: "No Message", error: errorMessage ? new Error(errorMessage) : undefined };
 }

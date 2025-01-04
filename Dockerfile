@@ -7,6 +7,6 @@ ENV NODE_ENV=production
 RUN cd packages/database && bun install --frozen-lockfile
 RUN bun install --frozen-lockfile
 
-EXPOSE 8080
+EXPOSE 80
 ENTRYPOINT ["bun", "run", "start"]
 

@@ -1,6 +1,11 @@
 import { db, eq, schema } from "@metadaoproject/indexer-db";
 import { PricesRecord, PricesType } from "@metadaoproject/indexer-db/lib/schema";
 import { connection } from "./connection";
+import { log } from "./logger/logger";
+
+const logger = log.child({
+  module: "priceHandler"
+});
 
 interface PriceData {
   id: string;
@@ -12,6 +17,7 @@ const baseUrl = "https://api.jup.ag/price/v2?ids=";
 
 export async function updatePrices(): Promise<Error | undefined> {
 
+  const startTime = performance.now();
   //get all the daos that are not hidden
   const results = await db.select({
     baseAcct: schema.daos.baseAcct
@@ -31,7 +37,7 @@ export async function updatePrices(): Promise<Error | undefined> {
   const slot = await connection.getSlot();
 
   for (const [tokenId, priceData] of Object.entries(data.data)) {
-    console.log(tokenId, priceData);
+    
     if (priceData) {
       const pd = priceData as PriceData;
       
@@ -47,13 +53,13 @@ export async function updatePrices(): Promise<Error | undefined> {
         .values(newPrice)
         .onConflictDoNothing()
         .execute();
-      
-      if ((insertPriceRes?.rowCount ?? 0) > 0) {
-        console.log("inserted new jup quote price", pd.id);
-      }
 
     }
+    
   }
+
+  const endTime = performance.now();
+  logger.info(`Updated prices in ${endTime - startTime}ms`);
 
 
   return undefined;

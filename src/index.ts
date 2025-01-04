@@ -1,6 +1,6 @@
 import { backfillDaos, backfillProposals, backfillTokenSupply, backfillTransactions } from "./v3_indexer";
 import { log } from "./logger/logger";
-import { subscribeAll } from "./txLogHandler";
+import { mapLogHealth, subscribeAll } from "./txLogHandler";
 import { frontfill as v4_frontfill, backfill as v4_backfill } from "./v4_indexer/filler";
 import { CronJob } from "cron";
 import http from "http";
@@ -11,17 +11,19 @@ const logger = log.child({
 });
 
 interface cronFunction {
-  (): Promise<Error | undefined>;
+  (): Promise<{message:string, error: Error | undefined}>;
 }
 
 class CronRunResult {
   name: string;
+  message: string;
   error: Error | undefined;
   start: Date;
   end: Date;
 
-  constructor(name: string, error: Error | undefined, start: Date, end: Date) {
+  constructor(name: string, message: string, error: Error | undefined, start: Date, end: Date) {
     this.name = name;
+    this.message = message;
     this.error = error;
     this.start = start;
     this.end = end;
@@ -32,15 +34,21 @@ const healthMap = new Map<string, CronRunResult>();
 async function main() {
 
   //first lets backfill v3
-  let err = await backfillV3();
-  if (err) {
-    logger.error(err, "Error backfilling v3");
-  }
+ await backfillV3().catch((e) => {
+    logger.error(e, "Error backfilling v3");
+    return e;
+  });
+  
   //now lets do v4
-  err = await backfillV4();
-  if (err) {
-    logger.error(err, "Error backfilling v4");
-  }
+  await backfillV4().catch((e) => {
+    logger.error(e, "Error backfilling v4");
+    return e;
+  });
+
+  await frontfillV4().catch((e) => {
+    logger.error(e, "Error frontfilling v4");
+    return e;
+  });
 
   //lets start our crons now
   
@@ -52,19 +60,86 @@ async function main() {
   //start tx log subscription
   subscribeAll();
 
-  const server = http.createServer((_req: any, res: any) => {
-    
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    let html = "<html><body>";
-    html += "<h1>Health Check</h1>";
-    html += "<table>";
-    html += "<tr><th>Name</th><th>Error</th><th>Start</th><th>End</th></tr>";
+  const server = http.createServer((req: any, res: any) => {
+    const reqUrl = new URL(req.url, `http://${req.headers.host}`).pathname;
+    let hasError = false;
     for (const result of healthMap.values()) {
-      html += `<tr><td>${result.name}</td><td>${result.error?.message || 'None'}</td><td>${result.start.toISOString()}</td><td>${result.end.toISOString()}</td></tr>`;
+      if (result.error) {
+        hasError = true;
+        break;
+      }
     }
-    html += "</table>";
-    html += "</body></html>";
-    res.end(html);
+    let logHasError = false;
+    for (const result of mapLogHealth.values()) {
+      if (result.error) {
+        logHasError = true;
+        break;
+      }
+    }
+
+    if (reqUrl == "/") {
+      
+      let bgColor = "#357e4e";
+      if (hasError) {
+        bgColor = "#ff0000";
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      let style = `<style>
+        body {font-family: Arial, sans-serif;}
+        table {border-collapse: collapse;width:100%;margin:25px 0; min-width: 400px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);}
+        thead tr {background-color: ${bgColor};color: #ffffff;text-align: left;font-weight: bold;}
+        td {padding:5px;min-width:100px;border-top:1px solid grey;}
+        th,td {padding:12px 15px;}
+        tr:nth-child(even) {background-color: #f3f3f3;}
+        tr{border-bottom:1px solid #dddddd;}
+       
+      </style>`;
+      let html = "<html><body>";
+      html += style;
+      html += "<h1>MetaDao IndexerHealth Check</h1>";
+      html += "<table>";
+      html += "<thead><tr><th>Name</th><th>Message</th><th>Error</th><th>Start</th><th>End</th></tr></thead>";
+      html += "<tbody>";
+      for (const result of healthMap.values()) {
+        html += `<tr>
+                <td >${result.name}</td>
+                <td >${result.message}</td>
+                <td >${result.error?.message || 'None'}</td>
+                <td >${result.start.toLocaleString()}</td>
+                <td >${result.end.toLocaleString()}</td>
+              </tr>`;
+      }
+      html += "</tbody>";
+      html += "</table>";
+
+      html += "<h2>Log Health</h2>";
+      html += "<table>";
+      html += "<thead><tr><th>Name</th><th>Error</th><th>Last Message</th></tr></thead>";
+      html += "<tbody>";
+      for (const result of mapLogHealth.values()) {
+        html += `<tr><td>${result.name}</td><td>${result.error?.message || 'None'}</td><td>${result.lastRun.toLocaleString()}</td></tr>`;
+      }
+      html += "</tbody>";
+      html += "</table>";
+
+      html += "</body></html>";
+
+
+      res.end(html);
+
+    }
+    else if (reqUrl == "/health") {
+
+      if (hasError || logHasError) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end("Error");
+      } else {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end("OK");
+      }
+    }
+    
+    
    
   });
 
@@ -77,14 +152,16 @@ async function main() {
 
 function startCron(cronName: string, cronFrequency: string, cf: cronFunction) {
   
-  healthMap.set(cronName, new CronRunResult(cronName, new Error("This job has not started yet"), new Date(), new Date()));
+  healthMap.set(cronName, new CronRunResult(cronName, "This job has not started yet", undefined, new Date(), new Date()));
 
   //every 10 minutes
   const cronJob = new CronJob(cronFrequency, async () => {
     const start = new Date();
-    let err = await cf();
+    let result = await cf();
+    const { message, error } = result;
     const end = new Date();
-    healthMap.set(cronName, new CronRunResult(cronName, err, start, end));
+
+    healthMap.set(cronName, new CronRunResult(cronName, message, error, start, end));
   });
   cronJob.start();
 }
@@ -92,9 +169,9 @@ function startCron(cronName: string, cronFrequency: string, cf: cronFunction) {
 
 /**
  * Backfill V3
- * @returns {Promise<Error | undefined>}
+ * @returns {Promise<string | Error>}
  */
-async function backfillV3(): Promise<Error | undefined> {
+async function backfillV3(): Promise<{ message:string, error: Error | undefined }> {
   
   const backfillTasks = [
     { fn: backfillDaos, name: 'backfillDaos' },
@@ -104,30 +181,37 @@ async function backfillV3(): Promise<Error | undefined> {
   ];
 
   let errors: string[] = [];
+  let messages: string[] = [];
   for (const task of backfillTasks) {
     try {
-      const error = await task.fn();
-      if (error) {
-        errors.push(`${task.name}: ${error}`);
-      }
+      await task.fn()
+        .then((data) => {
+          messages.push(data.message);
+          if (data.error) {
+            errors.push(data.error.message);
+          }
+        })
+        .catch((e) => errors.push(e?.toString() || 'Unknown error'));
+     
     } catch (error) {
       errors.push(`${task.name}: ${error}`);
     }
   }
 
   const errorMessage = errors.filter(Boolean).join('');
-  return errorMessage ? new Error(errorMessage) : undefined;
+  const message = messages.join('<br>');
+  return { message:message, error: errorMessage ? new Error(errorMessage) : undefined };
 }
 
-async function backfillV4(): Promise<Error | undefined> {
+async function backfillV4(): Promise<{message:string, error: Error|undefined}> {
   return await v4_backfill();
 }
 
-async function frontfillV4(): Promise<Error | undefined> {
+async function frontfillV4(): Promise<{message:string, error: Error|undefined}> {
   return await v4_frontfill();
 }
 
-async function priceHandler(): Promise<Error | undefined> {
+async function priceHandler(): Promise<{message:string, error: Error|undefined}> {
   return await updatePrices();
 }
 

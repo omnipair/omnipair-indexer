@@ -15,7 +15,7 @@ interface PriceData {
 
 const baseUrl = "https://api.jup.ag/price/v2?ids=";
 
-export async function updatePrices(): Promise<Error | undefined> {
+export async function updatePrices(): Promise<{message:string, error: Error|undefined}> {
 
   const startTime = performance.now();
   //get all the daos that are not hidden
@@ -36,6 +36,8 @@ export async function updatePrices(): Promise<Error | undefined> {
   const data = await response.json();
   const slot = await connection.getSlot();
 
+  let missingPrices = [];
+  let errors = [];
   for (const [tokenId, priceData] of Object.entries(data.data)) {
     
     if (priceData) {
@@ -49,18 +51,27 @@ export async function updatePrices(): Promise<Error | undefined> {
         updatedSlot: slot?.toString() ?? "0",
       };
 
-      const insertPriceRes = await db.insert(schema.prices)
-        .values(newPrice)
-        .onConflictDoNothing()
-        .execute();
+      try {
+        await db.insert(schema.prices)
+          .values(newPrice)
+          .onConflictDoNothing()
+          .execute();
+      } catch (error) {
+        logger.error(`Error inserting price for ${tokenId}: ${error}`);
+        errors.push(`Error inserting price for ${tokenId}: ${error}`);
+      }
 
+    } else {
+      logger.warn(`No price data found for ${tokenId}`);
+      missingPrices.push(tokenId);
     }
     
   }
 
   const endTime = performance.now();
-  logger.info(`Updated prices in ${endTime - startTime}ms`);
+  const missingPricesMessage = missingPrices.filter(Boolean).join('<br>');
+  const message = `Updated prices in ${(endTime - startTime)/1000}s missing <br>${missingPricesMessage}`;
+  logger.info(message);
 
-
-  return undefined;
+  return {message: message, error: errors.length > 0 ? new Error(errors.join('\n')) : undefined};
 }

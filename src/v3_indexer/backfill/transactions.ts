@@ -43,11 +43,15 @@ async function processTx(tx: ConfirmedSignatureInfo) {
     } else {
       //logger.info(tx, "successfully persisted pt");
 
-      //save that we have checked up to this slot
-      await db.update(schema.transactionWatchers).set({
-        latestTxSig: tx.signature,          
-        checkedUpToSlot: tx.slot.toString()
-      }).where(eq(schema.transactionWatchers.acct, AMM_KEY.toString()));
+      try {
+        //save that we have checked up to this slot
+        await db.update(schema.transactionWatchers).set({
+          latestTxSig: tx.signature,          
+          checkedUpToSlot: tx.slot.toString()
+        }).where(eq(schema.transactionWatchers.acct, AMM_KEY.toString()));
+      } catch (e) {
+        logger.error(e, "Error updating the transaction watcher");
+      }
     }
   }
 

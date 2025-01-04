@@ -234,37 +234,41 @@ async function updateProposal(proposal: ProposalAccountWithKey, currentSlot: BN)
   const endedAt = getProposalEndTime(currentSlot, proposal.account.slotEnqueued, new BN(dbDao.slotsPerProposal?.toString() ?? '0'));
 
   const currentTime = new Date();
-  await db.update(schema.proposals)
-    .set({
-      status,
-      endedAt: endedAt,
-      completedAt: status !== ProposalStatus.Pending ? currentTime : null,
-      updatedAt: sql`NOW()`
-    })
-    .where(
-      eq(schema.proposals.proposalAcct, proposal.publicKey.toString())
-    );
-
-
-  if (vaultStatus) {
-    await db.update(schema.conditionalVaults)
-      .set({ status: vaultStatus })
+  try {
+    await db.update(schema.proposals)
+      .set({
+        status,
+        endedAt: endedAt,
+        completedAt: status !== ProposalStatus.Pending ? currentTime : null,
+        updatedAt: sql`NOW()`
+      })
       .where(
-        or(
-          eq(
-            schema.conditionalVaults.condVaultAcct,
-            proposal.account.quoteVault.toString()
-          ),
-          eq(
-            schema.conditionalVaults.condVaultAcct,
-            proposal.account.baseVault.toString()
-          )
-        )
-    );
-    await calculateUserPerformance(proposal);
+        eq(schema.proposals.proposalAcct, proposal.publicKey.toString())
+      );
 
+
+    if (vaultStatus) {
+      await db.update(schema.conditionalVaults)
+        .set({ status: vaultStatus })
+        .where(
+          or(
+            eq(
+              schema.conditionalVaults.condVaultAcct,
+              proposal.account.quoteVault.toString()
+            ),
+            eq(
+              schema.conditionalVaults.condVaultAcct,
+              proposal.account.baseVault.toString()
+            )
+          )
+      );
+      await calculateUserPerformance(proposal);
+
+    }
+    await updateMarketsWithProposal(proposal);
+  } catch (e) {
+    logger.error(e, "Error updating the proposal");
   }
-  await updateMarketsWithProposal(proposal);
   return null;
 }
 
@@ -502,17 +506,21 @@ async function updateMarketsWithProposal(
     return;
   }
 
-  await db.update(schema.markets)
-    .set({
-      proposalAcct: proposal.publicKey.toString(),
-    })
+  try {
+    await db.update(schema.markets)
+      .set({
+        proposalAcct: proposal.publicKey.toString(),
+      })
     .where(
       or(
         eq(schema.markets.marketAcct, proposal.account.passAmm.toString()),
         eq(schema.markets.marketAcct, proposal.account.failAmm.toString())
       )
     )
-    .execute();
+      .execute();
+  } catch (e) {
+    logger.error(e, "Error updating the markets");
+  }
 }
 
 

@@ -53,8 +53,12 @@ export async function backfillDaos():Promise<{message:string, error: Error | und
   const endTime = performance.now()
   const message = `Backfilling daos complete - took ${(endTime - startTime) / 1000} seconds`;
   logger.info(message);
-  
-  return { message: message, error: errorsResult.length > 0 ? new Error(errorsResult.join('\n')) : undefined };
+  let errorMessage = "";
+  for (const error of errorsResult) {
+    errorMessage += error.toString() + '<br>';
+  }
+
+  return { message: message, error: errorMessage ? new Error(errorMessage) : undefined };
 }
 
 /********************************************************************************

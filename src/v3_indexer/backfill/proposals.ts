@@ -90,7 +90,7 @@ export async function backfillProposals(): Promise<{message:string, error: Error
   await processProposals(proposalsToUpdate, updateProposal);
 
   const endTime = performance.now()
-  message += `\nBackfilling proposals complete - took ${(endTime - startTime) / 1000} seconds`;
+  message += `<br>Backfilling proposals complete - took ${(endTime - startTime) / 1000} seconds`;
   logger.info(`Backfilling proposals complete - took ${(endTime - startTime) / 1000} seconds`);
 
   return {message: message, error: undefined};

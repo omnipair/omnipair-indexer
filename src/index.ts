@@ -34,21 +34,26 @@ const healthMap = new Map<string, CronRunResult>();
 async function main() {
 
   //first lets backfill v3
- await backfillV3().catch((e) => {
-    logger.error(e, "Error backfilling v3");
-    return e;
-  });
-  
-  //now lets do v4
-  await backfillV4().catch((e) => {
-    logger.error(e, "Error backfilling v4");
-    return e;
-  });
+  let start = new Date();
+  let res = await backfillV3()
+  let end = new Date();
+  let { message, error } = res;
+  healthMap.set("backfillV3", new CronRunResult("backfillV3", message, error, start, end));
 
-  await frontfillV4().catch((e) => {
-    logger.error(e, "Error frontfilling v4");
-    return e;
-  });
+
+  //now lets do v4
+  start = new Date();
+  res = await backfillV4()
+  end = new Date();
+  ({ message, error } = res);
+  healthMap.set("backfillV4", new CronRunResult("backfillV4", message, error, start, end));
+
+  //now lets frontfill v4
+  start = new Date();
+  res = await frontfillV4()
+  end = new Date();
+  ({ message, error } = res);
+  healthMap.set("frontfillV4", new CronRunResult("frontfillV4", message, error, start, end));
 
   //lets start our crons now
   
@@ -152,7 +157,7 @@ async function main() {
 
 function startCron(cronName: string, cronFrequency: string, cf: cronFunction) {
   
-  healthMap.set(cronName, new CronRunResult(cronName, "This job has not started yet", undefined, new Date(), new Date()));
+  //healthMap.set(cronName, new CronRunResult(cronName, "This job has not started yet", undefined, new Date(), new Date()));
 
   //every 10 minutes
   const cronJob = new CronJob(cronFrequency, async () => {

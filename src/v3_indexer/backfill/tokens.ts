@@ -31,7 +31,14 @@ export async function backfillTokenSupply(): Promise<{message:string, error: Err
   const message = `Backfilling token supply ${mintAccounts.length} tokens took ${(endTime - startTime)/1000} seconds`;
   logger.info(`message`);
 
-  return {message: message, error: errors.length > 0 ? new Error(errors.join('\n')) : undefined};
+  let errorMessage = "";
+  for (const error of errors) {
+    if (error) {
+      errorMessage += error.toString() + '<br>';
+    }
+  }
+
+  return {message: message, error: errorMessage ? new Error(errorMessage) : undefined};
 }
 
 async function updateMint(mintAcct: string): Promise<Error | null> {

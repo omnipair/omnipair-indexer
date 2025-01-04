@@ -72,6 +72,10 @@ export async function updatePrices(): Promise<{message:string, error: Error|unde
   const missingPricesMessage = missingPrices.filter(Boolean).join('<br>');
   const message = `Updated prices in ${(endTime - startTime)/1000}s missing <br>${missingPricesMessage}`;
   logger.info(message);
+  let errorMessage = "";
+  for (const error of errors) {
+    errorMessage += error + '<br>';
+  }
 
-  return {message: message, error: errors.length > 0 ? new Error(errors.join('\n')) : undefined};
+  return {message: message, error: errorMessage ? new Error(errorMessage) : undefined};
 }

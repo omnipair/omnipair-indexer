@@ -149,7 +149,7 @@ async function getLatestTxSigProcessed() {
 const programIds = [V4_CONDITIONAL_VAULT_PROGRAM_ID, V4_AMM_PROGRAM_ID, V4_AUTOCRAT_PROGRAM_ID];
 
 export async function backfill(): Promise<{message:string, error: Error | undefined}> {
-  const errors = await Promise.all(programIds.map(async (programId) => {
+  const results = await Promise.all(programIds.map(async (programId) => {
     let message = "";
     try {
       const backfilledSignatures = await backfillHistoricalSignatures(programId);
@@ -165,12 +165,22 @@ export async function backfill(): Promise<{message:string, error: Error | undefi
       return {message: "An Error occurred", error: error};
     }
   }));
-  const errorMessage = errors.filter(Boolean).map(e => e.toString()).join('<br>');
-  return { message: "", error: errorMessage ? new Error(errorMessage) : undefined };
+  let errorMessage = "";
+  let message = "";
+  for (const result of results) {
+    if (result.error) {
+      errorMessage += result.error.toString() + '<br>';
+    }
+    if (result.message) {
+      message += result.message + '<br>';
+    }
+  }
+  
+  return { message: message, error: errorMessage ? new Error(errorMessage) : undefined };
 }
 
 export async function frontfill(): Promise<{message:string, error: Error|undefined}> {
-  const errors = await Promise.all(programIds.map(async (programId) => {
+  const results = await Promise.all(programIds.map(async (programId) => {
     try {
       
       const newSignatures = await insertNewSignatures(programId);
@@ -186,6 +196,15 @@ export async function frontfill(): Promise<{message:string, error: Error|undefin
       return {message: "An Error occurred", error: error};
     }
   }));
-  const errorMessage = errors.filter(Boolean).map(e => e.toString()).join('<br>');
-  return { message: "No Message", error: errorMessage ? new Error(errorMessage) : undefined };
+  let errorMessage = "";
+  let message = "";
+  for (const result of results) {
+    if (result.error) {
+      errorMessage += result.error.toString() + '<br>';
+    }
+    if (result.message) {
+      message += result.message + '<br>';
+    }
+  }
+  return { message: message, error: errorMessage ? new Error(errorMessage) : undefined };
 }

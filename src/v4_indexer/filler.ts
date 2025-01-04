@@ -165,7 +165,7 @@ export async function backfill(): Promise<{message:string, error: Error | undefi
       return {message: "An Error occurred", error: error};
     }
   }));
-  const errorMessage = errors.filter(Boolean).map(e => e.toString()).join('');
+  const errorMessage = errors.filter(Boolean).map(e => e.toString()).join('<br>');
   return { message: "", error: errorMessage ? new Error(errorMessage) : undefined };
 }
 
@@ -186,6 +186,6 @@ export async function frontfill(): Promise<{message:string, error: Error|undefin
       return {message: "An Error occurred", error: error};
     }
   }));
-  const errorMessage = errors.filter(Boolean).map(e => e.toString()).join('');
+  const errorMessage = errors.filter(Boolean).map(e => e.toString()).join('<br>');
   return { message: "No Message", error: errorMessage ? new Error(errorMessage) : undefined };
 }

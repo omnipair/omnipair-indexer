@@ -110,8 +110,8 @@ async function main() {
                 <td >${result.name}</td>
                 <td >${result.message}</td>
                 <td >${result.error?.message || 'None'}</td>
-                <td >${result.start.toLocaleString()}</td>
-                <td >${result.end.toLocaleString()}</td>
+                <td >${result.start.toLocaleString('en-US', {timeZone: 'America/Vancouver'})}</td>
+                <td >${result.end.toLocaleString('en-US', {timeZone: 'America/Vancouver'})}</td>
               </tr>`;
       }
       html += "</tbody>";
@@ -122,7 +122,7 @@ async function main() {
       html += "<thead><tr><th>Name</th><th>Error</th><th>Last Message</th></tr></thead>";
       html += "<tbody>";
       for (const result of mapLogHealth.values()) {
-        html += `<tr><td>${result.name}</td><td>${result.error?.message || 'None'}</td><td>${result.lastRun.toLocaleString()}</td></tr>`;
+        html += `<tr><td>${result.name}</td><td>${result.error?.message || 'None'}</td><td>${result.lastRun.toLocaleString('en-US', {timeZone: 'America/Vancouver'})}</td></tr>`;
       }
       html += "</tbody>";
       html += "</table>";

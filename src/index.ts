@@ -109,7 +109,7 @@ async function main() {
       </style>`;
       let html = "<html><body>";
       html += style;
-      html += "<h1>MetaDao Indexer Health Check - Started at ${appStartTime.toLocaleString('en-US', {timeZone: 'America/Vancouver'})} </h1>";
+      html += `<h1>MetaDao Indexer Health Check - Started at ${appStartTime.toLocaleString('en-US', {timeZone: 'America/Vancouver'})} </h1>`;
       html += '<br><br><h2>Backfill Health</h2>';
       html += "<table>";
       html += "<thead><tr><th>Name</th><th>Message</th><th>Error</th><th>Previous Errors</th><th>Start</th><th>End</th></tr></thead>";

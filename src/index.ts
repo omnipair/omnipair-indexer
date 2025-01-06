@@ -6,6 +6,9 @@ import { CronJob } from "cron";
 import http from "http";
 import {  updatePrices } from "./priceHandler";
 
+const appStartTime = new Date();
+
+
 const logger = log.child({
   module: "main"
 });
@@ -20,13 +23,15 @@ class CronRunResult {
   error: Error | undefined;
   start: Date;
   end: Date;
+  totalPreviousErrors: number;
 
-  constructor(name: string, message: string, error: Error | undefined, start: Date, end: Date) {
+  constructor(name: string, message: string, error: Error | undefined, start: Date, end: Date, totalPreviousErrors: number) {
     this.name = name;
     this.message = message;
     this.error = error;
     this.start = start;
     this.end = end;
+    this.totalPreviousErrors = totalPreviousErrors;
   }
 }
 const healthMap = new Map<string, CronRunResult>();
@@ -38,7 +43,9 @@ async function main() {
   let res = await backfillV3()
   let end = new Date();
   let { message, error } = res;
-  healthMap.set("backfillV3", new CronRunResult("backfillV3", message, error, start, end));
+
+
+  healthMap.set("backfillV3", new CronRunResult("backfillV3", message, error, start, end, error ? 1 : 0));
 
 
   //now lets do v4
@@ -46,14 +53,15 @@ async function main() {
   res = await backfillV4()
   end = new Date();
   ({ message, error } = res);
-  healthMap.set("backfillV4", new CronRunResult("backfillV4", message, error, start, end));
+  let totalPreviousErrors = error ? 1 : 0;
+  healthMap.set("backfillV4", new CronRunResult("backfillV4", message, error, start, end, error ? 1 : 0));
 
   //now lets frontfill v4
   start = new Date();
   res = await frontfillV4()
   end = new Date();
   ({ message, error } = res);
-  healthMap.set("frontfillV4", new CronRunResult("frontfillV4", message, error, start, end));
+  healthMap.set("frontfillV4", new CronRunResult("frontfillV4", message, error, start, end, error ? 1 : 0));
 
   //lets start our crons now
   
@@ -101,15 +109,17 @@ async function main() {
       </style>`;
       let html = "<html><body>";
       html += style;
-      html += "<h1>MetaDao IndexerHealth Check</h1>";
+      html += "<h1>MetaDao Indexer Health Check - Started at ${appStartTime.toLocaleString('en-US', {timeZone: 'America/Vancouver'})} </h1>";
+      html += '<br><br><h2>Backfill Health</h2>';
       html += "<table>";
-      html += "<thead><tr><th>Name</th><th>Message</th><th>Error</th><th>Start</th><th>End</th></tr></thead>";
+      html += "<thead><tr><th>Name</th><th>Message</th><th>Error</th><th>Previous Errors</th><th>Start</th><th>End</th></tr></thead>";
       html += "<tbody>";
       for (const result of healthMap.values()) {
         html += `<tr>
                 <td >${result.name}</td>
                 <td >${result.message}</td>
                 <td >${result.error?.message || 'None'}</td>
+                <td >${result.totalPreviousErrors}</td>
                 <td >${result.start.toLocaleString('en-US', {timeZone: 'America/Vancouver'})}</td>
                 <td >${result.end.toLocaleString('en-US', {timeZone: 'America/Vancouver'})}</td>
               </tr>`;
@@ -117,7 +127,7 @@ async function main() {
       html += "</tbody>";
       html += "</table>";
 
-      html += "<h2>Log Health</h2>";
+      html += "<br><br><h2>Log Health</h2>";
       html += "<table>";
       html += "<thead><tr><th>Name</th><th>Error</th><th>Last Message</th></tr></thead>";
       html += "<tbody>";
@@ -165,8 +175,12 @@ function startCron(cronName: string, cronFrequency: string, cf: cronFunction) {
     let result = await cf();
     const { message, error } = result;
     const end = new Date();
-
-    healthMap.set(cronName, new CronRunResult(cronName, message, error, start, end));
+    let totalPreviousErrors = error ? 1 : 0;
+    const oldHealth = healthMap.get("backfillV3");
+    if (oldHealth) {
+      totalPreviousErrors = totalPreviousErrors + oldHealth.totalPreviousErrors;
+    }
+    healthMap.set(cronName, new CronRunResult(cronName, message, error, start, end, totalPreviousErrors));
   });
   cronJob.start();
 }
@@ -221,4 +235,5 @@ async function priceHandler(): Promise<{message:string, error: Error|undefined}>
 }
 
 // Run the main function
+
 main();

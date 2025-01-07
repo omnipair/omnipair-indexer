@@ -45,53 +45,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
 
     const swapIx = tx.instructions.find((ix) => ix.name === "swap");
     if (swapIx) {
-      // sometimes we mint cond tokens for the user right before we do the swap ix
-      const mintIx = tx.instructions?.find(
-        (i) => i.name === "mintConditionalTokens"
-      );
-      // What if there's more than one?
-      const mergeIx = tx.instructions?.find((i) => i.name === "mergeConditionalTokensForUnderlyingTokens");
-      
-      if (mergeIx && mintIx) {
-        logger.error("ARB TRANSACTION DETECTED")
-        return null;
-      }
-      ///
-      const marketAcct = swapIx.accountsWithData.find((a) => a.name === "amm");
-      if (!marketAcct) {
-        logger.info(signature, "no market account found");
-        return null;
-      }
-    
-      //get market account and index price and twap async
-      //logger.info("builder::buildOrderFromSwapIx::indexing price and twap for market", marketAcct.pubkey);
-      const marketAcctPubKey = new PublicKey(marketAcct.pubkey);
-    
-      //persist the market of this transaction
-      const marketTransaction = new MarketTransaction(marketAcctPubKey);
-      marketTransaction.persist();
-
-      const blockTime =  new Date(tx.blockTime * 1000);
-      // now we are upserting price/twap in the buildOrderFromSwapIx function
-      const result = await buildOrderFromSwapIx(swapIx, tx, mintIx, marketAcct.pubkey, blockTime);
-      if (!result) {
-        logger.error(signature, "no swap order or swap take found");
-        return null;
-      }
-      const {swapOrder, swapTake} = result;
-
-      const transactionRecord: TransactionRecord = {
-        txSig: signature,
-        slot: slot.toString(),
-        blockTime: blockTime,
-        failed: tx.err !== undefined,
-        payload: serialize(tx),
-        serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
-        mainIxType: getMainIxTypeFromTransaction(tx),
-      };
-
-      return new SwapTransaction(swapOrder, swapTake, transactionRecord);
-   
+      return await createSwapTransaction(tx, swapIx, signature, slot);   
     } else {
       // handle non-swap transactions (add/remove liquidity, crank, etc)
       // find market account from instructions
@@ -121,6 +75,75 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
 
   return null;
 }
+
+async function createSwapTransaction(
+  tx: Transaction, 
+  swapIx: Instruction, 
+  signature: string, 
+  slot: number
+): Promise<SwapTransaction | null> {
+  const mintIx = tx.instructions?.find(i => i.name === "mintConditionalTokens");
+  const mergeIx = tx.instructions?.find(i => i.name === "mergeConditionalTokensForUnderlyingTokens");
+  
+  if (mergeIx && mintIx) {
+    logger.error("ARB TRANSACTION DETECTED");
+    return null;
+  }
+
+  const marketAcct = swapIx.accountsWithData.find(a => a.name === "amm");
+  if (!marketAcct) {
+    logger.info(signature, "no market account found");
+    return null;
+  }
+
+  const marketAcctPubKey = new PublicKey(marketAcct.pubkey);
+  const marketTransaction = new MarketTransaction(marketAcctPubKey);
+  marketTransaction.persist();
+
+  const blockTime = new Date(tx.blockTime * 1000);
+  const result = await buildOrderFromSwapIx(swapIx, tx, mintIx, marketAcct.pubkey, blockTime);
+  if (!result) {
+    logger.error(signature, "no swap order or swap take found");
+    return null;
+  }
+
+  const {swapOrder, swapTake} = result;
+  const transactionRecord: TransactionRecord = {
+    txSig: signature,
+    slot: slot.toString(),
+    blockTime: blockTime,
+    failed: tx.err !== undefined,
+    payload: serialize(tx),
+    serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
+    mainIxType: getMainIxTypeFromTransaction(tx),
+  };
+
+  return new SwapTransaction(swapOrder, swapTake, transactionRecord);
+}
+
+  /*
+    async indexPriceAndTWAPForAccount(account: PublicKey) {
+    console.log("indexing price and twap for account", account.toBase58());
+    const accountInfo = await connection.getAccountInfoAndContext(
+      account
+    );
+
+    //index refresh on startup
+    if (accountInfo.value) {
+      const res = await AmmMarketAccountUpdateIndexer.index(
+        accountInfo.value,
+        account,
+        accountInfo.context
+      );
+      if (!res.success) {
+        logger.error(
+          "error indexing account initial fetch",
+          account.toString()
+        );
+      }
+    }
+  }
+  */
 
 
 async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx: Instruction | undefined, marketAcct: string, blockTime:Date):

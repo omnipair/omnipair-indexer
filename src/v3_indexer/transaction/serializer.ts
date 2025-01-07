@@ -418,12 +418,7 @@ export async function getTransaction(signature: string): Promise<Transaction|boo
     logger.warn(`${signature} no tx response for signature`);
     return null;
   }
-  for (const msg of txResponse.meta?.logMessages ?? []) {
-    if (msg.includes("Instruction: CrankThatTwap")) {
-      console.log(`skipping tx - crank that twap ${signature}`);
-      return true;
-    }
-  }
+  
   const accountsRaw = await resolveAccounts(txResponse);
   if (!accountsRaw) {
     logger.warn(`${signature} no accounts response for signature`);
@@ -431,16 +426,9 @@ export async function getTransaction(signature: string): Promise<Transaction|boo
   }
   
   const accounts: Account[] = [];
-  // Index to token balance
+  
   const preTokenBalances = getTokenBalances(txResponse.meta?.preTokenBalances ?? [], accountsRaw);
-  if (preTokenBalances.size == 0) {
-    return null;
-  }
-
   const postTokenBalances = getTokenBalances(txResponse.meta?.postTokenBalances ?? [], accountsRaw );
-  if (postTokenBalances.size == 0) {
-    return null;
-  }
 
   for (let i = 0; i < accountsRaw.length; ++i) {
     const cur = accountsRaw.get(i);
@@ -472,7 +460,6 @@ export async function getTransaction(signature: string): Promise<Transaction|boo
     logger.warn("no instructions");
     return null;
   }
-  
 
   const parseResult = SerializableTransaction.safeParse({
     blockTime: txResponse.blockTime,

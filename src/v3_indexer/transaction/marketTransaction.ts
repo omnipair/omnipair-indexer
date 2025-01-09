@@ -26,7 +26,7 @@ export class MarketTransaction implements PersistableTransaction {
       logger.error("no account info found", this.marketAcct);
       return false;
     }
-    this.indexAmmMarketAccountWithContext(accountInfo.value, this.marketAcct, accountInfo.context);
+    await this.indexAmmMarketAccountWithContext(accountInfo.value, this.marketAcct, accountInfo.context);
 
     return true;
   }

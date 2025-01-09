@@ -33,6 +33,18 @@ class FakePersistableTransaction implements PersistableTransaction {
 export async function ptFromSignatureAndSlot(signature: string, slot:number): Promise<PersistableTransaction | null > {
 
   try {
+
+    //first lets see if we have this in the db
+    const dbTx = await db.select({txSig: schema.transactions.txSig})
+      .from(schema.transactions)
+      .where(eq(schema.transactions.txSig, signature))
+      .execute();
+    
+    if (dbTx.length > 0) {
+      logger.info(`${signature} already in db`);
+      return null;
+    }
+
     const tx = await getTransaction(signature);
     if (tx === true) {
       //this is a crank and a hack to make the other code cleaner
@@ -86,7 +98,7 @@ async function createSwapTransaction(
   const mergeIx = tx.instructions?.find(i => i.name === "mergeConditionalTokensForUnderlyingTokens");
   
   if (mergeIx && mintIx) {
-    logger.error("ARB TRANSACTION DETECTED");
+    logger.error(new Error("ARB TRANSACTION DETECTED"));
     return null;
   }
 
@@ -103,7 +115,7 @@ async function createSwapTransaction(
   const blockTime = new Date(tx.blockTime * 1000);
   const result = await buildOrderFromSwapIx(swapIx, tx, mintIx, marketAcct.pubkey, blockTime);
   if (!result) {
-    logger.error(signature, "no swap order or swap take found");
+    logger.warn(`${signature} no swap order or swap take found`);
     return null;
   }
 
@@ -120,31 +132,6 @@ async function createSwapTransaction(
 
   return new SwapTransaction(swapOrder, swapTake, transactionRecord);
 }
-
-  /*
-    async indexPriceAndTWAPForAccount(account: PublicKey) {
-    console.log("indexing price and twap for account", account.toBase58());
-    const accountInfo = await connection.getAccountInfoAndContext(
-      account
-    );
-
-    //index refresh on startup
-    if (accountInfo.value) {
-      const res = await AmmMarketAccountUpdateIndexer.index(
-        accountInfo.value,
-        account,
-        accountInfo.context
-      );
-      if (!res.success) {
-        logger.error(
-          "error indexing account initial fetch",
-          account.toString()
-        );
-      }
-    }
-  }
-  */
-
 
 async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx: Instruction | undefined, marketAcct: string, blockTime:Date):
   Promise<{ swapOrder: OrdersRecord; swapTake: TakesRecord } | null> {
@@ -230,7 +217,7 @@ async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx
     quoteAmount.toString() === "0" &&
     baseAmount.toString() === "0"
   ) {
-    funcLog.error(`failed swap ${tx.signatures[0]}`);
+    funcLog.error(new Error(`failed swap ${tx.signatures[0]} with no quote or base amount`));
     return null;
   }
 
@@ -239,7 +226,7 @@ async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx
   // default is input / output (buying a token with USDC or whatever)
   const { baseToken, quoteToken } = await getMarketTokens(marketAcct);
   if (!baseToken || !quoteToken) {
-    logger.error("no base or quote token found for market", marketAcct);
+    logger.error(new Error(`no base or quote token found for market ${marketAcct}`));
     return null;
   }
 
@@ -256,7 +243,7 @@ async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx
         quoteToken.decimals
       );
     } catch (e) {
-      logger.error("error getting price", e);
+      logger.error(e, "error getting price");
       return null;
     }
   }
@@ -310,7 +297,7 @@ async function getMarketTokens(marketAcctPubKey: string): Promise<{baseToken: To
     .execute();
     
   if (marketAcctRecord.length === 0) {
-    logger.error(`no market acct record found for ${marketAcctPubKey}` );
+    logger.error( new Error(`no market acct record found for ${marketAcctPubKey}`) );
     return { baseToken: null, quoteToken: null};
   }
   const baseToken = await db.select()
@@ -319,7 +306,7 @@ async function getMarketTokens(marketAcctPubKey: string): Promise<{baseToken: To
     .execute();
     
   if (baseToken.length === 0) {
-    logger.error(`No base token found for market ${marketAcctPubKey}`, );
+    logger.error( new Error(`No base token found for market ${marketAcctPubKey}`) );
     return {baseToken: null, quoteToken: null};
   }
   const quoteToken = await db.select()
@@ -328,7 +315,7 @@ async function getMarketTokens(marketAcctPubKey: string): Promise<{baseToken: To
     .limit(1)
     .execute();
   if (baseToken.length === 0) {
-    logger.error(`No quote token found for market ${marketAcctPubKey}`, );
+    logger.error( new Error(`No quote token found for market ${marketAcctPubKey}`) );
     return {baseToken: null, quoteToken: null};
   }
 

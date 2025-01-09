@@ -65,11 +65,7 @@ async function handleCreateAmmEvent(event: CreateAmmEvent) {
     }).onConflictDoNothing();
 
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleCreateAmmEvent: ${error.message}`
-        : "Unknown error in handleCreateAmmEvent"
-    );
+    logger.error(error, "Error in handleCreateAmmEvent");
   }
 }
 
@@ -98,11 +94,7 @@ async function handleAddLiquidityEvent(event: AddLiquidityEvent) {
     logger.info("Updated AMM", event.common.amm.toString());
 
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleAddLiquidityEvent: ${error.message}`
-        : "Unknown error in handleAddLiquidityEvent"
-    );
+    logger.error(error, "Error in handleAddLiquidityEvent");
   }
 }
 
@@ -132,11 +124,7 @@ async function handleRemoveLiquidityEvent(event: RemoveLiquidityEvent) {
     logger.info("Updated AMM", event.common.amm.toString());
 
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleRemoveLiquidityEvent: ${error.message}`
-        : "Unknown error in handleRemoveLiquidityEvent"
-    );
+    logger.error(error, "Error in handleRemoveLiquidityEvent");
   }
 }
 
@@ -182,11 +170,7 @@ async function handleSwapEvent(event: SwapEvent, signature: string, transactionR
     }).where(eq(schema.v0_4_amms.ammAddr, event.common.amm.toString()));
 
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleSwapEvent: ${error.message}`
-        : "Unknown error in handleSwapEvent"
-    );
+    logger.error(error, "Error in handleSwapEvent");
   }
 }
 
@@ -221,11 +205,7 @@ async function handleSplitEvent(event: SplitTokensEvent, signature: string, tran
       .onConflictDoNothing();
     
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleSplitEvent: ${error.message}`
-        : "Unknown error in handleSplitEvent"
-    );
+    logger.error(error, "Error in handleSplitEvent");
   }
 }
 
@@ -241,11 +221,7 @@ async function handleMergeEvent(event: MergeTokensEvent, signature: string, tran
     }).onConflictDoNothing();
     
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleMergeEvent: ${error.message}`
-        : "Unknown error in handleMergeEvent"
-    );
+    logger.error(error, "Error in handleMergeEvent");
   }
 }
 
@@ -303,11 +279,7 @@ async function handleInitializeQuestionEvent(event: InitializeQuestionEvent) {
     }).onConflictDoNothing();
     
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleInitializeQuestionEvent: ${error.message}`
-        : "Unknown error in handleInitializeQuestionEvent"
-    );
+    logger.error(error, "Error in handleInitializeQuestionEvent");
   }
 }
 
@@ -325,11 +297,7 @@ async function handleInitializeConditionalVaultEvent(event: InitializeConditiona
     });
     
   } catch (error) {
-    logger.error(
-      error instanceof Error
-        ? `Error in handleInitializeConditionalVaultEvent: ${error.message}`
-        : "Unknown error in handleInitializeConditionalVaultEvent"
-    );
+    logger.error(error, "Error in handleInitializeConditionalVaultEvent");
   }
 }
 
@@ -441,8 +409,8 @@ async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: Ad
   } catch (error) {
     logger.error(
       error instanceof Error
-        ? `Error in insertPriceIfNotDuplicate: ${error.message}`
-        : "Unknown error in insertPriceIfNotDuplicate"
+        ? new Error(`Error in insertPriceIfNotDuplicate: ${error.message}`)
+        : new Error("Unknown error in insertPriceIfNotDuplicate")
     );
   }
 }

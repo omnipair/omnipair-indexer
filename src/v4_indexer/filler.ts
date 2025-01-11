@@ -3,6 +3,9 @@ import { AMM_PROGRAM_ID as V4_AMM_PROGRAM_ID, AUTOCRAT_PROGRAM_ID as V4_AUTOCRAT
 import { db, schema, eq, asc } from "@metadaoproject/indexer-db";
 import { log } from "../logger/logger";
 import { index } from "./indexer";
+import pLimit from "p-limit";
+
+const limit = pLimit(10);
 
 const RPC_ENDPOINT = process.env.RPC_ENDPOINT;
 
@@ -47,10 +50,13 @@ const backfillHistoricalSignatures = async (
     await insertSignatures(signatures, programId);
 
     //trigger indexing
-    Promise.all(signatures.map(async (signature: ConfirmedSignatureInfo) => {
-      await index(signature.signature, programId);
-    }));
-
+    const tasks = [];
+    for (const signature of signatures) {
+        const task = limit(() => index(signature.signature, programId));
+        tasks.push(task);
+    }
+    await Promise.all(tasks);
+    
     backfilledSignatures = backfilledSignatures.concat(signatures);
     oldestSignature = signatures[signatures.length - 1].signature;
 
@@ -80,9 +86,12 @@ const insertNewSignatures = async (programId: PublicKey) => {
 
     //trigger indexing
     //TODO: maybe only index if signature doesnt exist in signatures table (which would mean it wasnt indexed yet)
-    Promise.all(signatures.map(async (signature: ConfirmedSignatureInfo) => {
-      await index(signature.signature, programId);
-    }));
+    const tasks = [];
+    for (const signature of signatures) {
+        const task = limit(() => index(signature.signature, programId));
+        tasks.push(task);
+    }
+    await Promise.all(tasks);
 
     allSignatures = allSignatures.concat(signatures);
     if (!oldestSignatureInserted) setLatestTxSigProcessed(signatures[0].signature); //since getSignaturesForAddress is a backwards walk, this should be the latest signature

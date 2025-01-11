@@ -61,16 +61,18 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
     } else {
       // handle non-swap transactions (add/remove liquidity, crank, etc)
       // find market account from instructions
-      let marketAcct: PublicKey | undefined;
+      
+      let marketAccts: PublicKey[] = [];
       for (const ix of tx.instructions) {
         const candidate = ix.accountsWithData.find((a) => a.name === "amm");
         if (candidate) {
-          marketAcct = new PublicKey(candidate.pubkey);
-          break;
+          const marketAcct = new PublicKey(candidate.pubkey);
+          marketAccts.push(marketAcct);
         }
       }
-      if (marketAcct) {
-        const marketTransaction = new MarketTransaction(marketAcct);
+      
+      if (marketAccts.length > 0) {
+        const marketTransaction = new MarketTransaction(marketAccts);
         return marketTransaction;
       } else {
         logger.info(signature,"no market account found for non swap txn");
@@ -109,8 +111,8 @@ async function createSwapTransaction(
   }
 
   const marketAcctPubKey = new PublicKey(marketAcct.pubkey);
-  const marketTransaction = new MarketTransaction(marketAcctPubKey);
-  marketTransaction.persist();
+  const marketTransaction = new MarketTransaction([marketAcctPubKey]);
+  await marketTransaction.persist();
 
   const blockTime = new Date(tx.blockTime * 1000);
   const result = await buildOrderFromSwapIx(swapIx, tx, mintIx, marketAcct.pubkey, blockTime);

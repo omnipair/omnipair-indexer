@@ -245,7 +245,7 @@ async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx
         quoteToken.decimals
       );
     } catch (e) {
-      logger.error(e, "error getting price");
+      logger.warn(e, "error getting price");
       return null;
     }
   }

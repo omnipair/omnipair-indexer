@@ -202,15 +202,20 @@ async function parseInstructions(
     }
     const programAccount = accounts[curOuter.programIdIndex].pubkey;
     const idl = await getIdlForProgram(programAccount);
-    const outerIxWithDisplay = getIxWithDisplay(
-      {
-        ...curOuter,
+    let outerIxWithDisplay = null;
+    try {
+      outerIxWithDisplay = getIxWithDisplay(
+        {
+          ...curOuter,
         data: Buffer.from(curOuter.data),
         accounts: curOuter.accountKeyIndexes,
       },
       idl,
-      accounts
-    );
+        accounts
+      );
+    } catch (e) {
+      logger.warn(e, "error with getIxWithDisplay");
+    }
 
     const outerName = outerIxWithDisplay?.instruction.name ?? "unknown";
     const outerArgs = outerIxWithDisplay?.instructionDisplay?.args ?? [];

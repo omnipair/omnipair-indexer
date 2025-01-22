@@ -342,19 +342,19 @@ function getIxWithDisplay(
   try {
     coder = new BorshInstructionCoder(idl);
   } catch (e) {
-    logger.error(e, "error with initializing coder");
+    logger.warn(e, "error with initializing coder");
     return null;
   }
 
   if (!coder) {
-    logger.error("no coder can't continue");
+    logger.warn("no coder can't continue");
     return null;
   }
 
   try {
     decodedIx = coder.decode(Buffer.from(instruction.data));
   } catch (e) {
-    logger.error(e, "error with coder decoding of instruction:");
+    logger.warn(e, "error with coder decoding of instruction:");
     return null;
   }
 
@@ -388,7 +388,7 @@ function getIxWithDisplay(
       instructionDisplay: ixDisplay,
     };
   } catch (e) {
-    logger.error(e, "error with coder formatting of decodedIx:");
+    logger.warn(e, "error with coder formatting of decodedIx:");
     return null;
   }
 }

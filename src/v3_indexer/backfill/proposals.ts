@@ -201,7 +201,7 @@ async function insertProposal(proposal: ProposalAccountWithKey, currentSlot: BN)
 
   try {
     await db.update(schema.proposalDetails)
-      .set({state:"deployed"})ı
+      .set({state:"deployed"})
       .where(eq(schema.proposalDetails.proposalAcct, dbProposal.proposalAcct)));
   } catch (e) {
     logger.error(e, `Error updating Proposal Details ${dbProposal.proposalAcct} with proposal`);

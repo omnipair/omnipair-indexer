@@ -54,6 +54,10 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
       //logger.info(signature, "no tx for signature");
       return null;
     }
+    if (tx.err) {
+      logger.warn(`${signature} tx error ${tx.err.toString()}`);
+      return null;
+    }
 
     const swapIx = tx.instructions.find((ix) => ix.name === "swap");
     if (swapIx) {
@@ -215,7 +219,6 @@ async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx
   const quoteAmount = new BN(qb.toString()).abs();
 
   if (
-    !!tx.err &&
     quoteAmount.toString() === "0" &&
     baseAmount.toString() === "0"
   ) {

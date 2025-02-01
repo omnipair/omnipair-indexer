@@ -1,50 +1,33 @@
 import { db, eq, schema } from "@metadaoproject/indexer-db";
 import { OrdersRecord, TakesRecord, TokenRecord, TransactionRecord } from "@metadaoproject/indexer-db/lib/schema";
 import { log } from "../../logger/logger";
-import { PersistableTransaction } from "./persistableTransaction";
+import { BaseTransaction } from "./baseTransaction";
 
 
 const logger = log.child({
   module: "swap"
 });
 
-export class SwapTransaction implements PersistableTransaction {
+export class SwapTransaction extends BaseTransaction {
   protected ordersRecord: OrdersRecord;
   protected takesRecord: TakesRecord;
-  protected transactionRecord: TransactionRecord;
+  
   constructor(
     ordersRecord: OrdersRecord,
     takesRecord: TakesRecord,
     transactionRecord: TransactionRecord,    
   ) {
-    
+    super(transactionRecord);
     this.ordersRecord = ordersRecord;
     this.takesRecord = takesRecord;
-    this.transactionRecord = transactionRecord;
+    
     //this.priceRecord = priceRecord;
   }
 
   async persist(): Promise<boolean> {
     try {
-      // First insert the transaction record
-      const upsertResult = await db.insert(schema.transactions)
-        .values(this.transactionRecord)
-        .onConflictDoUpdate({
-          target: schema.transactions.txSig,
-          set: this.transactionRecord,
-        })
-        .returning({ txSig: schema.transactions.txSig });
-        
-      if (
-        upsertResult.length !== 1 ||
-        upsertResult[0].txSig !== this.transactionRecord.txSig
-      ) {
-        logger.warn(
-          `Failed to upsert ${this.transactionRecord.txSig}. ${JSON.stringify(
-            this.transactionRecord
-          )}`
-        );
-      }
+      //save the transaction record first
+      this.saveRecord();
 
       // Insert user if they aren't already in the database
       await db.insert(schema.users)

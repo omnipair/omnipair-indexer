@@ -7,22 +7,11 @@ import { getHumanPrice, getMainIxTypeFromTransaction } from "./utils";
 import { SwapTransaction } from "./swapTransaction";
 import { MarketTransaction } from "./marketTransaction";
 import { db, eq, schema } from "@metadaoproject/indexer-db";
-
-const logger = log.child({
+import { ErrorTransaction } from "./errorTransaction";
+import { BaseTransaction } from "./baseTransaction";
+export const logger = log.child({
   module: "persistable"
 });
-
-
-export interface PersistableTransaction { 
-  persist(): Promise<boolean>;
-}
-
-class FakePersistableTransaction implements PersistableTransaction {
-  async persist(): Promise<boolean> {
-    return true;
-  }
-}
-
 
 
 /*
@@ -30,7 +19,7 @@ class FakePersistableTransaction implements PersistableTransaction {
 *
 * it can be a swap or a market transaction
 */
-export async function ptFromSignatureAndSlot(signature: string, slot:number): Promise<PersistableTransaction | null > {
+export async function ptFromSignatureAndSlot(signature: string, slot:number): Promise<BaseTransaction | null > {
 
   try {
 
@@ -51,14 +40,28 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
       //logger.info(signature, "no tx for signature");
       return null;
     }
+
+    //everything saves a tx record from this point on
+    const blockTime = new Date(tx.blockTime * 1000);
+    const transactionRecord: TransactionRecord = {
+      txSig: signature,
+      slot: slot.toString(),
+      blockTime: blockTime,
+      failed: tx.err !== undefined,
+      payload: serialize(tx),
+      serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
+      mainIxType: getMainIxTypeFromTransaction(tx),
+    };
+
     if (tx.err) {
-      logger.warn(`${signature} tx error ${tx.err.toString()}`);
-      return null;
+      //return an error tx so we save it but stop further processing
+      const errorTransaction = new ErrorTransaction(transactionRecord);
+      return errorTransaction;
     }
 
     const swapIx = tx.instructions.find((ix) => ix.name === "swap");
     if (swapIx) {
-      return await createSwapTransaction(tx, swapIx, signature, slot);   
+      return await createSwapTransaction(tx, swapIx, signature, blockTime, transactionRecord);   
     } else {
       // handle non-swap transactions (add/remove liquidity, crank, etc)
       // find market account from instructions
@@ -73,7 +76,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
       }
       
       if (marketAccts.length > 0) {
-        const marketTransaction = new MarketTransaction(marketAccts);
+        const marketTransaction = new MarketTransaction(marketAccts, transactionRecord);
         return marketTransaction;
       } else {
         logger.info(signature,"no market account found for non swap txn");
@@ -95,7 +98,8 @@ async function createSwapTransaction(
   tx: Transaction, 
   swapIx: Instruction, 
   signature: string, 
-  slot: number
+  blockTime: Date,
+  transactionRecord: TransactionRecord
 ): Promise<SwapTransaction | null> {
   const mintIx = tx.instructions?.find(i => i.name === "mintConditionalTokens");
   const mergeIx = tx.instructions?.find(i => i.name === "mergeConditionalTokensForUnderlyingTokens");
@@ -112,10 +116,9 @@ async function createSwapTransaction(
   }
 
   const marketAcctPubKey = new PublicKey(marketAcct.pubkey);
-  const marketTransaction = new MarketTransaction([marketAcctPubKey]);
+  const marketTransaction = new MarketTransaction([marketAcctPubKey], transactionRecord);
   await marketTransaction.persist();
 
-  const blockTime = new Date(tx.blockTime * 1000);
   const result = await buildOrderFromSwapIx(swapIx, tx, mintIx, marketAcct.pubkey, blockTime);
   if (!result) {
     logger.warn(`${signature} no swap order or swap take found`);
@@ -123,16 +126,6 @@ async function createSwapTransaction(
   }
 
   const {swapOrder, swapTake} = result;
-  const transactionRecord: TransactionRecord = {
-    txSig: signature,
-    slot: slot.toString(),
-    blockTime: blockTime,
-    failed: tx.err !== undefined,
-    payload: serialize(tx),
-    serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
-    mainIxType: getMainIxTypeFromTransaction(tx),
-  };
-
   return new SwapTransaction(swapOrder, swapTake, transactionRecord);
 }
 

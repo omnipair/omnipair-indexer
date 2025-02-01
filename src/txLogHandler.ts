@@ -94,12 +94,12 @@ async function processLogs(logs: Logs, ctx: Context, programId: PublicKey) {
 
 async function indexV3(logs: Logs, ctx: Context, programId: PublicKey) {
   //console.log("indexV3", logs, ctx, programId);
-  const builder = await ptFromSignatureAndSlot(logs.signature, ctx.slot);
-  if (!builder) {
+  const pt = await ptFromSignatureAndSlot(logs.signature, ctx.slot);
+  if (!pt) {
     logger.debug(`No builder found indexing amm logs, signature: ${logs.signature}` );
     return false;
   }
-  await builder.persist();
+  await pt.persist();
   logger.info(`successfully persisted txLog: ${logs.signature} for account: ${programId.toBase58()}`);
   return true;
 }

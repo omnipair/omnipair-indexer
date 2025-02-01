@@ -775,6 +775,7 @@ export const proposalDetails = pgTable("proposal_details", {
   quote_cond_vault_acct: pubkey("quote_cond_vault_acct"),
   pass_market_acct: pubkey("pass_market_acct"),
   fail_market_acct: pubkey("fail_market_acct"),
+  state: text("state"),
 });
 
 export const programSystem = pgTable("program_system", {

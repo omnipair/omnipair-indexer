@@ -234,9 +234,9 @@ async function buildOrderFromSwapIx(swapIx: Instruction, tx: Transaction, mintIx
 
   let price: number | null = null;
 
-  if (quoteAmount.toString() && baseAmount.toString()) {
-    console.log(quoteAmount.toString(), baseAmount.toString());
-    try{
+  if (quoteAmount.toString() && baseAmount.toString() && !baseAmount.isZero() && !quoteAmount.isZero()) {
+
+    try {
       const ammPrice = quoteAmount.mul(new BN(10).pow(new BN(12))).div(baseAmount)
 
       price = getHumanPrice(

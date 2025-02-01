@@ -46,10 +46,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
     }
 
     const tx = await getTransaction(signature);
-    if (tx === true) {
-      //this is a crank and a hack to make the other code cleaner
-      return new FakePersistableTransaction();
-    }
+
     if (!tx) {
       //logger.info(signature, "no tx for signature");
       return null;

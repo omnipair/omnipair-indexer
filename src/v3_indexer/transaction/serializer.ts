@@ -352,7 +352,7 @@ function getIxWithDisplay(
   }
 
   try {
-    decodedIx = coder.decode(Buffer.from(instruction.data));
+    decodedIx = coder.decode(instruction.data);
   } catch (e) {
     logger.warn(e, "error with coder decoding of instruction:");
     return null;
@@ -414,7 +414,7 @@ function flattenIdlAccounts(
     .flat();
 }
 
-export async function getTransaction(signature: string): Promise<Transaction|boolean|null> {
+export async function getTransaction(signature: string): Promise<Transaction|null> {
   const txResponse: VersionedTransactionResponse | null = await connection.getTransaction(signature, {
     maxSupportedTransactionVersion: 0,
   });

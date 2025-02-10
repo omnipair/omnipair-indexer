@@ -8,6 +8,7 @@ import { db, eq, schema } from "@metadaoproject/indexer-db";
 import { ErrorTransaction } from "./errorTransaction";
 import { BaseTransaction } from "./baseTransaction";
 import { createArbTransaction } from "./arbTransaction";
+import { UnprocessedTransaction } from "./unprocessedTransaction";
 export const logger = log.child({
   module: "persistable"
 });
@@ -36,7 +37,16 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
     const result = await getTransaction(signature);
     if (!result) {
       logger.info(signature, "no tx for signature");
-      return null;
+      const unprocessedTransaction: UnprocessedTransaction = new UnprocessedTransaction({
+        txSig: signature,
+        slot: slot.toString(),
+        blockTime: new Date(),
+        failed: false,
+        payload: "",
+        serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
+      });
+      
+      return unprocessedTransaction;
     }
     const {tx, rawTx} = result;
 
@@ -83,12 +93,19 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
 
     }
     //logger.info("no swap found for txn", signature);
-    return null;
+    return new UnprocessedTransaction(transactionRecord);
 
   } catch (e: any) {
     console.log(e);
     logger.error(e);
-    return null;
+    return new UnprocessedTransaction({
+      txSig: signature,
+      slot: slot.toString(),
+      blockTime: new Date(),
+      failed: false,
+      payload: "",
+      serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
+    });
   }
 }
 

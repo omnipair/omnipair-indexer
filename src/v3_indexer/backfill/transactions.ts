@@ -41,19 +41,20 @@ async function processTx(tx: ConfirmedSignatureInfo) {
     const res = await pt.persist();
     if (!res) {
       logger.error(tx, "failed to persist pt");
-    } else {
-      //logger.info(tx, "successfully persisted pt");
-
-      try {
-        //save that we have checked up to this slot
-        await db.update(schema.transactionWatchers).set({
-          latestTxSig: tx.signature,          
-          checkedUpToSlot: tx.slot.toString()
-        }).where(eq(schema.transactionWatchers.acct, AMM_KEY.toString()));
-      } catch (e) {
-        logger.error(e, "Error updating the transaction watcher");
-      }
-    }
+    } 
+  }
+  //now pt is only invalid if it is alread in the db 
+  //which it really should be at this point becuase the
+  //websocket handler should have saved it
+  //we now have the unprocessed_transaction table that is our failed to process tx table
+  try {
+    //save that we have checked up to this slot
+    await db.update(schema.transactionWatchers).set({
+      latestTxSig: tx.signature,          
+      checkedUpToSlot: tx.slot.toString()
+    }).where(eq(schema.transactionWatchers.acct, AMM_KEY.toString()));
+  } catch (e) {
+    logger.error(e, "Error updating the transaction watcher");
   }
 
 

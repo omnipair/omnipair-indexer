@@ -7,7 +7,7 @@ import { MarketTransaction } from "./marketTransaction";
 import { db, eq, schema } from "@metadaoproject/indexer-db";
 import { ErrorTransaction } from "./errorTransaction";
 import { BaseTransaction } from "./baseTransaction";
-import { createArbTransaction } from "./arbTransaction";
+import { createAmmSwapTransaction } from "./ammSwapTransaction";
 import { UnprocessedTransaction } from "./unprocessedTransaction";
 export const logger = log.child({
   module: "persistable"
@@ -70,7 +70,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
 
     const swapIx = tx.instructions.find((ix) => ix.name === "swap");
     if (swapIx) {
-      return createArbTransaction(tx, swapIx, signature, blockTime, transactionRecord, rawTx);
+      return createAmmSwapTransaction(tx, swapIx, signature, blockTime, transactionRecord, rawTx);
     } else {
       // handle non-swap transactions (add/remove liquidity, crank, etc)
       // find market account from instructions

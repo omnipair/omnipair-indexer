@@ -14,7 +14,7 @@ const logger = log.child({
   module: "arbTransaction"
 });
 
-export async function createArbTransaction(
+export async function createAmmSwapTransaction(
   tx: Transaction,
   swapIx: Instruction,
   signature: string,
@@ -194,12 +194,12 @@ export async function createArbTransaction(
     takes.push(swapTake);
   }
 
-  const arbTransaction = new ArbTransaction(orders, takes, transactionRecord, marketAccts);
+  const ammSwapTransaction = new AmmSwapTransaction(orders, takes, transactionRecord, marketAccts);
 
-  return arbTransaction;
+  return ammSwapTransaction;
 }
 
-export class ArbTransaction extends MarketTransaction {
+export class AmmSwapTransaction extends MarketTransaction {
   protected orders: OrdersRecord[];
   protected takes: TakesRecord[];
 

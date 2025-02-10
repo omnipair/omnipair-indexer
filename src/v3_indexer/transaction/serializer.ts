@@ -400,14 +400,21 @@ function flattenIdlAccounts(
 }
 
 export async function getTransaction(signature: string): Promise<{tx: Transaction, rawTx: VersionedTransactionResponse}|null> {
-  const txResponse: VersionedTransactionResponse | null = await connection.getTransaction(signature, {
+  let txResponse: VersionedTransactionResponse | null = await connection.getTransaction(signature, {
     maxSupportedTransactionVersion: 0,
   });
   
   if (!txResponse) {
-    logger.warn(`${signature} no tx response for signature`);
-    return null;
+    //try agaain, just in case the first call didnt work
+    txResponse = await connection.getTransaction(signature, {
+      maxSupportedTransactionVersion: 0,
+    });
+    if (!txResponse) {
+      logger.error(`${signature} no tx response for signature`);
+      return null;
+    }
   }
+
   
   const accountsRaw = await resolveAccounts(txResponse, signature);
   if (!accountsRaw) {

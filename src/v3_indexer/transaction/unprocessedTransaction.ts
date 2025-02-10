@@ -5,7 +5,7 @@ import { BaseTransaction } from "./baseTransaction";
 
 
 const logger = log.child({
-  module: "swap"
+  module: "unprocessed Transaction"
 });
 
 
@@ -19,13 +19,14 @@ export class UnprocessedTransaction extends BaseTransaction {
   async persist(): Promise<boolean> {
      //save the transaction record first
     this.saveRecord();
+    if (this.transactionRecord.mainIxType === "vault_mint_conditional_tokens") {
+      //we dont need to save these, they are normal transactions
+      return true;
+    }
 
     try {
       const text = `INSERT INTO unprocessed_transactions (tx_sig) values($1) ON CONFLICT (tx_sig) DO NOTHING`;
-      const res = await db.$client.query(text, [this.transactionRecord.txSig]);
-      if (res.rowCount !== 1) {
-        logger.warn(`Failed to insert unprocessed transaction ${this.transactionRecord.txSig}`);
-      }
+     await db.$client.query(text, [this.transactionRecord.txSig]);
     } catch (e) {
       logger.warn(e, `error saving transaction record ${this.transactionRecord.txSig}`);
       return false;

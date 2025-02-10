@@ -66,13 +66,13 @@ export async function createAmmSwapTransaction(
 
   for (const marketAcct of allAddresses) {
 
-    let preBaseBalance = 0;
-    let preQuoteBalance = 0;
-    let baseDecimals = 0;
-    let quoteDecimals = 0;
+    let preBaseBalance = BigInt(0);
+    let preQuoteBalance = BigInt(0);
+    let baseDecimals = BigInt(0);
+    let quoteDecimals = BigInt(0);
 
-    let postBaseBalance = 0;
-    let postQuoteBalance = 0;
+    let postBaseBalance = BigInt(0);
+    let postQuoteBalance = BigInt(0);
 
     /*
     * We calculate balance changes
@@ -86,11 +86,11 @@ export async function createAmmSwapTransaction(
       if (preTokenBalance.owner === marketAcct) {
         //now we need to see if this is a base or quote token
         if (preTokenBalance.mint === dbMarkets.get(marketAcct)?.baseToken) {
-          preBaseBalance = Number(preTokenBalance.uiTokenAmount.amount);
-          baseDecimals = Number(preTokenBalance.uiTokenAmount.decimals);
+          preBaseBalance = BigInt(preTokenBalance.uiTokenAmount.amount);
+          baseDecimals = BigInt(preTokenBalance.uiTokenAmount.decimals);
         } else if (preTokenBalance.mint === dbMarkets.get(marketAcct)?.quoteToken) {
-          preQuoteBalance = Number(preTokenBalance.uiTokenAmount.amount);
-          quoteDecimals = Number(preTokenBalance.uiTokenAmount.decimals);
+          preQuoteBalance = BigInt(preTokenBalance.uiTokenAmount.amount);
+          quoteDecimals = BigInt(preTokenBalance.uiTokenAmount.decimals);
         }
       }
     }
@@ -99,9 +99,9 @@ export async function createAmmSwapTransaction(
       if (postTokenBalance.owner === marketAcct) {
         //now we need to see if this is a base or quote token
         if (postTokenBalance.mint === dbMarkets.get(marketAcct)?.baseToken) {
-          postBaseBalance = Number(postTokenBalance.uiTokenAmount.amount);
+          postBaseBalance = BigInt(postTokenBalance.uiTokenAmount.amount);
         } else if (postTokenBalance.mint === dbMarkets.get(marketAcct)?.quoteToken) {
-          postQuoteBalance = Number(postTokenBalance.uiTokenAmount.amount);
+          postQuoteBalance = BigInt(postTokenBalance.uiTokenAmount.amount);
         }
       }
     }
@@ -109,9 +109,9 @@ export async function createAmmSwapTransaction(
     // this is a sanity check but also is wrong
     // as if all balances were taken out (or it was empty before) 
     // this would bail.  This should really not happen though
-    if (preBaseBalance === 0 || preQuoteBalance === 0 || postBaseBalance === 0 || postQuoteBalance === 0) {
+    if (preBaseBalance === BigInt(0) || preQuoteBalance === BigInt(0) || postBaseBalance === BigInt(0) || postQuoteBalance === BigInt(0)) {
       //we dont have any balances
-      if (preBaseBalance != 0 || preQuoteBalance != 0 || postBaseBalance != 0 || postQuoteBalance != 0) {
+      if (preBaseBalance != BigInt(0) || preQuoteBalance != BigInt(0) || postBaseBalance != BigInt(0) || postQuoteBalance != BigInt(0)) {
         //we should not run into this scenario where one is 0 and the other is not
         //so if we do, this may need to be investigated
         logger.error("no balance found for market", marketAcct);
@@ -125,16 +125,16 @@ export async function createAmmSwapTransaction(
 
     //we now have the data for a trade, so lets make one
     const isBid = postBaseBalance < preBaseBalance;
-    const baseAmount = Math.abs(preBaseBalance - postBaseBalance);
-    const quoteAmount = Math.abs(preQuoteBalance - postQuoteBalance);
-    const humanBaseAmount = baseAmount / (10 ** baseDecimals);
-    const humanQuoteAmount = quoteAmount / (10 ** quoteDecimals);
+    const baseAmount = preBaseBalance > postBaseBalance ? preBaseBalance - postBaseBalance : postBaseBalance - preBaseBalance;
+    const quoteAmount = preQuoteBalance > postQuoteBalance ? preQuoteBalance - postQuoteBalance : postQuoteBalance - preQuoteBalance;
+    const humanBaseAmount = Number(baseAmount) / (10 ** Number(baseDecimals));
+    const humanQuoteAmount = Number(quoteAmount) / (10 ** Number(quoteDecimals));
 
     //this is the price that the AMM internally calculated, it does not include fees
     const price = humanQuoteAmount / humanBaseAmount;
 
-    let baseFee = 0;
-    let quoteFee = 0;
+    let baseFee = BigInt(0);
+    let quoteFee = BigInt(0);
 
     const feeAdjust = process.env.FEE_ADJUST ? Number(process.env.FEE_ADJUST) : 0.01;
 
@@ -142,10 +142,10 @@ export async function createAmmSwapTransaction(
     //NOTE: this is rounded ----- should it be floored? -------
     if (isBid) {
       //The fee comes off the input quote amount
-      quoteFee = Math.round(quoteAmount * feeAdjust);
+      quoteFee = quoteAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
     } else {
       //The fee comes off the input base amount
-      baseFee = Math.round(baseAmount * feeAdjust);
+      baseFee = baseAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
     }
 
     if (process.env.DEPLOY_ENVIRONMENT == "DEVELOPMENT") {
@@ -185,8 +185,8 @@ export async function createAmmSwapTransaction(
       orderTime: now,
       orderTxSig: signature,
       quotePrice: price?.toString() ?? "0",
-      takerBaseFee: BigInt(baseFee),
-      takerQuoteFee: BigInt(quoteFee),
+      takerBaseFee: baseFee,
+      takerQuoteFee: quoteFee,
     };
 
     marketAccts.push(new PublicKey(marketAcct));

@@ -127,11 +127,11 @@ export async function createAmmSwapTransaction(
     const isBid = postBaseBalance < preBaseBalance;
     const baseAmount = preBaseBalance > postBaseBalance ? preBaseBalance - postBaseBalance : postBaseBalance - preBaseBalance;
     const quoteAmount = preQuoteBalance > postQuoteBalance ? preQuoteBalance - postQuoteBalance : postQuoteBalance - preQuoteBalance;
-    const humanBaseAmount = Number(baseAmount) / (10 ** Number(baseDecimals));
-    const humanQuoteAmount = Number(quoteAmount) / (10 ** Number(quoteDecimals));
+    const humanBaseAmount = baseAmount / (10n ** (baseDecimals));
+    const humanQuoteAmount = quoteAmount / (10n ** quoteDecimals);
 
     //this is the price that the AMM internally calculated, it does not include fees
-    const price = humanQuoteAmount / humanBaseAmount;
+    const price = Number(humanQuoteAmount) / Number(humanBaseAmount);
 
     let baseFee = BigInt(0);
     let quoteFee = BigInt(0);

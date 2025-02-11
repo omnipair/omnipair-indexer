@@ -94,9 +94,8 @@ async function processLogs(logs: Logs, ctx: Context, programId: PublicKey) {
 
 async function indexV3(logs: Logs, ctx: Context, programId: PublicKey) {
   //console.log("indexV3", logs, ctx, programId);
-  const pt = await ptFromSignatureAndSlot(logs.signature, ctx.slot);
+  const pt = await ptFromSignatureAndSlot(logs.signature, ctx.slot, logs);
   if (!pt) {
-    logger.debug(`No builder found indexing amm logs, signature: ${logs.signature}` );
     return false;
   }
   await pt.persist();

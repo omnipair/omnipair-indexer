@@ -1,7 +1,7 @@
 import { getTransaction, serialize, SERIALIZED_TRANSACTION_LOGIC_VERSION } from "./serializer";
 import { log } from "../../logger/logger";
 import { TransactionRecord } from "@metadaoproject/indexer-db/lib/schema";
-import { PublicKey } from "@solana/web3.js";
+import { Logs, PublicKey } from "@solana/web3.js";
 import { getMainIxTypeFromTransaction } from "./utils";
 import { MarketTransaction } from "./marketTransaction";
 import { db, eq, schema } from "@metadaoproject/indexer-db";
@@ -19,7 +19,7 @@ export const logger = log.child({
 *
 * it can be a swap or a market transaction
 */
-export async function ptFromSignatureAndSlot(signature: string, slot:number): Promise<BaseTransaction | null > {
+export async function ptFromSignatureAndSlot(signature: string, slot:number, logs: Logs|undefined=undefined): Promise<BaseTransaction | null > {
 
   try {
 
@@ -36,7 +36,17 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number): Pr
 
     const result = await getTransaction(signature);
     if (!result) {
-      logger.info(signature, "no tx for signature");
+      if (logs && logs.err) {
+        return new ErrorTransaction({
+          txSig: signature,
+          slot: slot.toString(),
+          blockTime: new Date(),
+          failed: true,
+          payload: logs.logs.join("\n"),
+          serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
+        });
+      }
+      logger.error(signature, "no tx for signature");
       const unprocessedTransaction: UnprocessedTransaction = new UnprocessedTransaction({
         txSig: signature,
         slot: slot.toString(),

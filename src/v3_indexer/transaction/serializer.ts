@@ -410,7 +410,7 @@ export async function getTransaction(signature: string): Promise<{tx: Transactio
       maxSupportedTransactionVersion: 0,
     });
     if (!txResponse) {
-      logger.error(`${signature} no tx response for signature`);
+      logger.warn(`${signature} no tx response for signature`);
       return null;
     }
   }

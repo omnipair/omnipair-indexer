@@ -31,6 +31,12 @@ export abstract class BaseTransaction {
       ) {
         logger.warn(`Failed to upsert ${this.transactionRecord.txSig}. ${JSON.stringify(this.transactionRecord)}`);
       }
+
+      //remove the transaction record from the unprocessed table
+      await db.$client.query(
+        `DELETE FROM unprocessed_transactions WHERE tx_sig = $1`,
+        [this.transactionRecord.txSig]
+      );
     } catch (e) {
       logger.warn(e, `error saving transaction record ${this.transactionRecord.txSig}`);
       return false;

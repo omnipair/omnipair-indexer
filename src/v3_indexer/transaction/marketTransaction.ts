@@ -17,11 +17,17 @@ const logger = log.child({
 
 export class MarketTransaction extends BaseTransaction {
   protected marketAccts: PublicKey[];
-  constructor(marketAccts: PublicKey[], transactionRecord: TransactionRecord) {
-    super(transactionRecord);
+  constructor(marketAccts: PublicKey[], transactionRecord: TransactionRecord, reprocess: boolean) {
+    super(transactionRecord, reprocess);
     this.marketAccts = marketAccts;
   }
   async persist(): Promise<boolean> {
+    
+    if (this.reprocess) {
+      //we dont want to mess up prices for reprocessed txns
+      return true;
+    }
+
     //save the transaction record first
     this.saveRecord();
     
@@ -205,10 +211,7 @@ export class MarketTransaction extends BaseTransaction {
     try {
       const pricesInsertResult = await db.insert(schema.prices)
         .values(newAmmConditionaPrice)
-        .onConflictDoUpdate({
-          target: [schema.prices.createdAt, schema.prices.marketAcct],
-          set: newAmmConditionaPrice,
-        })
+        .onConflictDoNothing()
         .returning({ marketAcct: schema.prices.marketAcct });
 
       if (pricesInsertResult === undefined || pricesInsertResult.length === 0) {

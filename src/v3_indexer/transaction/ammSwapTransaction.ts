@@ -20,7 +20,8 @@ export async function createAmmSwapTransaction(
   signature: string,
   blockTime: Date,
   transactionRecord: TransactionRecord,
-  rawTx: VersionedTransactionResponse
+  rawTx: VersionedTransactionResponse,
+  reprocess: boolean
 ): Promise<BaseTransaction | null> {
 
   const ts = tx.blockTime;
@@ -127,11 +128,14 @@ export async function createAmmSwapTransaction(
     const isBid = postBaseBalance < preBaseBalance;
     const baseAmount = preBaseBalance > postBaseBalance ? preBaseBalance - postBaseBalance : postBaseBalance - preBaseBalance;
     const quoteAmount = preQuoteBalance > postQuoteBalance ? preQuoteBalance - postQuoteBalance : postQuoteBalance - preQuoteBalance;
-    const humanBaseAmount = baseAmount / (10n ** (baseDecimals));
-    const humanQuoteAmount = quoteAmount / (10n ** quoteDecimals);
+    const humanBaseAmount = Number(baseAmount) / Math.pow(10, Number(baseDecimals));
+    const humanQuoteAmount = Number(quoteAmount) / Math.pow(10, Number(quoteDecimals));
 
     //this is the price that the AMM internally calculated, it does not include fees
-    const price = Number(humanQuoteAmount) / Number(humanBaseAmount);
+    let price = Number(humanQuoteAmount) / Number(humanBaseAmount);
+    if (!isFinite(price)) {
+      price = 0;
+    }
 
     let baseFee = BigInt(0);
     let quoteFee = BigInt(0);
@@ -187,6 +191,8 @@ export async function createAmmSwapTransaction(
       quotePrice: price?.toString() ?? "0",
       takerBaseFee: baseFee,
       takerQuoteFee: quoteFee,
+      base_decimals: Number(baseDecimals),
+      quote_decimals: Number(quoteDecimals),
     };
 
     marketAccts.push(new PublicKey(marketAcct));
@@ -194,7 +200,7 @@ export async function createAmmSwapTransaction(
     takes.push(swapTake);
   }
 
-  const ammSwapTransaction = new AmmSwapTransaction(orders, takes, transactionRecord, marketAccts);
+  const ammSwapTransaction = new AmmSwapTransaction(orders, takes, transactionRecord, marketAccts, reprocess);
 
   return ammSwapTransaction;
 }
@@ -203,8 +209,8 @@ export class AmmSwapTransaction extends MarketTransaction {
   protected orders: OrdersRecord[];
   protected takes: TakesRecord[];
 
-  constructor(orders: OrdersRecord[], takes: TakesRecord[], transactionRecord: TransactionRecord, marketAccts: PublicKey[]) {
-    super(marketAccts, transactionRecord);
+  constructor(orders: OrdersRecord[], takes: TakesRecord[], transactionRecord: TransactionRecord, marketAccts: PublicKey[], reprocess: boolean) {
+    super(marketAccts, transactionRecord, reprocess );
     this.orders = orders;
     this.takes = takes;
   }
@@ -212,36 +218,47 @@ export class AmmSwapTransaction extends MarketTransaction {
   async persist(): Promise<boolean> {
 
     try {
-      //save the market and transaction record first
-      await super.persist();
 
-      for (const order of this.orders) {
-        // Insert user if they aren't already in the database
-        await db.insert(schema.users)
-          .values({ userAcct: order.actorAcct })
-          .onConflictDoNothing()
-          .returning({ userAcct: schema.users.userAcct });
-
-        const orderInsertRes = await db.insert(schema.orders)
-          .values(order)
-          .onConflictDoNothing()
-          .returning({ txSig: schema.orders.orderTxSig });
-
-        if (orderInsertRes.length > 0) {
-          console.log("successfully inserted swap order record", orderInsertRes[0].txSig);
+      await db.transaction(async (trx) => {
+        if (this.reprocess) {
+          //delete all orders and takes for this tx
+          await trx.delete(schema.takes).where(eq(schema.takes.orderTxSig, this.transactionRecord.txSig)).execute();
+          await trx.delete(schema.orders).where(eq(schema.orders.orderTxSig, this.transactionRecord.txSig)).execute();          
         }
-      }
 
-      for (const take of this.takes) {
-        const takeInsertRes = await db.insert(schema.takes)
-          .values(take)
-          .onConflictDoNothing()
-          .returning({ txSig: schema.takes.orderTxSig });
+        //save the market and transaction record first
+        await super.persist();
 
-        if (takeInsertRes.length > 0) {
-          logger.info(`successfully inserted swap take record. ${takeInsertRes[0].txSig}`);
+        for (const order of this.orders) {
+          // Insert user if they aren't already in the database
+          await trx.insert(schema.users)
+            .values({ userAcct: order.actorAcct })
+            .onConflictDoNothing()
+            .returning({ userAcct: schema.users.userAcct });
+
+          const orderInsertRes = await trx.insert(schema.orders)
+            .values(order)
+            .onConflictDoNothing()
+            .returning({ txSig: schema.orders.orderTxSig });
+
+          if (orderInsertRes.length > 0) {
+            console.log("successfully inserted swap order record", orderInsertRes[0].txSig);
+          }
         }
-      }
+
+        for (const take of this.takes) {
+          if (take.orderTxSig) {
+            const takeInsertRes = await trx.insert(schema.takes)
+              .values(take)
+              .onConflictDoNothing()
+              .returning({ txSig: schema.takes.orderTxSig });
+
+            if (takeInsertRes.length > 0) {
+              logger.info(`successfully inserted swap take record. ${takeInsertRes[0].txSig}`);
+            }
+          }
+        }
+      });
     } catch (e) {
       logger.error(e, `error with persisting swap: ${e}`);
       return false;

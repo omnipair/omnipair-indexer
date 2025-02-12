@@ -12,11 +12,12 @@ const logger = log.child({
 //this is just an error transaction.  It just saves the transaction record and stops further processing
 //it only exists to have persistable be abstract.
 export class UnprocessedTransaction extends BaseTransaction {
-  constructor( transactionRecord: TransactionRecord) {
-    super(transactionRecord);
+  constructor( transactionRecord: TransactionRecord, reprocess: boolean) {
+    super(transactionRecord, reprocess);
   }
 
   async persist(): Promise<boolean> {
+
      //save the transaction record first
     this.saveRecord();
     if (this.transactionRecord.mainIxType === "vault_mint_conditional_tokens") {

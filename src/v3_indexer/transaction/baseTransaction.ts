@@ -9,21 +9,28 @@ const logger = log.child({
 export abstract class BaseTransaction { 
   abstract persist(): Promise<boolean>;
   protected transactionRecord: TransactionRecord;
+  protected reprocess: boolean;
 
-  constructor(transactionRecord: TransactionRecord) {
+  constructor(transactionRecord: TransactionRecord, reprocess: boolean) {
     this.transactionRecord = transactionRecord;
+    this.reprocess = reprocess;
   }
 
   async saveRecord(): Promise<boolean> {
     // First insert the transaction record
+    if (this.reprocess) {
+      //we dont want to mess up prices for reprocessed txns
+      return true;
+    }
+
     try {
       const upsertResult = await db.insert(schema.transactions)
         .values(this.transactionRecord)
-        .onConflictDoUpdate({
-          target: schema.transactions.txSig,
-          set: this.transactionRecord,
-        })
-        .returning({ txSig: schema.transactions.txSig });
+      .onConflictDoUpdate({
+        target: schema.transactions.txSig,
+        set: this.transactionRecord,
+      })
+      .returning({ txSig: schema.transactions.txSig });
       
       if (
         upsertResult.length !== 1 ||

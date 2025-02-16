@@ -19,19 +19,21 @@ export const logger = log.child({
 *
 * it can be a swap or a market transaction
 */
-export async function ptFromSignatureAndSlot(signature: string, slot:number, logs: Logs|undefined=undefined): Promise<BaseTransaction | null > {
+export async function ptFromSignatureAndSlot(signature: string, slot:number, logs: Logs|undefined=undefined, reprocess: boolean): Promise<BaseTransaction | null > {
 
   try {
 
-    //first lets see if we have this in the db
-    const dbTx = await db.select({txSig: schema.transactions.txSig})
-      .from(schema.transactions)
-      .where(eq(schema.transactions.txSig, signature))
-      .execute();
+    if (!reprocess) {
+      //first lets see if we have this in the db
+      const dbTx = await db.select({ txSig: schema.transactions.txSig })
+        .from(schema.transactions)
+        .where(eq(schema.transactions.txSig, signature))
+        .execute();
     
-    if (dbTx.length > 0) {
-      logger.info(`${signature} already in db`);
-      return null;
+      if (dbTx.length > 0) {
+        logger.info(`${signature} already in db`);
+        return null;
+      }
     }
 
     const result = await getTransaction(signature);
@@ -44,7 +46,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number, log
           failed: true,
           payload: logs.logs.join("\n"),
           serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
-        });
+        }, reprocess);
       }
       logger.error(signature, "no tx for signature");
       const unprocessedTransaction: UnprocessedTransaction = new UnprocessedTransaction({
@@ -54,7 +56,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number, log
         failed: false,
         payload: "",
         serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
-      });
+      }, reprocess);
       
       return unprocessedTransaction;
     }
@@ -74,13 +76,13 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number, log
 
     if (tx.err) {
       //return an error tx so we save it but stop further processing
-      const errorTransaction = new ErrorTransaction(transactionRecord);
+      const errorTransaction = new ErrorTransaction(transactionRecord, reprocess);
       return errorTransaction;
     }
 
     const swapIx = tx.instructions.find((ix) => ix.name === "swap");
     if (swapIx) {
-      return createAmmSwapTransaction(tx, swapIx, signature, blockTime, transactionRecord, rawTx);
+      return createAmmSwapTransaction(tx, swapIx, signature, blockTime, transactionRecord, rawTx, reprocess);
     } else {
       // handle non-swap transactions (add/remove liquidity, crank, etc)
       // find market account from instructions
@@ -95,7 +97,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number, log
       }
       
       if (marketAccts.length > 0) {
-        const marketTransaction = new MarketTransaction(marketAccts, transactionRecord);
+        const marketTransaction = new MarketTransaction(marketAccts, transactionRecord, reprocess);
         return marketTransaction;
       } else {
         logger.info(signature,"no market account found for non swap txn");
@@ -103,7 +105,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number, log
 
     }
     //logger.info("no swap found for txn", signature);
-    return new UnprocessedTransaction(transactionRecord);
+    return new UnprocessedTransaction(transactionRecord, reprocess);
 
   } catch (e: any) {
     console.log(e);
@@ -115,7 +117,7 @@ export async function ptFromSignatureAndSlot(signature: string, slot:number, log
       failed: false,
       payload: "",
       serializerLogicVersion: SERIALIZED_TRANSACTION_LOGIC_VERSION,
-    });
+    }, reprocess);
   }
 }
 

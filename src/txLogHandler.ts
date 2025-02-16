@@ -94,7 +94,7 @@ async function processLogs(logs: Logs, ctx: Context, programId: PublicKey) {
 
 async function indexV3(logs: Logs, ctx: Context, programId: PublicKey) {
   //console.log("indexV3", logs, ctx, programId);
-  const pt = await ptFromSignatureAndSlot(logs.signature, ctx.slot, logs);
+  const pt = await ptFromSignatureAndSlot(logs.signature, ctx.slot, logs, false);
   if (!pt) {
     return false;
   }

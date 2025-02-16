@@ -12,14 +12,14 @@ const logger = log.child({
   module: "backfill-transactions"
 });
 
-const limit = pLimit(20);
+const limit = pLimit(15);
 
-export async function backfillTransactions(): Promise<{message:string, error: Error|undefined}> {
+export async function backfillTransactions(reprocess: boolean=false): Promise<{message:string, error: Error|undefined}> {
 
   const startTime = performance.now()
 
-  const hist = await getTransactionHistory(AMM_KEY);
-  await processTransactions(hist);
+  const hist = await getTransactionHistory(AMM_KEY, reprocess);
+  await processTransactions(hist, reprocess);
 
   const endTime = performance.now()
   const message = `Backfilling ${hist.length} transactions complete - took ${(endTime - startTime) / 1000} seconds`;
@@ -28,15 +28,13 @@ export async function backfillTransactions(): Promise<{message:string, error: Er
   return {message: message, error: undefined};
 }
 
-async function processTransactions(transactions: ConfirmedSignatureInfo[]) {
-  const currentSlot = await connection.getSlot();
-
-  const tasks = transactions.map(tx => limit(() => processTx(tx)));
+async function processTransactions(transactions: ConfirmedSignatureInfo[], reprocess: boolean) {
+  const tasks = transactions.map(tx => limit(() => processTx(tx, reprocess)));
   await Promise.all(tasks);
 }
 
-async function processTx(tx: ConfirmedSignatureInfo) {
-  const pt = await ptFromSignatureAndSlot(tx.signature, tx.slot);
+async function processTx(tx: ConfirmedSignatureInfo, reprocess: boolean) {
+  const pt = await ptFromSignatureAndSlot(tx.signature, tx.slot, undefined, reprocess);
   if (pt) {
     const res = await pt.persist();
     if (!res) {
@@ -66,7 +64,7 @@ async function processTx(tx: ConfirmedSignatureInfo) {
  * @param range 
  * @returns 
  */
-async function getTransactionHistory(account: PublicKey, after?: string): Promise<ConfirmedSignatureInfo[]> {
+async function getTransactionHistory(account: PublicKey, reprocess: boolean = false): Promise<ConfirmedSignatureInfo[]> {
   
   const history: ConfirmedSignatureInfo[] = [];
 
@@ -75,7 +73,7 @@ async function getTransactionHistory(account: PublicKey, after?: string): Promis
   
   //grab the latest transaction
   const latestTx = await db.select().from(schema.transactionWatchers).where(eq(schema.transactionWatchers.acct, account.toString()));
-  if (latestTx.length > 0 && latestTx[0].latestTxSig) {
+  if (!reprocess && latestTx.length > 0 && latestTx[0].latestTxSig) {
     latestSig = latestTx[0].latestTxSig;
   }
 

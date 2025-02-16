@@ -20,7 +20,8 @@ export async function createAmmSwapTransaction(
   signature: string,
   blockTime: Date,
   transactionRecord: TransactionRecord,
-  rawTx: VersionedTransactionResponse
+  rawTx: VersionedTransactionResponse,
+  reprocess: boolean
 ): Promise<BaseTransaction | null> {
 
   const ts = tx.blockTime;
@@ -123,78 +124,87 @@ export async function createAmmSwapTransaction(
       continue;
     }
 
-    //we now have the data for a trade, so lets make one
-    const isBid = postBaseBalance < preBaseBalance;
-    const baseAmount = preBaseBalance > postBaseBalance ? preBaseBalance - postBaseBalance : postBaseBalance - preBaseBalance;
-    const quoteAmount = preQuoteBalance > postQuoteBalance ? preQuoteBalance - postQuoteBalance : postQuoteBalance - preQuoteBalance;
-    const humanBaseAmount = baseAmount / (10n ** (baseDecimals));
-    const humanQuoteAmount = quoteAmount / (10n ** quoteDecimals);
+    try {
+      //we now have the data for a trade, so lets make one
+      const isBid = postBaseBalance < preBaseBalance;
+      const baseAmount = preBaseBalance > postBaseBalance ? preBaseBalance - postBaseBalance : postBaseBalance - preBaseBalance;
+      const quoteAmount = preQuoteBalance > postQuoteBalance ? preQuoteBalance - postQuoteBalance : postQuoteBalance - preQuoteBalance;
+      const humanBaseAmount = Number(baseAmount) / Math.pow(10, Number(baseDecimals));
+      const humanQuoteAmount = Number(quoteAmount) / Math.pow(10, Number(quoteDecimals));
 
-    //this is the price that the AMM internally calculated, it does not include fees
-    const price = Number(humanQuoteAmount) / Number(humanBaseAmount);
+      //this is the price that the AMM internally calculated, it does not include fees
+      let price = Number(humanQuoteAmount) / Number(humanBaseAmount);
+      if (!isFinite(price)) {
+        price = 0;
+      }
 
-    let baseFee = BigInt(0);
-    let quoteFee = BigInt(0);
+      let baseFee = BigInt(0);
+      let quoteFee = BigInt(0);
 
-    const feeAdjust = process.env.FEE_ADJUST ? Number(process.env.FEE_ADJUST) : 0.01;
+      const feeAdjust = process.env.FEE_ADJUST ? Number(process.env.FEE_ADJUST) : 0.01;
 
-    //figure out our fees
-    //NOTE: this is rounded ----- should it be floored? -------
-    if (isBid) {
-      //The fee comes off the input quote amount
-      quoteFee = quoteAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
-    } else {
-      //The fee comes off the input base amount
-      baseFee = baseAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
+      //figure out our fees
+      //NOTE: this is rounded ----- should it be floored? -------
+      if (isBid) {
+        //The fee comes off the input quote amount
+        quoteFee = quoteAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
+      } else {
+        //The fee comes off the input base amount
+        baseFee = baseAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
+      }
+
+      if (process.env.DEPLOY_ENVIRONMENT == "DEVELOPMENT") {
+        console.log("--------------------------------");
+        console.log("marketAcct", marketAcct);
+        console.log("baseAmount", baseAmount);
+        console.log("quoteAmount", quoteAmount);
+        console.log("humanBaseAmount", humanBaseAmount);
+        console.log("humanQuoteAmount", humanQuoteAmount);
+        console.log("price", price);
+        console.log("isBid", isBid);
+        console.log("baseAmount", baseAmount);
+        console.log("quoteAmount", quoteAmount);
+        console.log("baseFee", baseFee);
+        console.log("quoteFee", quoteFee);
+        console.log("--------------------------------");
+      }
+
+      const swapOrder: OrdersRecord = {
+        marketAcct: marketAcct,
+        orderBlock: tx.slot.toString(),
+        orderTime: now,
+        orderTxSig: signature,
+        quotePrice: price?.toString() ?? "0",
+        actorAcct: actor.pubkey,
+        filledBaseAmount: baseAmount.toString(),
+        isActive: false,
+        side: isBid ? OrderSide.BID : OrderSide.ASK,
+        unfilledBaseAmount: "0",
+        updatedAt: now,
+      };
+
+      const swapTake: TakesRecord = {
+        marketAcct: marketAcct,
+        baseAmount: baseAmount.toString(),
+        orderBlock: tx.slot.toString(),
+        orderTime: now,
+        orderTxSig: signature,
+        quotePrice: price?.toString() ?? "0",
+        takerBaseFee: baseFee,
+        takerQuoteFee: quoteFee,
+        base_decimals: Number(baseDecimals),
+        quote_decimals: Number(quoteDecimals),
+      };
+
+      marketAccts.push(new PublicKey(marketAcct));
+      orders.push(swapOrder);
+      takes.push(swapTake);
+    } catch (e) {
+      logger.error(e, `error with creating swap: ${e}`);
     }
-
-    if (process.env.DEPLOY_ENVIRONMENT == "DEVELOPMENT") {
-      console.log("--------------------------------");
-      console.log("marketAcct", marketAcct);
-      console.log("baseAmount", baseAmount);
-      console.log("quoteAmount", quoteAmount);
-      console.log("humanBaseAmount", humanBaseAmount);
-      console.log("humanQuoteAmount", humanQuoteAmount);
-      console.log("price", price);
-      console.log("isBid", isBid);
-      console.log("baseAmount", baseAmount);
-      console.log("quoteAmount", quoteAmount);
-      console.log("baseFee", baseFee);
-      console.log("quoteFee", quoteFee);
-      console.log("--------------------------------");
-    }
-
-    const swapOrder: OrdersRecord = {
-      marketAcct: marketAcct,
-      orderBlock: tx.slot.toString(),
-      orderTime: now,
-      orderTxSig: signature,
-      quotePrice: price?.toString() ?? "0",
-      actorAcct: actor.pubkey,
-      filledBaseAmount: baseAmount.toString(),
-      isActive: false,
-      side: isBid ? OrderSide.BID : OrderSide.ASK,
-      unfilledBaseAmount: "0",
-      updatedAt: now,
-    };
-
-    const swapTake: TakesRecord = {
-      marketAcct: marketAcct,
-      baseAmount: baseAmount.toString(),
-      orderBlock: tx.slot.toString(),
-      orderTime: now,
-      orderTxSig: signature,
-      quotePrice: price?.toString() ?? "0",
-      takerBaseFee: baseFee,
-      takerQuoteFee: quoteFee,
-    };
-
-    marketAccts.push(new PublicKey(marketAcct));
-    orders.push(swapOrder);
-    takes.push(swapTake);
   }
 
-  const ammSwapTransaction = new AmmSwapTransaction(orders, takes, transactionRecord, marketAccts);
+  const ammSwapTransaction = new AmmSwapTransaction(orders, takes, transactionRecord, marketAccts, reprocess);
 
   return ammSwapTransaction;
 }
@@ -203,8 +213,8 @@ export class AmmSwapTransaction extends MarketTransaction {
   protected orders: OrdersRecord[];
   protected takes: TakesRecord[];
 
-  constructor(orders: OrdersRecord[], takes: TakesRecord[], transactionRecord: TransactionRecord, marketAccts: PublicKey[]) {
-    super(marketAccts, transactionRecord);
+  constructor(orders: OrdersRecord[], takes: TakesRecord[], transactionRecord: TransactionRecord, marketAccts: PublicKey[], reprocess: boolean) {
+    super(marketAccts, transactionRecord, reprocess );
     this.orders = orders;
     this.takes = takes;
   }
@@ -212,36 +222,47 @@ export class AmmSwapTransaction extends MarketTransaction {
   async persist(): Promise<boolean> {
 
     try {
-      //save the market and transaction record first
-      await super.persist();
 
-      for (const order of this.orders) {
-        // Insert user if they aren't already in the database
-        await db.insert(schema.users)
-          .values({ userAcct: order.actorAcct })
-          .onConflictDoNothing()
-          .returning({ userAcct: schema.users.userAcct });
-
-        const orderInsertRes = await db.insert(schema.orders)
-          .values(order)
-          .onConflictDoNothing()
-          .returning({ txSig: schema.orders.orderTxSig });
-
-        if (orderInsertRes.length > 0) {
-          console.log("successfully inserted swap order record", orderInsertRes[0].txSig);
+      await db.transaction(async (trx) => {
+        if (this.reprocess) {
+          //delete all orders and takes for this tx
+          await trx.delete(schema.takes).where(eq(schema.takes.orderTxSig, this.transactionRecord.txSig)).execute();
+          await trx.delete(schema.orders).where(eq(schema.orders.orderTxSig, this.transactionRecord.txSig)).execute();          
         }
-      }
 
-      for (const take of this.takes) {
-        const takeInsertRes = await db.insert(schema.takes)
-          .values(take)
-          .onConflictDoNothing()
-          .returning({ txSig: schema.takes.orderTxSig });
+        //save the market and transaction record first
+        await super.persist();
 
-        if (takeInsertRes.length > 0) {
-          logger.info(`successfully inserted swap take record. ${takeInsertRes[0].txSig}`);
+        for (const order of this.orders) {
+          // Insert user if they aren't already in the database
+          await trx.insert(schema.users)
+            .values({ userAcct: order.actorAcct })
+            .onConflictDoNothing()
+            .returning({ userAcct: schema.users.userAcct });
+
+          const orderInsertRes = await trx.insert(schema.orders)
+            .values(order)
+            .onConflictDoNothing()
+            .returning({ txSig: schema.orders.orderTxSig });
+
+          if (orderInsertRes.length > 0) {
+            console.log("successfully inserted swap order record", orderInsertRes[0].txSig);
+          }
         }
-      }
+
+        for (const take of this.takes) {
+          if (take.orderTxSig) {
+            const takeInsertRes = await trx.insert(schema.takes)
+              .values(take)
+              .onConflictDoNothing()
+              .returning({ txSig: schema.takes.orderTxSig });
+
+            if (takeInsertRes.length > 0) {
+              logger.info(`successfully inserted swap take record. ${takeInsertRes[0].txSig}`);
+            }
+          }
+        }
+      });
     } catch (e) {
       logger.error(e, `error with persisting swap: ${e}`);
       return false;

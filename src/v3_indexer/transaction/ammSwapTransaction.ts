@@ -124,80 +124,84 @@ export async function createAmmSwapTransaction(
       continue;
     }
 
-    //we now have the data for a trade, so lets make one
-    const isBid = postBaseBalance < preBaseBalance;
-    const baseAmount = preBaseBalance > postBaseBalance ? preBaseBalance - postBaseBalance : postBaseBalance - preBaseBalance;
-    const quoteAmount = preQuoteBalance > postQuoteBalance ? preQuoteBalance - postQuoteBalance : postQuoteBalance - preQuoteBalance;
-    const humanBaseAmount = Number(baseAmount) / Math.pow(10, Number(baseDecimals));
-    const humanQuoteAmount = Number(quoteAmount) / Math.pow(10, Number(quoteDecimals));
+    try {
+      //we now have the data for a trade, so lets make one
+      const isBid = postBaseBalance < preBaseBalance;
+      const baseAmount = preBaseBalance > postBaseBalance ? preBaseBalance - postBaseBalance : postBaseBalance - preBaseBalance;
+      const quoteAmount = preQuoteBalance > postQuoteBalance ? preQuoteBalance - postQuoteBalance : postQuoteBalance - preQuoteBalance;
+      const humanBaseAmount = Number(baseAmount) / Math.pow(10, Number(baseDecimals));
+      const humanQuoteAmount = Number(quoteAmount) / Math.pow(10, Number(quoteDecimals));
 
-    //this is the price that the AMM internally calculated, it does not include fees
-    let price = Number(humanQuoteAmount) / Number(humanBaseAmount);
-    if (!isFinite(price)) {
-      price = 0;
+      //this is the price that the AMM internally calculated, it does not include fees
+      let price = Number(humanQuoteAmount) / Number(humanBaseAmount);
+      if (!isFinite(price)) {
+        price = 0;
+      }
+
+      let baseFee = BigInt(0);
+      let quoteFee = BigInt(0);
+
+      const feeAdjust = process.env.FEE_ADJUST ? Number(process.env.FEE_ADJUST) : 0.01;
+
+      //figure out our fees
+      //NOTE: this is rounded ----- should it be floored? -------
+      if (isBid) {
+        //The fee comes off the input quote amount
+        quoteFee = quoteAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
+      } else {
+        //The fee comes off the input base amount
+        baseFee = baseAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
+      }
+
+      if (process.env.DEPLOY_ENVIRONMENT == "DEVELOPMENT") {
+        console.log("--------------------------------");
+        console.log("marketAcct", marketAcct);
+        console.log("baseAmount", baseAmount);
+        console.log("quoteAmount", quoteAmount);
+        console.log("humanBaseAmount", humanBaseAmount);
+        console.log("humanQuoteAmount", humanQuoteAmount);
+        console.log("price", price);
+        console.log("isBid", isBid);
+        console.log("baseAmount", baseAmount);
+        console.log("quoteAmount", quoteAmount);
+        console.log("baseFee", baseFee);
+        console.log("quoteFee", quoteFee);
+        console.log("--------------------------------");
+      }
+
+      const swapOrder: OrdersRecord = {
+        marketAcct: marketAcct,
+        orderBlock: tx.slot.toString(),
+        orderTime: now,
+        orderTxSig: signature,
+        quotePrice: price?.toString() ?? "0",
+        actorAcct: actor.pubkey,
+        filledBaseAmount: baseAmount.toString(),
+        isActive: false,
+        side: isBid ? OrderSide.BID : OrderSide.ASK,
+        unfilledBaseAmount: "0",
+        updatedAt: now,
+      };
+
+      const swapTake: TakesRecord = {
+        marketAcct: marketAcct,
+        baseAmount: baseAmount.toString(),
+        orderBlock: tx.slot.toString(),
+        orderTime: now,
+        orderTxSig: signature,
+        quotePrice: price?.toString() ?? "0",
+        takerBaseFee: baseFee,
+        takerQuoteFee: quoteFee,
+        base_decimals: Number(baseDecimals),
+        quote_decimals: Number(quoteDecimals),
+      };
+
+      marketAccts.push(new PublicKey(marketAcct));
+      orders.push(swapOrder);
+      takes.push(swapTake);
+    } catch (e) {
+      logger.error(e, `error with creating swap: ${e}`);
     }
-
-    let baseFee = BigInt(0);
-    let quoteFee = BigInt(0);
-
-    const feeAdjust = process.env.FEE_ADJUST ? Number(process.env.FEE_ADJUST) : 0.01;
-
-    //figure out our fees
-    //NOTE: this is rounded ----- should it be floored? -------
-    if (isBid) {
-      //The fee comes off the input quote amount
-      quoteFee = quoteAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
-    } else {
-      //The fee comes off the input base amount
-      baseFee = baseAmount * BigInt(Math.round(feeAdjust * 100)) / 100n;
-    }
-
-    if (process.env.DEPLOY_ENVIRONMENT == "DEVELOPMENT") {
-      console.log("--------------------------------");
-      console.log("marketAcct", marketAcct);
-      console.log("baseAmount", baseAmount);
-      console.log("quoteAmount", quoteAmount);
-      console.log("humanBaseAmount", humanBaseAmount);
-      console.log("humanQuoteAmount", humanQuoteAmount);
-      console.log("price", price);
-      console.log("isBid", isBid);
-      console.log("baseAmount", baseAmount);
-      console.log("quoteAmount", quoteAmount);
-      console.log("baseFee", baseFee);
-      console.log("quoteFee", quoteFee);
-      console.log("--------------------------------");
-    }
-
-    const swapOrder: OrdersRecord = {
-      marketAcct: marketAcct,
-      orderBlock: tx.slot.toString(),
-      orderTime: now,
-      orderTxSig: signature,
-      quotePrice: price?.toString() ?? "0",
-      actorAcct: actor.pubkey,
-      filledBaseAmount: baseAmount.toString(),
-      isActive: false,
-      side: isBid ? OrderSide.BID : OrderSide.ASK,
-      unfilledBaseAmount: "0",
-      updatedAt: now,
-    };
-
-    const swapTake: TakesRecord = {
-      marketAcct: marketAcct,
-      baseAmount: baseAmount.toString(),
-      orderBlock: tx.slot.toString(),
-      orderTime: now,
-      orderTxSig: signature,
-      quotePrice: price?.toString() ?? "0",
-      takerBaseFee: baseFee,
-      takerQuoteFee: quoteFee,
-      base_decimals: Number(baseDecimals),
-      quote_decimals: Number(quoteDecimals),
-    };
-
-    marketAccts.push(new PublicKey(marketAcct));
-    orders.push(swapOrder);
-    takes.push(swapTake);
   }
 
   const ammSwapTransaction = new AmmSwapTransaction(orders, takes, transactionRecord, marketAccts, reprocess);

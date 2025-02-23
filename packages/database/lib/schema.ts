@@ -598,7 +598,7 @@ export const takes = pgTable(
     base_decimals: smallint("base_decimals").notNull(),
     quote_decimals: smallint("quote_decimals").notNull(),
     order_id: uuid("order_id"),
-    side: pgEnum("side", OrderSide).notNull(),
+    side: text("side"),
     actorAcct: pubkey("actor_acct"),
   },
   (table) => ({

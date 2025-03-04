@@ -1,7 +1,6 @@
 import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schemaDefs from "./schema";
 import { Pool, PoolClient } from "pg";
-import * as alias from "drizzle-orm/alias"
 import "dotenv/config";
 
 let connectionString = process.env.FUTARCHY_PG_URL;
@@ -111,4 +110,4 @@ export {
   inArray,
 } from "drizzle-orm";
 
-export { alias };
+export { alias } from "drizzle-orm/pg-core/alias";

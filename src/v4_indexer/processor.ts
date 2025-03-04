@@ -265,79 +265,6 @@ export async function processVaultEvent(event: { name: string; data: Conditional
   }
 }
 
-export async function processLaunchpadEvent(event: { name: string; data: LaunchpadEvent }, signature: string, transactionResponse: VersionedTransactionResponse) {
-  switch (event.name) {
-    case "LaunchClaimEvent":
-      await handleLaunchClaimEvent(event.data as LaunchClaimEvent, signature, transactionResponse);
-      break;
-    case "LaunchCompletedEvent":
-      break;
-    case "LaunchFundedEvent":
-      break;
-    case "LaunchInitializedEvent":
-      break;
-    case "LaunchRefundedEvent":
-      break;
-    case "LaunchStartedEvent":
-      break;
-    default:
-      logger.info("Unknown Launchpad event", event.name);
-  }
-}
-
-async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
-  try {
-
-  } catch (error) {
-    logger.error(error, "Error in handleLaunchClaimEvent");
-  }
-}
-
-async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
-  try {
-
-  } catch (error) {
-    logger.error(error, "Error in handleLaunchCompletedEvent");
-  }
-}
-
-async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
-  try {
-
-  } catch (error) {
-    logger.error(error, "Error in handleLaunchFundedEvent");
-  }
-}
-
-async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
-  try {
-
-  } catch (error) {
-    logger.error(error, "Error in handleLaunchInitializedEvent");
-  }
-}
-
-async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
-  try {
-
-  } catch (error) {
-    logger.error(error, "Error in handleLaunchRefundedEvent");
-  }
-}
-
-async function handleLaunchStartedEvent(event: LaunchStartedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
-  try {
-    // await db.insert(schema.v0).values({
-    //   launchAddr: event.launch.toString(),
-    //   signature: signature,
-    //   slot: transactionResponse.slot.toString(),
-    //   createdAt: new Date(),
-    // }).onConflictDoNothing();
-  } catch (error) {
-    logger.error(error, "Error in handleLaunchStartedEvent");
-  }
-}
-
 async function handleInitializeQuestionEvent(event: InitializeQuestionEvent) {
   try {
     
@@ -550,3 +477,151 @@ async function insertConditionalVault(db: DBConnection, event: InitializeConditi
 //     return [];
 //   }
 // }
+
+export async function processLaunchpadEvent(event: { name: string; data: LaunchpadEvent }, signature: string, transactionResponse: VersionedTransactionResponse) {
+  switch (event.name) {
+    case "LaunchClaimEvent":
+      await handleLaunchClaimEvent(event.data as LaunchClaimEvent, signature, transactionResponse);
+      break;
+    case "LaunchCompletedEvent":
+      await handleLaunchCompletedEvent(event.data as LaunchCompletedEvent, signature, transactionResponse);
+      break;
+    case "LaunchFundedEvent":
+      await handleLaunchFundedEvent(event.data as LaunchFundedEvent, signature, transactionResponse);
+      break;
+    case "LaunchInitializedEvent":
+      await handleLaunchInitializedEvent(event.data as LaunchInitializedEvent, signature, transactionResponse);
+      break;
+    case "LaunchRefundedEvent":
+      await handleLaunchRefundedEvent(event.data as LaunchRefundedEvent, signature, transactionResponse);
+      break;
+    case "LaunchStartedEvent":
+      await handleLaunchStartedEvent(event.data as LaunchStartedEvent, signature, transactionResponse);
+      break;
+    default:
+      logger.info("Unknown Launchpad event", event.name);
+  }
+}
+
+async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+    await db.insert(schema.v0_4_claims).values({
+      launchAddr: event.launch.toString(),
+      funderAddr: event.funder.toString(),
+      tokensClaimed: event.tokensClaimed.toString(),
+      fundingRecordAddr: event.fundingRecord.toString(),
+      slot: event.common.slot.toString(),
+      timestamp: new Date(event.common.unixTimestamp * 1000),
+    }).onConflictDoNothing();
+
+    await db.update(schema.v0_4_funding_records).set({
+      isClaimed: true,
+    }).where(eq(schema.v0_4_funding_records.fundingRecordAddr, event.fundingRecord.toString()));
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchClaimEvent");
+  }
+}
+
+async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+    await db.update(schema.v0_4_launches).set({
+      state: event.finalState as V04LaunchState,
+      committedAmount: event.totalCommitted.toString(),
+      latestLaunchSeqNumApplied: event.common.launchSeqNum.toString(),
+    }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchCompletedEvent");
+  }
+}
+
+async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+    await db.insert(schema.v0_4_funds).values({
+      launchAddr: event.launch.toString(),
+      funderAddr: event.funder.toString(),
+      slot: event.common.slot.toString(),
+      timestamp: new Date(event.common.unixTimestamp * 1000),
+      usdcAmount: event.amount.toString(),
+    }).onConflictDoNothing();
+
+    await db.insert(schema.v0_4_funding_records).values({
+      fundingRecordAddr: event.fundingRecord.toString(),
+      launchAddr: event.launch.toString(),
+      funderAddr: event.funder.toString(),
+      committedAmount: event.totalCommittedByFunder.toString(),
+      latestFundingRecordSeqNumApplied: event.fundingRecordSeqNum.toString(),
+      isClaimed: false,
+      isRefunded: false,
+    }).onConflictDoUpdate({
+      target: schema.v0_4_funding_records.fundingRecordAddr,
+      set: {
+        committedAmount: event.totalCommittedByFunder.toString(),
+        latestFundingRecordSeqNumApplied: event.fundingRecordSeqNum.toString(),
+      }
+    });
+
+    await db.update(schema.v0_4_launches).set({
+      committedAmount: event.totalCommitted.toString(),
+      latestLaunchSeqNumApplied: event.common.launchSeqNum.toString(),
+    }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchFundedEvent");
+  }
+}
+
+async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+    await insertTokenIfNotExists(db, event.tokenMint);
+
+    await db.insert(schema.v0_4_launches).values({
+      launchAddr: event.launch.toString(),
+      minimumRaiseAmount: event.minimumRaiseAmount.toString(),
+      creator: event.creator.toString(),
+      launchSigner: event.launchSigner.toString(),
+      launchSignerPdaBump: event.launchSignerPdaBump,
+      launchUsdcVault: event.launchUsdcVault.toString(),
+      launchTokenVault: event.launchTokenVault.toString(),
+      tokenMintAcct: event.tokenMint.toString(),
+      pdaBump: event.pdaBump,
+      daoAddr: null,
+      daoTreasuryAddr: null,
+      treasuryUsdcAcct: null,
+      committedAmount: 0n,
+      latestLaunchSeqNumApplied: 0n,
+      state: V04LaunchState.Initialized,
+      slotStarted: 0n,
+    }).onConflictDoNothing();
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchInitializedEvent");
+  }
+}
+
+async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+    await db.insert(schema.v0_4_refunds).values({
+      launchAddr: event.launch.toString(),
+      funderAddr: event.funder.toString(),
+      slot: event.common.slot.toString(),
+      timestamp: new Date(event.common.unixTimestamp * 1000),
+      usdcAmount: event.usdcRefunded.toString(),
+    }).onConflictDoNothing();
+
+    await db.update(schema.v0_4_funding_records).set({
+      isRefunded: true,
+    }).where(eq(schema.v0_4_funding_records.fundingRecordAddr, event.fundingRecord.toString()));
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchRefundedEvent");
+  }
+}
+
+async function handleLaunchStartedEvent(event: LaunchStartedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+    await db.update(schema.v0_4_launches).set({
+      state: V04LaunchState.Live,
+      slotStarted: event.slotStarted.toString(),
+      latestLaunchSeqNumApplied: event.common.launchSeqNum.toString(),
+    }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchStartedEvent");
+  }
+}

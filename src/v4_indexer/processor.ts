@@ -1,4 +1,4 @@
-import { AddLiquidityEvent, AmmEvent, ConditionalVaultEvent, CreateAmmEvent, getVaultAddr, InitializeConditionalVaultEvent, InitializeQuestionEvent, SwapEvent, PriceMath, SplitTokensEvent, MergeTokensEvent, RemoveLiquidityEvent, ResolveQuestionEvent } from "@metadaoproject/futarchy/v0.4";
+import { AddLiquidityEvent, AmmEvent, ConditionalVaultEvent, CreateAmmEvent, getVaultAddr, InitializeConditionalVaultEvent, InitializeQuestionEvent, SwapEvent, PriceMath, SplitTokensEvent, MergeTokensEvent, RemoveLiquidityEvent, ResolveQuestionEvent, LaunchpadEvent, LaunchInitializedEvent, LaunchClaimEvent, LaunchCompletedEvent, LaunchFundedEvent, LaunchRefundedEvent, LaunchStartedEvent } from "@metadaoproject/futarchy/v0.4";
 import { schema, db, eq, and, or } from "@metadaoproject/indexer-db";
 import { PublicKey } from "@solana/web3.js";
 import type { VersionedTransactionResponse } from "@solana/web3.js";
@@ -263,9 +263,79 @@ export async function processVaultEvent(event: { name: string; data: Conditional
     default:
       logger.info("Unknown Vault event", event.name);
   }
+}
 
-  
+export async function processLaunchpadEvent(event: { name: string; data: LaunchpadEvent }, signature: string, transactionResponse: VersionedTransactionResponse) {
+  switch (event.name) {
+    case "LaunchClaimEvent":
+      await handleLaunchClaimEvent(event.data as LaunchClaimEvent, signature, transactionResponse);
+      break;
+    case "LaunchCompletedEvent":
+      break;
+    case "LaunchFundedEvent":
+      break;
+    case "LaunchInitializedEvent":
+      break;
+    case "LaunchRefundedEvent":
+      break;
+    case "LaunchStartedEvent":
+      break;
+    default:
+      logger.info("Unknown Launchpad event", event.name);
+  }
+}
 
+async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchClaimEvent");
+  }
+}
+
+async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchCompletedEvent");
+  }
+}
+
+async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchFundedEvent");
+  }
+}
+
+async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchInitializedEvent");
+  }
+}
+
+async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchRefundedEvent");
+  }
+}
+
+async function handleLaunchStartedEvent(event: LaunchStartedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
+  try {
+    // await db.insert(schema.v0).values({
+    //   launchAddr: event.launch.toString(),
+    //   signature: signature,
+    //   slot: transactionResponse.slot.toString(),
+    //   createdAt: new Date(),
+    // }).onConflictDoNothing();
+  } catch (error) {
+    logger.error(error, "Error in handleLaunchStartedEvent");
+  }
 }
 
 async function handleInitializeQuestionEvent(event: InitializeQuestionEvent) {

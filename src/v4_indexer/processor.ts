@@ -2,12 +2,13 @@ import { AddLiquidityEvent, AmmEvent, ConditionalVaultEvent, CreateAmmEvent, get
 import { schema, db, eq, and, or } from "@metadaoproject/indexer-db";
 import { PublicKey } from "@solana/web3.js";
 import type { VersionedTransactionResponse } from "@solana/web3.js";
-import { PricesType, V04SwapType } from "@metadaoproject/indexer-db/lib/schema";
+import { PricesType, V04LaunchState, V04SwapType } from "@metadaoproject/indexer-db/lib/schema";
 import * as token from "@solana/spl-token";
 
 import { connection, conditionalVaultClient } from "../connection";
 
 import { log } from "../logger/logger";
+import { BN } from "@coral-xyz/anchor";
 
 const logger = log.child({
   module: "v4_processor"
@@ -510,8 +511,8 @@ async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string
       funderAddr: event.funder.toString(),
       tokensClaimed: event.tokensClaimed.toString(),
       fundingRecordAddr: event.fundingRecord.toString(),
-      slot: event.common.slot.toString(),
-      timestamp: new Date(event.common.unixTimestamp * 1000),
+      slot: BigInt(event.common.slot.toString()),
+      timestamp: new Date(event.common.unixTimestamp.mul(new BN(1000)).toNumber()),
     }).onConflictDoNothing();
 
     await db.update(schema.v0_4_funding_records).set({
@@ -525,9 +526,9 @@ async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string
 async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
   try {
     await db.update(schema.v0_4_launches).set({
-      state: event.finalState as V04LaunchState,
-      committedAmount: event.totalCommitted.toString(),
-      latestLaunchSeqNumApplied: event.common.launchSeqNum.toString(),
+      state: event.finalState.toString() === "Complete" ? V04LaunchState.Complete : V04LaunchState.Refunding, // Only these two states are possible
+      committedAmount: BigInt(event.totalCommitted.toString()),
+      latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchCompletedEvent");
@@ -539,8 +540,8 @@ async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: stri
     await db.insert(schema.v0_4_funds).values({
       launchAddr: event.launch.toString(),
       funderAddr: event.funder.toString(),
-      slot: event.common.slot.toString(),
-      timestamp: new Date(event.common.unixTimestamp * 1000),
+      slot: BigInt(event.common.slot.toString()),
+      timestamp: new Date(event.common.unixTimestamp.mul(new BN(1000)).toNumber()),
       usdcAmount: event.amount.toString(),
     }).onConflictDoNothing();
 
@@ -548,21 +549,21 @@ async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: stri
       fundingRecordAddr: event.fundingRecord.toString(),
       launchAddr: event.launch.toString(),
       funderAddr: event.funder.toString(),
-      committedAmount: event.totalCommittedByFunder.toString(),
-      latestFundingRecordSeqNumApplied: event.fundingRecordSeqNum.toString(),
+      committedAmount: BigInt(event.totalCommittedByFunder.toString()),
+      latestFundingRecordSeqNumApplied: BigInt(event.fundingRecordSeqNum.toString()),
       isClaimed: false,
       isRefunded: false,
     }).onConflictDoUpdate({
       target: schema.v0_4_funding_records.fundingRecordAddr,
       set: {
-        committedAmount: event.totalCommittedByFunder.toString(),
-        latestFundingRecordSeqNumApplied: event.fundingRecordSeqNum.toString(),
+        committedAmount: BigInt(event.totalCommittedByFunder.toString()),
+        latestFundingRecordSeqNumApplied: BigInt(event.fundingRecordSeqNum.toString()),
       }
     });
 
     await db.update(schema.v0_4_launches).set({
-      committedAmount: event.totalCommitted.toString(),
-      latestLaunchSeqNumApplied: event.common.launchSeqNum.toString(),
+      committedAmount: BigInt(event.totalCommitted.toString()),
+      latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchFundedEvent");
@@ -575,7 +576,7 @@ async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signa
 
     await db.insert(schema.v0_4_launches).values({
       launchAddr: event.launch.toString(),
-      minimumRaiseAmount: event.minimumRaiseAmount.toString(),
+      minimumRaiseAmount: BigInt(event.minimumRaiseAmount.toString()),
       creator: event.creator.toString(),
       launchSigner: event.launchSigner.toString(),
       launchSignerPdaBump: event.launchSignerPdaBump,
@@ -601,8 +602,8 @@ async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: 
     await db.insert(schema.v0_4_refunds).values({
       launchAddr: event.launch.toString(),
       funderAddr: event.funder.toString(),
-      slot: event.common.slot.toString(),
-      timestamp: new Date(event.common.unixTimestamp * 1000),
+      slot: BigInt(event.common.slot.toString()),
+      timestamp: new Date(event.common.unixTimestamp.mul(new BN(1000)).toNumber()),
       usdcAmount: event.usdcRefunded.toString(),
     }).onConflictDoNothing();
 
@@ -618,8 +619,8 @@ async function handleLaunchStartedEvent(event: LaunchStartedEvent, signature: st
   try {
     await db.update(schema.v0_4_launches).set({
       state: V04LaunchState.Live,
-      slotStarted: event.slotStarted.toString(),
-      latestLaunchSeqNumApplied: event.common.launchSeqNum.toString(),
+      slotStarted: BigInt(event.slotStarted.toString()),
+      latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchStartedEvent");

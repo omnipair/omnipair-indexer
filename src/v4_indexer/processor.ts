@@ -5,7 +5,7 @@ import type { VersionedTransactionResponse } from "@solana/web3.js";
 import { PricesType, V04LaunchState, V04SwapType } from "@metadaoproject/indexer-db/lib/schema";
 import * as token from "@solana/spl-token";
 
-import { connection, conditionalVaultClient } from "../connection";
+import { connection, conditionalVaultClient, autocratClient } from "../connection";
 
 import { log } from "../logger/logger";
 import { BN } from "@coral-xyz/anchor";
@@ -550,10 +550,49 @@ async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature
       return;
     }
 
+    // Check if the launch is complete or refunding
+    const launchState = !!event.finalState.complete ? V04LaunchState.Complete : V04LaunchState.Refunding;
+
+    if( launchState === V04LaunchState.Complete && event.dao) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const dao = await autocratClient.fetchDao(event.dao);
+      
+      if(dao) {
+        const [existingDao] = await db.select()
+          .from(schema.v0_4_daos)
+          .where(eq(schema.v0_4_daos.daoAddr, event.dao.toString()))
+          .limit(1);
+        
+        if(existingDao && existingDao.updatedAtSlot > BigInt(event.common.slot.toString())) {
+          logger.info(`DAO ${event.dao.toString()} already updated at slot ${existingDao.updatedAtSlot.toString()}`);
+        } else {
+          await db.insert(schema.v0_4_daos).values({
+            daoAddr: event.dao.toString(),
+            createdAt: new Date(),
+            treasuryAddr: dao.treasury.toString(),
+            treasuryPdaBump: dao.treasuryPdaBump,
+            tokenMintAcct: dao.tokenMint.toString(),
+            usdcMintAcct: dao.usdcMint.toString(),
+            proposalCount: 0n,
+            passThresholdBps: dao.passThresholdBps,
+            slotsPerProposal: BigInt(dao.slotsPerProposal.toString()),
+            twapInitialObservation: dao.twapInitialObservation.toString(),
+            twapMaxObservationChangePerUpdate: dao.twapMaxObservationChangePerUpdate.toString(),
+            minQuoteFutarchicLiquidity: BigInt(dao.minQuoteFutarchicLiquidity.toString()),
+            minBaseFutarchicLiquidity: BigInt(dao.minBaseFutarchicLiquidity.toString()),
+            latestDaoSeqNumApplied: BigInt(dao.seqNum.toString()),
+            updatedAtSlot: BigInt(event.common.slot.toString()),
+          }).onConflictDoNothing();
+        }
+      }
+    }
+
     await db.update(schema.v0_4_launches).set({
-      state: event.finalState.toString() === "Complete" ? V04LaunchState.Complete : V04LaunchState.Refunding, // Only these two states are possible
+      state: launchState,
       committedAmount: BigInt(event.totalCommitted.toString()),
       latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
+      daoAddr: launchState === V04LaunchState.Complete ? event.dao?.toString() : null,
+      daoTreasuryAddr: launchState === V04LaunchState.Complete ? event.daoTreasury?.toString() : null,
       updatedAtSlot: BigInt(event.common.slot.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
   } catch (error) {

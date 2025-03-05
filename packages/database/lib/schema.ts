@@ -1183,6 +1183,7 @@ export const v0_4_launches = pgTable("v0_4_launches", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),
+  updatedAtSlot: slot("updated_at_slot").notNull(),
 });
 
 export const v0_4_funding_records = pgTable("v0_4_funding_records", {
@@ -1198,6 +1199,7 @@ export const v0_4_funding_records = pgTable("v0_4_funding_records", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),
+  updatedAtSlot: slot("updated_at_slot").notNull(),
 });
 
 export const launchDetails = pgTable("launch_details", {

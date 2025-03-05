@@ -506,6 +506,20 @@ export async function processLaunchpadEvent(event: { name: string; data: Launchp
 
 async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
   try {
+    const [existingClaim] = await db.select()
+      .from(schema.v0_4_claims)
+      .where(and(
+        eq(schema.v0_4_claims.launchAddr, event.launch.toString()),
+        eq(schema.v0_4_claims.funderAddr, event.funder.toString()),
+        eq(schema.v0_4_claims.slot, BigInt(event.common.slot.toString()))
+      ))
+      .limit(1);
+
+    if (existingClaim) {
+      logger.info(`Claim already exists for launch ${event.launch.toString()} by ${event.funder.toString()} at slot ${existingClaim.slot.toString()}`);
+      return;
+    }
+
     await db.insert(schema.v0_4_claims).values({
       launchAddr: event.launch.toString(),
       funderAddr: event.funder.toString(),
@@ -517,6 +531,7 @@ async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string
 
     await db.update(schema.v0_4_funding_records).set({
       isClaimed: true,
+      updatedAtSlot: BigInt(event.common.slot.toString()),
     }).where(eq(schema.v0_4_funding_records.fundingRecordAddr, event.fundingRecord.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchClaimEvent");
@@ -525,10 +540,21 @@ async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string
 
 async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
   try {
+    const [existingLaunch] = await db.select()
+      .from(schema.v0_4_launches)
+      .where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()))
+      .limit(1);
+
+    if (existingLaunch && existingLaunch.updatedAtSlot > BigInt(event.common.slot.toString())) {
+      logger.info(`Launch ${event.launch.toString()} already updated at slot ${existingLaunch.updatedAtSlot.toString()}`);
+      return;
+    }
+
     await db.update(schema.v0_4_launches).set({
       state: event.finalState.toString() === "Complete" ? V04LaunchState.Complete : V04LaunchState.Refunding, // Only these two states are possible
       committedAmount: BigInt(event.totalCommitted.toString()),
       latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
+      updatedAtSlot: BigInt(event.common.slot.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchCompletedEvent");
@@ -537,6 +563,20 @@ async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature
 
 async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
   try {
+    const [existingFund] = await db.select()
+      .from(schema.v0_4_funds)
+      .where(and(
+        eq(schema.v0_4_funds.funderAddr, event.funder.toString()),
+        eq(schema.v0_4_funds.launchAddr, event.launch.toString()),
+        eq(schema.v0_4_funds.slot, BigInt(event.common.slot.toString()))
+      ))
+      .limit(1);
+
+    if (existingFund) {
+      logger.info(`Fund already exists for launch ${event.launch.toString()} by ${event.funder.toString()} at slot ${existingFund.slot.toString()}`);
+      return;
+    }
+
     await db.insert(schema.v0_4_funds).values({
       launchAddr: event.launch.toString(),
       funderAddr: event.funder.toString(),
@@ -553,6 +593,7 @@ async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: stri
       latestFundingRecordSeqNumApplied: BigInt(event.fundingRecordSeqNum.toString()),
       isClaimed: false,
       isRefunded: false,
+      updatedAtSlot: BigInt(event.common.slot.toString()),
     }).onConflictDoUpdate({
       target: schema.v0_4_funding_records.fundingRecordAddr,
       set: {
@@ -564,6 +605,7 @@ async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: stri
     await db.update(schema.v0_4_launches).set({
       committedAmount: BigInt(event.totalCommitted.toString()),
       latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
+      updatedAtSlot: BigInt(event.common.slot.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchFundedEvent");
@@ -572,6 +614,16 @@ async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: stri
 
 async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
   try {
+    const [existingLaunch] = await db.select()
+      .from(schema.v0_4_launches)
+      .where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()))
+      .limit(1);
+
+    if (existingLaunch && existingLaunch.updatedAtSlot > BigInt(event.common.slot.toString())) {
+      logger.info(`Launch ${event.launch.toString()} already exists with last updated slot ${existingLaunch.updatedAtSlot.toString()}`);
+      return;
+    }
+
     await insertTokenIfNotExists(db, event.tokenMint);
 
     await db.insert(schema.v0_4_launches).values({
@@ -591,6 +643,7 @@ async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signa
       latestLaunchSeqNumApplied: 0n,
       state: V04LaunchState.Initialized,
       slotStarted: 0n,
+      updatedAtSlot: BigInt(event.common.slot.toString()),
     }).onConflictDoNothing();
   } catch (error) {
     logger.error(error, "Error in handleLaunchInitializedEvent");
@@ -599,6 +652,20 @@ async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signa
 
 async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
   try {
+    const [existingRefund] = await db.select()
+      .from(schema.v0_4_refunds)
+      .where(and(
+        eq(schema.v0_4_refunds.funderAddr, event.funder.toString()),
+        eq(schema.v0_4_refunds.launchAddr, event.launch.toString()),
+        eq(schema.v0_4_refunds.slot, BigInt(event.common.slot.toString()))
+      ))
+      .limit(1);
+
+    if (existingRefund) {
+      logger.info(`Refund already exists for launch ${event.launch.toString()} by ${event.funder.toString()} at slot ${existingRefund.slot.toString()}`);
+      return;
+    }
+
     await db.insert(schema.v0_4_refunds).values({
       launchAddr: event.launch.toString(),
       funderAddr: event.funder.toString(),
@@ -609,6 +676,7 @@ async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: 
 
     await db.update(schema.v0_4_funding_records).set({
       isRefunded: true,
+      updatedAtSlot: BigInt(event.common.slot.toString()),
     }).where(eq(schema.v0_4_funding_records.fundingRecordAddr, event.fundingRecord.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchRefundedEvent");
@@ -617,10 +685,21 @@ async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: 
 
 async function handleLaunchStartedEvent(event: LaunchStartedEvent, signature: string, transactionResponse: VersionedTransactionResponse) {
   try {
+    const [existingLaunch] = await db.select()
+      .from(schema.v0_4_launches)
+      .where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()))
+      .limit(1);
+
+    if (existingLaunch && existingLaunch.updatedAtSlot > BigInt(event.common.slot.toString())) {
+      logger.info(`Launch ${event.launch.toString()} already updated at slot ${existingLaunch.updatedAtSlot.toString()}`);
+      return;
+    }
+
     await db.update(schema.v0_4_launches).set({
       state: V04LaunchState.Live,
       slotStarted: BigInt(event.slotStarted.toString()),
       latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
+      updatedAtSlot: BigInt(event.common.slot.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));
   } catch (error) {
     logger.error(error, "Error in handleLaunchStartedEvent");

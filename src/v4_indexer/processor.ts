@@ -668,7 +668,7 @@ async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signa
     await db.insert(schema.v0_4_launches).values({
       launchAddr: event.launch.toString(),
       minimumRaiseAmount: BigInt(event.minimumRaiseAmount.toString()),
-      creator: event.creator.toString(),
+      launchAuthority: event.launchAuthority.toString(),
       launchSigner: event.launchSigner.toString(),
       launchSignerPdaBump: event.launchSignerPdaBump,
       launchUsdcVault: event.launchUsdcVault.toString(),
@@ -681,7 +681,8 @@ async function handleLaunchInitializedEvent(event: LaunchInitializedEvent, signa
       committedAmount: 0n,
       latestLaunchSeqNumApplied: 0n,
       state: V04LaunchState.Initialized,
-      slotStarted: 0n,
+      unixTimestampStarted: 0n,
+      secondsForLaunch: event.secondsForLaunch,
       updatedAtSlot: BigInt(event.common.slot.toString()),
     }).onConflictDoNothing();
   } catch (error) {
@@ -736,7 +737,7 @@ async function handleLaunchStartedEvent(event: LaunchStartedEvent, signature: st
 
     await db.update(schema.v0_4_launches).set({
       state: V04LaunchState.Live,
-      slotStarted: BigInt(event.slotStarted.toString()),
+      unixTimestampStarted: BigInt(event.common.unixTimestamp.toString()),
       latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
       updatedAtSlot: BigInt(event.common.slot.toString()),
     }).where(eq(schema.v0_4_launches.launchAddr, event.launch.toString()));

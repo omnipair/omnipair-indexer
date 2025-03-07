@@ -522,10 +522,10 @@ async function handleLaunchClaimEvent(event: LaunchClaimEvent, signature: string
       }
 
       await trx.insert(schema.v0_4_claims).values({
+        fundingRecordAddr: event.fundingRecord.toString(),
         launchAddr: event.launch.toString(),
         funderAddr: event.funder.toString(),
         tokensClaimed: event.tokensClaimed.toString(),
-        fundingRecordAddr: event.fundingRecord.toString(),
         slot: BigInt(event.common.slot.toString()),
         timestamp: new Date(event.common.unixTimestamp.mul(new BN(1000)).toNumber()),
       }).onConflictDoNothing();
@@ -569,6 +569,9 @@ async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature
           if(existingDao && existingDao.updatedAtSlot > BigInt(event.common.slot.toString())) {
             logger.info(`DAO ${event.dao.toString()} already created at slot ${existingDao.updatedAtSlot.toString()}`);
           } else {
+            await insertTokenIfNotExists(trx, dao.usdcMint);
+            await insertTokenIfNotExists(trx, dao.tokenMint);
+
             await trx.insert(schema.v0_4_daos).values({
               daoAddr: event.dao.toString(),
               createdAt: new Date(),
@@ -581,6 +584,7 @@ async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature
               slotsPerProposal: BigInt(dao.slotsPerProposal.toString()),
               twapInitialObservation: dao.twapInitialObservation.toString(),
               twapMaxObservationChangePerUpdate: dao.twapMaxObservationChangePerUpdate.toString(),
+              twapStartDelaySlots: 0n,
               minQuoteFutarchicLiquidity: BigInt(dao.minQuoteFutarchicLiquidity.toString()),
               minBaseFutarchicLiquidity: BigInt(dao.minBaseFutarchicLiquidity.toString()),
               latestDaoSeqNumApplied: BigInt(dao.seqNum.toString()),
@@ -718,6 +722,7 @@ async function handleLaunchRefundedEvent(event: LaunchRefundedEvent, signature: 
       }
 
       await trx.insert(schema.v0_4_refunds).values({
+        fundingRecordAddr: event.fundingRecord.toString(),
         launchAddr: event.launch.toString(),
         funderAddr: event.funder.toString(),
         slot: BigInt(event.common.slot.toString()),

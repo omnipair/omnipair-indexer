@@ -1220,7 +1220,8 @@ export const launchDetails = pgTable("launch_details", {
 });
 
 export const v0_4_funds = pgTable("v0_4_funds", {
-  fundId: uuid("fund_id").notNull().defaultRandom().primaryKey(),
+  fundingRecordAddr: pubkey("funding_record_addr").notNull().references(() => v0_4_funding_records.fundingRecordAddr),
+  fundingRecordSeqNum: bigint("funding_record_seq_num", { mode: "bigint" }).notNull(),
   launchAddr: pubkey("launch_addr").notNull().references(() => v0_4_launches.launchAddr),
   funderAddr: pubkey("funder_addr").notNull(),
   slot: slot("slot").notNull(),
@@ -1229,7 +1230,9 @@ export const v0_4_funds = pgTable("v0_4_funds", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),
-});
+}, (table) => ({
+  pk: primaryKey({ columns: [table.fundingRecordAddr, table.fundingRecordSeqNum]}),
+}));
 
 export const v0_4_refunds = pgTable("v0_4_refunds", {
   refundId: uuid("refund_id").notNull().defaultRandom().primaryKey(),

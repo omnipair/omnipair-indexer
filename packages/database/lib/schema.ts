@@ -1120,10 +1120,13 @@ export const v0_4_daos = pgTable("v0_4_daos", {
   slotsPerProposal: bigint("slots_per_proposal", { mode: "bigint" }).notNull(),
   twapInitialObservation: numeric("twap_initial_observation", { precision: 40, scale: 0 }).notNull(),
   twapMaxObservationChangePerUpdate: numeric("twap_max_observation_change_per_update", { precision: 40, scale: 0 }).notNull(),
+  twapStartDelaySlots: bigint("twap_start_delay_slots", { mode: "bigint" }).notNull(),
   minQuoteFutarchicLiquidity: bigint("min_quote_futarchic_liquidity", { mode: "bigint" }).notNull(),
   minBaseFutarchicLiquidity: bigint("min_base_futarchic_liquidity", { mode: "bigint" }).notNull(),
   latestDaoSeqNumApplied: bigint("latest_dao_seq_num_applied", { mode: "bigint" }).notNull(),
   updatedAtSlot: slot("updated_at_slot").default(sql`0`).notNull(),
+  organizationId: bigint("organization_id", { mode: "bigint" })
+    .references(() => organizations.organizationId),
 });
 
 export const v0_4_proposals = pgTable("v0_4_proposals", {
@@ -1220,7 +1223,8 @@ export const launchDetails = pgTable("launch_details", {
 });
 
 export const v0_4_funds = pgTable("v0_4_funds", {
-  fundId: uuid("fund_id").notNull().defaultRandom().primaryKey(),
+  fundingRecordAddr: pubkey("funding_record_addr").notNull().references(() => v0_4_funding_records.fundingRecordAddr),
+  fundingRecordSeqNum: bigint("funding_record_seq_num", { mode: "bigint" }).notNull(),
   launchAddr: pubkey("launch_addr").notNull().references(() => v0_4_launches.launchAddr),
   funderAddr: pubkey("funder_addr").notNull(),
   slot: slot("slot").notNull(),
@@ -1229,10 +1233,12 @@ export const v0_4_funds = pgTable("v0_4_funds", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),
-});
+}, (table) => ({
+  pk: primaryKey({ columns: [table.fundingRecordAddr, table.fundingRecordSeqNum]}),
+}));
 
 export const v0_4_refunds = pgTable("v0_4_refunds", {
-  refundId: uuid("refund_id").notNull().defaultRandom().primaryKey(),
+  fundingRecordAddr: pubkey("funding_record_addr").primaryKey().notNull().references(() => v0_4_funding_records.fundingRecordAddr),
   launchAddr: pubkey("launch_addr").notNull().references(() => v0_4_launches.launchAddr),
   funderAddr: pubkey("funder_addr").notNull(),
   slot: slot("slot").notNull(),
@@ -1244,11 +1250,10 @@ export const v0_4_refunds = pgTable("v0_4_refunds", {
 });
 
 export const v0_4_claims = pgTable("v0_4_claims", {
-  claimId: uuid("claim_id").notNull().defaultRandom().primaryKey(),
+  fundingRecordAddr: pubkey("funding_record_addr").primaryKey().notNull().references(() => v0_4_funding_records.fundingRecordAddr),
   launchAddr: pubkey("launch_addr").notNull().references(() => v0_4_launches.launchAddr),
   funderAddr: pubkey("funder_addr").notNull(),
   tokensClaimed: numeric("tokens_claimed", { precision: 20, scale: 0 }).notNull(),
-  fundingRecordAddr: pubkey("funding_record_addr").notNull().references(() => v0_4_funding_records.fundingRecordAddr),
   slot: slot("slot").notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })

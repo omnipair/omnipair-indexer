@@ -584,7 +584,7 @@ async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature
               slotsPerProposal: BigInt(dao.slotsPerProposal.toString()),
               twapInitialObservation: dao.twapInitialObservation.toString(),
               twapMaxObservationChangePerUpdate: dao.twapMaxObservationChangePerUpdate.toString(),
-              twapStartDelaySlots: 0n,
+              twapStartDelaySlots: BigInt(dao.twapStartDelaySlots.toString()),
               minQuoteFutarchicLiquidity: BigInt(dao.minQuoteFutarchicLiquidity.toString()),
               minBaseFutarchicLiquidity: BigInt(dao.minBaseFutarchicLiquidity.toString()),
               latestDaoSeqNumApplied: BigInt(dao.seqNum.toString()),

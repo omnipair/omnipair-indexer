@@ -1,11 +1,11 @@
-import { AddLiquidityEvent, AmmEvent, ConditionalVaultEvent, CreateAmmEvent, getVaultAddr, InitializeConditionalVaultEvent, InitializeQuestionEvent, SwapEvent, PriceMath, SplitTokensEvent, MergeTokensEvent, RemoveLiquidityEvent, ResolveQuestionEvent, LaunchpadEvent, LaunchInitializedEvent, LaunchClaimEvent, LaunchCompletedEvent, LaunchFundedEvent, LaunchRefundedEvent, LaunchStartedEvent } from "@metadaoproject/futarchy/v0.4";
+import { AddLiquidityEvent, AmmEvent, ConditionalVaultEvent, CreateAmmEvent, getVaultAddr, InitializeConditionalVaultEvent, InitializeQuestionEvent, SwapEvent, PriceMath, SplitTokensEvent, MergeTokensEvent, RemoveLiquidityEvent, ResolveQuestionEvent, LaunchpadEvent, LaunchInitializedEvent, LaunchClaimEvent, LaunchCompletedEvent, LaunchFundedEvent, LaunchRefundedEvent, LaunchStartedEvent, CrankThatTwapEvent } from "@metadaoproject/futarchy/v0.4";
 import { schema, db, eq, and, or } from "@metadaoproject/indexer-db";
 import { PublicKey } from "@solana/web3.js";
 import type { VersionedTransactionResponse } from "@solana/web3.js";
-import { PricesType, V04LaunchState, V04SwapType } from "@metadaoproject/indexer-db/lib/schema";
+import { PricesType, TwapRecord, V04LaunchState, V04SwapType } from "@metadaoproject/indexer-db/lib/schema";
 import * as token from "@solana/spl-token";
 
-import { connection, conditionalVaultClient, autocratClient } from "../connection";
+import { connection, conditionalVaultClient, autocratClient, ammClient } from "../connection";
 
 import { log } from "../logger/logger";
 import { BN } from "@coral-xyz/anchor";
@@ -38,6 +38,7 @@ export async function processAmmEvent(event: { name: string; data: AmmEvent }, s
       await handleSwapEvent(event.data as SwapEvent, signature, transactionResponse);
       break;
     case "CrankThatTwapEvent":
+      await handleCrankThatTwapEvent(event.data as CrankThatTwapEvent);
       break;
     default:
       logger.info(`Unknown event ${event.name}`);
@@ -172,8 +173,67 @@ async function handleSwapEvent(event: SwapEvent, signature: string, transactionR
       latestAmmSeqNumApplied: BigInt(event.common.seqNum.toString()),
     }).where(eq(schema.v0_4_amms.ammAddr, event.common.amm.toString()));
 
+    await insertTwapIfNotExists(db, event);
   } catch (error) {
     logger.error(error, "Error in handleSwapEvent");
+  }
+}
+
+async function handleCrankThatTwapEvent(event: CrankThatTwapEvent) {
+  try {
+    await insertTwapIfNotExists(db, event);
+  } catch (error) {
+    logger.error(error, "Error in handleCrankThatTwapEvent");
+  }
+}
+
+async function insertTwapIfNotExists(
+  db: DBConnection,
+  event: CrankThatTwapEvent | SwapEvent
+) {
+  const ammMarketAccount = await ammClient.getAmm(event.common.amm);
+
+  // Copy-pasted & modified from v3_indexer/transaction/marketTransaction.ts, line 116
+  if (!ammMarketAccount.oracle.aggregator.isZero()) {
+    // indexing the twap
+    const market = await db
+      .select()
+      .from(schema.markets)
+      .where(eq(schema.markets.marketAcct, event.common.amm.toBase58()))
+      .execute();
+
+    if (market === undefined || market.length === 0) {
+      logger.warn("market not found", event.common.amm.toBase58());
+      return false;
+    }
+
+    const twapCalculation: BN = ammMarketAccount.oracle.aggregator.div(
+      ammMarketAccount.oracle.lastUpdatedSlot.sub(
+        ammMarketAccount.createdAtSlot
+      )
+    );
+
+    const proposalAcct = market[0].proposalAcct;
+
+    const twapNumber: string = twapCalculation.toString();
+    const newTwap: TwapRecord = {
+      curTwap: twapNumber,
+      marketAcct: event.common.amm.toBase58(),
+      observationAgg: ammMarketAccount.oracle.aggregator.toString(),
+      proposalAcct: proposalAcct,
+      // alternatively, we could pass in the context of the update here
+      updatedSlot: event.common.slot.toString(),
+      lastObservation: ammMarketAccount.oracle.lastObservation.toString(),
+      lastPrice: ammMarketAccount.oracle.lastPrice.toString(),
+    };
+
+    try {
+      // TODO batch commits across inserts - maybe with event queue
+      await db.insert(schema.twaps).values(newTwap).onConflictDoNothing();
+    } catch (e) {
+      logger.error("error upserting twap", e);
+      return false;
+    }
   }
 }
 

@@ -503,7 +503,9 @@ async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: Ad
       updatedSlot: BigInt(event.common.slot.toString()),
       createdBy: 'amm-market-indexer',
       pricesType: PricesType.Conditional,
-    }).onConflictDoNothing();
+    }).onConflictDoNothing({
+      target: [schema.prices.marketAcct, schema.prices.updatedSlot]
+    });
   } catch (error) {
     logger.error(
       error instanceof Error

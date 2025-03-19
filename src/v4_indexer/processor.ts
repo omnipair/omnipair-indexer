@@ -181,6 +181,8 @@ async function handleSwapEvent(event: SwapEvent, signature: string, transactionR
 
 async function handleCrankThatTwapEvent(event: CrankThatTwapEvent) {
   try {
+    const amm = await db.select().from(schema.v0_4_amms).where(eq(schema.v0_4_amms.ammAddr, event.common.amm.toString())).limit(1);
+    await insertPriceIfNotDuplicate(db, amm, event);
     await insertTwapIfNotExists(db, event);
   } catch (error) {
     logger.error(error, "Error in handleCrankThatTwapEvent");
@@ -463,7 +465,7 @@ async function insertMarketIfNotExists(db: DBConnection, market: Market) {
   }
 }
 
-async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: AddLiquidityEvent | SwapEvent | RemoveLiquidityEvent) {
+async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: AddLiquidityEvent | SwapEvent | RemoveLiquidityEvent | CrankThatTwapEvent) {
   logger.info("insertPriceIfNotDuplicate::event", event);
   const existingPrice = await db.select()
     .from(schema.prices)

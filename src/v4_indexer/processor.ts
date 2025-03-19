@@ -506,7 +506,7 @@ async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: Ad
       createdBy: 'amm-market-indexer',
       pricesType: PricesType.Conditional,
     }).onConflictDoNothing({
-      target: [schema.prices.marketAcct, schema.prices.updatedSlot]
+      target: [schema.prices.marketAcct, schema.prices.createdAt]
     });
   } catch (error) {
     logger.error(

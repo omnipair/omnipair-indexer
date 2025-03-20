@@ -860,6 +860,8 @@ async function handleInitializeDaoEvent(event: InitializeDaoEvent, signature: st
     const daoAcct = await autocratClient.getDao(event.dao);
 
     await db.transaction(async (trx) => {
+      await insertTokenIfNotExists(trx, daoAcct.usdcMint);
+      await insertTokenIfNotExists(trx, daoAcct.tokenMint);
       await upsertDao(daoAcct, event.dao, BigInt(event.common.slot.toString()), trx);
     });
   } catch (error) {
@@ -872,6 +874,8 @@ async function handleUpdateDaoEvent(event: UpdateDaoEvent, signature: string, tr
     const daoAcct = await autocratClient.getDao(event.dao);
 
     await db.transaction(async (trx) => {
+      await insertTokenIfNotExists(trx, daoAcct.usdcMint);
+      await insertTokenIfNotExists(trx, daoAcct.tokenMint);
       await upsertDao(daoAcct, event.dao, BigInt(event.common.slot.toString()), trx);
     });
   } catch (error) {

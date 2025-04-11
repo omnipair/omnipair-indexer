@@ -141,6 +141,11 @@ export async function index(signature: string, programId: PublicKey) {
       logger.warn(e, "Error inserting the signatures");
     }
 
+    if (transactionResponse.meta?.err) {
+      logger.info(transactionResponse.meta.err, `Error in transaction ${signature}, skipping indexing.`);
+      return;
+    }
+
     const events = parseEvents(transactionResponse);
     
     const { ammEvents, vaultEvents, launchpadEvents, autocratEvents } = events;

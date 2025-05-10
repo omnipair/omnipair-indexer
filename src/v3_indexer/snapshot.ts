@@ -286,21 +286,40 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
       }
     }
 
-    // Filter out pairs that correspond to zero balance accounts
+    // TODO: Might be worth while adding a new filter on top of all of these to check the last updated time so we don't re-run a bunch of stuff we already did
     try {
-      const existingTokenAccounts = await db.select({
-        tokenAccount: schema.tokenAccts.tokenAcct,
-        balance: schema.tokenAccts.amount
+      // Get all token accounts we're about to process
+      const tokenAccountsToProcess = allActorMintPairs.map(({ actorAddrStr, mintStr }) => {
+        const actorPubkey = new PublicKey(actorAddrStr);
+        const mintPubkey = conditionalMintPubkeys.get(mintStr);
+        if (!mintPubkey) return null;
+        
+        return splToken.getAssociatedTokenAddressSync(
+          mintPubkey,
+          actorPubkey,
+          true
+        ).toString();
+      }).filter((account): account is string => account !== null);
+
+      // Query the database for these accounts' update times
+      const recentUpdates = await db.select({
+        tokenAcct: schema.tokenAccts.tokenAcct,
+        updatedAt: schema.tokenAccts.updatedAt
       })
       .from(schema.tokenAccts)
-      .where(eq(schema.tokenAccts.amount, "0"));
+      .where(inArray(schema.tokenAccts.tokenAcct, tokenAccountsToProcess));
 
-      // Create a set of token accounts we've already processed with zero balance
-      const zeroBalanceAccounts = new Set(
-        existingTokenAccounts.map(account => account.tokenAccount)
+      // Calculate 2 hours ago timestamp
+      const twoHoursAgo = Math.floor(Date.now() / 1000) - (2 * 60 * 60);
+
+      // Create a set of recently updated accounts
+      const recentlyUpdatedAccounts = new Set(
+        recentUpdates
+          .filter(account => account.updatedAt && new Date(account.updatedAt).getTime() / 1000 > twoHoursAgo)
+          .map(account => account.tokenAcct)
       );
 
-      // Filter out actor-mint pairs that correspond to zero balance accounts
+      // Filter out pairs that correspond to recently updated accounts
       const filteredPairs = allActorMintPairs.filter(({ actorAddrStr, mintStr }) => {
         const actorPubkey = new PublicKey(actorAddrStr);
         const mintPubkey = conditionalMintPubkeys.get(mintStr);
@@ -310,16 +329,16 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
           mintPubkey,
           actorPubkey,
           true
-        );
+        ).toString();
 
-        return !zeroBalanceAccounts.has(tokenAccount.toString());
+        return !recentlyUpdatedAccounts.has(tokenAccount);
       });
 
-      logger.info(`Filtered out ${allActorMintPairs.length - filteredPairs.length} pairs of existing token accounts in the db with zero balance`);
+      logger.info(`Filtered out ${allActorMintPairs.length - filteredPairs.length} pairs that were updated in the last 2 hours`);
       allActorMintPairs.length = 0; // Clear the original array
       allActorMintPairs.push(...filteredPairs); // Add filtered pairs
     } catch (error) {
-      logger.error(`Error filtering existing token accounts: ${error}`);
+      logger.error(`Error filtering recently updated accounts: ${error}`);
     }
 
     let tokenAccountCount = 0;
@@ -368,37 +387,28 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
           const tokenAccountInfo = tokenAccountInfos[i];
           const { actorAddrStr, mintStr } = batch[i];
 
-          const data = {
-            //db: db,
-            tokenAccount: validTokenAccounts[i],
-            balance: BigInt(tokenAccountInfo.amount.toString()),
-            mint: conditionalMintPubkeys.get(mintStr)!,
-            owner: tokenAccountInfo.owner,
-            signature: "market_actor_snapshot",
-            slot: "0",
-            blockTime: Math.floor(Date.now() / 1000)
-          }
-          if (tokenAccountInfo && tokenAccountInfo.amount > 0) {
-            logger.info(`Would update token account ${validTokenAccounts[i].toString()} with balance ${tokenAccountInfo.amount}`);
-            logger.info(data);
-            //await updateOrInsertTokenBalance(
-            //   db,
-            //   validTokenAccounts[i],
-            //   BigInt(tokenAccountInfo.amount.toString()),
-            //   conditionalMintPubkeys.get(mintStr)!,
-            //   tokenAccountInfo.owner,
-            //   "market_actor_snapshot",
-            //   "0",
-            //   Math.floor(Date.now() / 1000)
-            //);
-            delay(1000)
+
+          if (tokenAccountInfo) {
+            logger.info(`Updated token account ${validTokenAccounts[i].toString()} with balance ${tokenAccountInfo.amount}`);
+            // logger.info(data);
+            await updateOrInsertTokenBalance(
+              db,
+              validTokenAccounts[i],
+              BigInt(tokenAccountInfo.amount.toString() ?? "0"),
+              conditionalMintPubkeys.get(mintStr)!,
+              tokenAccountInfo.owner, // TODO: This needs to be the actor account regardless if its 0 or doesn't exist as we want to make sure to not show 0 redeemable (even if they traded)
+              "market_actor_snapshot",
+              "0",
+              Math.floor(Date.now() / 1000)
+            );
+            await delay(1000)
             updatedBalanceCount++;
           }
           tokenAccountCount++;
         }
         
         // Add a small delay between batches to avoid rate limits
-        await delay(200);
+        await delay(2000);
         
       } catch (error) {
         logger.error(`Error processing batch of token accounts: ${error}`);

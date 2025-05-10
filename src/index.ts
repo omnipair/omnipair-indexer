@@ -76,7 +76,7 @@ async function main() {
   // subscribeAll();
 
   await captureTokenBalanceSnapshotV3();
-  await captureTokenBalanceSnapshotV4();
+  // await captureTokenBalanceSnapshotV4();
 
 
 

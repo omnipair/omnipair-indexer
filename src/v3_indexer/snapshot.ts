@@ -4,7 +4,7 @@ import { log } from "../logger/logger";
 import pLimit from "p-limit";
 import { updateOrInsertTokenBalance } from "../v4_indexer/processor";
 import { connection, conditionalVaultClient } from "./connection";
-import { db, schema, eq, or, inArray } from "@metadaoproject/indexer-db";
+import { db, schema, eq, or, inArray, not } from "@metadaoproject/indexer-db";
 
 const logger = log.child({
   module: "market_actor_query"
@@ -273,10 +273,55 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
     }
     
     logger.info(`Found ${actorToMintsMap.size} unique actors across all markets`);
-    
+
     // Step 7: Process token balances for all identified actors and their relevant mints
     logger.info(`Fetching token balances for ${actorToMintsMap.size} actors with their relevant mints...`);
     
+    
+    // Create all actor-mint pairs
+    const allActorMintPairs: Array<{ actorAddrStr: string; mintStr: string }> = [];
+    for (const [actorAddrStr, mintStrSet] of actorToMintsMap.entries()) {
+      for (const mintStr of mintStrSet) {
+        allActorMintPairs.push({ actorAddrStr, mintStr });
+      }
+    }
+
+    // Filter out pairs that correspond to zero balance accounts
+    try {
+      const existingTokenAccounts = await db.select({
+        tokenAccount: schema.tokenAccts.tokenAcct,
+        balance: schema.tokenAccts.amount
+      })
+      .from(schema.tokenAccts)
+      .where(eq(schema.tokenAccts.amount, "0"));
+
+      // Create a set of token accounts we've already processed with zero balance
+      const zeroBalanceAccounts = new Set(
+        existingTokenAccounts.map(account => account.tokenAccount)
+      );
+
+      // Filter out actor-mint pairs that correspond to zero balance accounts
+      const filteredPairs = allActorMintPairs.filter(({ actorAddrStr, mintStr }) => {
+        const actorPubkey = new PublicKey(actorAddrStr);
+        const mintPubkey = conditionalMintPubkeys.get(mintStr);
+        if (!mintPubkey) return false;
+
+        const tokenAccount = splToken.getAssociatedTokenAddressSync(
+          mintPubkey,
+          actorPubkey,
+          true
+        );
+
+        return !zeroBalanceAccounts.has(tokenAccount.toString());
+      });
+
+      logger.info(`Filtered out ${allActorMintPairs.length - filteredPairs.length} pairs of existing token accounts in the db with zero balance`);
+      allActorMintPairs.length = 0; // Clear the original array
+      allActorMintPairs.push(...filteredPairs); // Add filtered pairs
+    } catch (error) {
+      logger.error(`Error filtering existing token accounts: ${error}`);
+    }
+
     let tokenAccountCount = 0;
     let updatedBalanceCount = 0;
     let errorCount = 0;
@@ -285,18 +330,8 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
     const actorProcessLimit = pLimit(2);
     const BATCH_SIZE = 100;
     
-    // Create batches of actor-mint combinations
-    const actorMintBatches = [];
-    const allActorMintPairs = [];
-    
-    // Create all actor-mint pairs
-    for (const [actorAddrStr, mintStrSet] of actorToMintsMap.entries()) {
-      for (const mintStr of mintStrSet) {
-        allActorMintPairs.push({ actorAddrStr, mintStr });
-      }
-    }
-    
     // Create batches of 100 pairs
+    const actorMintBatches = [];
     for (let i = 0; i < allActorMintPairs.length; i += BATCH_SIZE) {
       actorMintBatches.push(allActorMintPairs.slice(i, i + BATCH_SIZE));
     }
@@ -332,10 +367,21 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
         for (let i = 0; i < tokenAccountInfos.length; i++) {
           const tokenAccountInfo = tokenAccountInfos[i];
           const { actorAddrStr, mintStr } = batch[i];
-          
+
+          const data = {
+            //db: db,
+            tokenAccount: validTokenAccounts[i],
+            balance: BigInt(tokenAccountInfo.amount.toString()),
+            mint: conditionalMintPubkeys.get(mintStr)!,
+            owner: tokenAccountInfo.owner,
+            signature: "market_actor_snapshot",
+            slot: "0",
+            blockTime: Math.floor(Date.now() / 1000)
+          }
           if (tokenAccountInfo && tokenAccountInfo.amount > 0) {
-            logger.info(`Updating token account ${validTokenAccounts[i].toString()} with balance ${tokenAccountInfo.amount}`);
-            // await updateOrInsertTokenBalance(
+            logger.info(`Would update token account ${validTokenAccounts[i].toString()} with balance ${tokenAccountInfo.amount}`);
+            logger.info(data);
+            //await updateOrInsertTokenBalance(
             //   db,
             //   validTokenAccounts[i],
             //   BigInt(tokenAccountInfo.amount.toString()),
@@ -344,7 +390,8 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
             //   "market_actor_snapshot",
             //   "0",
             //   Math.floor(Date.now() / 1000)
-            // );
+            //);
+            delay(1000)
             updatedBalanceCount++;
           }
           tokenAccountCount++;

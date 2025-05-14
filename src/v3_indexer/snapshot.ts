@@ -7,13 +7,12 @@ import { connection, conditionalVaultClient } from "./connection";
 import { db, schema, eq, or, inArray, not } from "@metadaoproject/indexer-db";
 
 const logger = log.child({
-  module: "market_actor_query"
+  module: "V3_Dashboard_Snapshots"
 });
 
 // Constants
 const BATCH_SIZE = 100;
 const RPC_DELAY_MS = 500;
-const DB_DELAY_MS = 500;
 const UPDATE_THRESHOLD_HOURS = 2;
 const IGNORE_VAULTS: string[] = [
   "7FjYuZrQ4cJWC2Laazv6aNRzT9SqEe4WPyxuGtYxfR6K", "7nYyCRBt9JXDBK3PmV2sc3YBU7EgiGi6HnzyawfaWsT8",
@@ -320,7 +319,6 @@ async function processTokenAccounts(
             "0",
             Math.floor(Date.now() / 1000)
           );
-          await delay(DB_DELAY_MS);
           updatedBalanceCount++;
         }
         tokenAccountCount++;

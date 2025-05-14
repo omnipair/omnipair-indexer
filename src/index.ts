@@ -40,43 +40,44 @@ const healthMap = new Map<string, CronRunResult>();
 
 async function main() {
 
-  // //first lets backfill v3
-  // let start = new Date();
-  // let res = await backfillV3()
-  // let end = new Date();
-  // let { message, error } = res;
+  //first lets backfill v3
+  let start = new Date();
+  let res = await backfillV3()
+  let end = new Date();
+  let { message, error } = res;
 
 
-  // healthMap.set("backfillV3", new CronRunResult("backfillV3", message, error, start, end, error ? 1 : 0));
+  healthMap.set("backfillV3", new CronRunResult("backfillV3", message, error, start, end, error ? 1 : 0));
 
 
-  // //now lets do v4
-  // start = new Date();
-  // res = await backfillV4()
-  // end = new Date();
-  // ({ message, error } = res);
-  // let totalPreviousErrors = error ? 1 : 0;
-  // healthMap.set("backfillV4", new CronRunResult("backfillV4", message, error, start, end, error ? 1 : 0));
+  //now lets do v4
+  start = new Date();
+  res = await backfillV4()
+  end = new Date();
+  ({ message, error } = res);
+  let totalPreviousErrors = error ? 1 : 0;
+  healthMap.set("backfillV4", new CronRunResult("backfillV4", message, error, start, end, error ? 1 : 0));
 
-  // // now lets frontfill v4
-  // start = new Date();
-  // res = await gapFillV4()
-  // end = new Date();
-  // ({ message, error } = res);
-  // healthMap.set("gapFillV4", new CronRunResult("gapFillV4", message, error, start, end, error ? 1 : 0));
+  // now lets frontfill v4
+  start = new Date();
+  res = await gapFillV4()
+  end = new Date();
+  ({ message, error } = res);
+  healthMap.set("gapFillV4", new CronRunResult("gapFillV4", message, error, start, end, error ? 1 : 0));
 
-  // //lets start our crons now
+  //lets start our crons now
   
-  // startCron("backfillV3", "*/10 * * * *", backfillV3);
-  // startCron("backfillV4", "*/12 * * * *", backfillV4);
-  // startCron("gapFillV4", "*/14 * * * *", gapFillV4);
-  // startCron("priceHandler", "* * * * *", priceHandler);
+  startCron("backfillV3", "*/10 * * * *", backfillV3);
+  startCron("backfillV4", "*/12 * * * *", backfillV4);
+  startCron("gapFillV4", "*/14 * * * *", gapFillV4);
+  startCron("priceHandler", "* * * * *", priceHandler);
 
   // //start tx log subscription
-  // subscribeAll();
+  subscribeAll();
 
+  // dashboard snapshots
   await captureTokenBalanceSnapshotV3();
-  // await captureTokenBalanceSnapshotV4();
+  await captureTokenBalanceSnapshotV4();
 
 
 

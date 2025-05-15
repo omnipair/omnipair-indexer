@@ -71,15 +71,11 @@ async function main() {
   startCron("backfillV4", "*/12 * * * *", backfillV4);
   startCron("gapFillV4", "*/14 * * * *", gapFillV4);
   startCron("priceHandler", "* * * * *", priceHandler);
+  startCron("snapshotV3", "*/6 * * * *", snapshotV3);
+  startCron("snapshotV4", "*/6 * * * *", snapshotV4);
 
-  // //start tx log subscription
+  //start tx log subscription
   subscribeAll();
-
-  // dashboard snapshots
-  await captureTokenBalanceSnapshotV3();
-  await captureTokenBalanceSnapshotV4();
-
-
 
   const server = http.createServer((req: any, res: any) => {
     const reqUrl = new URL(req.url, `http://${req.headers.host}`).pathname;
@@ -240,6 +236,14 @@ async function gapFillV4(): Promise<{message:string, error: Error|undefined}> {
 
 async function priceHandler(): Promise<{message:string, error: Error|undefined}> {
   return await updatePrices();
+}
+
+async function snapshotV3(): Promise<{message:string, error: Error|undefined}> {
+  return await captureTokenBalanceSnapshotV3();
+}
+
+async function snapshotV4(): Promise<{message:string, error: Error|undefined}> {
+  return await captureTokenBalanceSnapshotV4();
 }
 
 async function reprocess() {

@@ -283,18 +283,17 @@ async function processTokenAccounts(
             );
             
             // Update token balance in DB
-            // await updateOrInsertTokenBalance(
-            //   db,
-            //   pair.tokenAcct,
-            //   BigInt(tokenAccountData.amount.toString() || "0"),
-            //   pair.mintPubkey,
-            //   tokenAccountData.owner,
-            //   "market_actor_snapshot",
-            //   "0",
-            //   Math.floor(Date.now() / 1000)
-            // );
-            logger.info(`[TEST] Would insert token balance: account=${pair.tokenAcct.toString()}, amount=${tokenAccountData.amount.toString()}, mint=${pair.mintPubkey.toString()}, owner=${tokenAccountData.owner.toString()}`);
-            
+            await updateOrInsertTokenBalance(
+              db,
+              pair.tokenAcct,
+              BigInt(tokenAccountData.amount.toString() || "0"),
+              pair.mintPubkey,
+              tokenAccountData.owner,
+              "market_actor_snapshot",
+              "0",
+              Math.floor(Date.now() / 1000)
+            );
+
             updatedBalanceCount++;
           } catch (error) {
             logger.error(`Error unpacking account ${pair.tokenAcct.toString()}: ${error}`);
@@ -304,18 +303,16 @@ async function processTokenAccounts(
           // Account is closed or doesn't exist - insert with zero balance
           logger.debug(`Token account ${pair.tokenAcct.toString()} is closed or doesn't exist`);
           
-          // await updateOrInsertTokenBalance(
-          //   db,
-          //   pair.tokenAcct,
-          //   BigInt(0),  // Zero balance for closed accounts
-          //   pair.mintPubkey,
-          //   pair.actorPubkey, // Use actor as owner for closed accounts
-          //   "market_actor_snapshot",
-          //   "0",
-          //   Math.floor(Date.now() / 1000)
-          // );
-
-          logger.info(`[TEST] Would insert zero balance for closed account: account=${pair.tokenAcct.toString()}, amount=0, mint=${pair.mintPubkey.toString()}, owner=${pair.actorPubkey.toString()}`);
+          await updateOrInsertTokenBalance(
+            db,
+            pair.tokenAcct,
+            BigInt(0),  // Zero balance for closed accounts
+            pair.mintPubkey,
+            pair.actorPubkey, // Use actor as owner for closed accounts
+            "market_actor_snapshot",
+            "0",
+            Math.floor(Date.now() / 1000)
+          );
           
           logger.debug(`Inserted zero balance for closed token account: ${pair.tokenAcct.toString()}`);
           updatedBalanceCount++;

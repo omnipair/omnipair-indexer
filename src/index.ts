@@ -77,8 +77,8 @@ async function main() {
   // //start tx log subscription
   // subscribeAll();
 
-  captureTokenBalanceSnapshotV3();
-  //captureTokenBalanceSnapshotV4();
+  // captureTokenBalanceSnapshotV3();
+  captureTokenBalanceSnapshotV4();
 
   const server = http.createServer((req: any, res: any) => {
     const reqUrl = new URL(req.url, `http://${req.headers.host}`).pathname;

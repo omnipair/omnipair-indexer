@@ -24,6 +24,13 @@ interface ActorMintPair {
   mintStr: string;
 }
 
+// Enhanced type that includes token account information
+interface EnhancedActorMintPair extends ActorMintPair {
+  tokenAcct: PublicKey;
+  actorPubkey: PublicKey;
+  mintPubkey: PublicKey;
+}
+
 interface VaultAccount {
   publicKey: string;
   account: any;
@@ -36,21 +43,48 @@ function createTokenAccount(
   actorAddrStr: string,
   mintStr: string,
   conditionalMintPubkeys: Map<string, PublicKey>
-): PublicKey | null {
+): EnhancedActorMintPair | null {
   try {
     const actorPubkey = new PublicKey(actorAddrStr);
     const mintPubkey = conditionalMintPubkeys.get(mintStr);
     if (!mintPubkey) return null;
     
-    return splToken.getAssociatedTokenAddressSync(
+    const tokenAcct = splToken.getAssociatedTokenAddressSync(
       mintPubkey,
       actorPubkey,
       true
     );
+    
+    return {
+      actorAddrStr,
+      mintStr,
+      tokenAcct,
+      actorPubkey,
+      mintPubkey
+    };
+    
   } catch (error) {
     logger.debug(`Error creating token account for actor ${actorAddrStr} and mint ${mintStr}: ${error}`);
     return null;
   }
+}
+
+// Create enhanced pairs just once with all necessary information
+function createEnhancedPairs(
+  pairs: ActorMintPair[],
+  conditionalMintPubkeys: Map<string, PublicKey>
+): EnhancedActorMintPair[] {
+  const enhancedPairs: EnhancedActorMintPair[] = [];
+  
+  for (const pair of pairs) {
+    const enhancedPair = createTokenAccount(pair.actorAddrStr, pair.mintStr, conditionalMintPubkeys);
+    if (enhancedPair) {
+      enhancedPairs.push(enhancedPair);
+    }
+  }
+  
+  logger.info(`Created ${enhancedPairs.length} token accounts from ${pairs.length} actor-mint pairs`);
+  return enhancedPairs;
 }
 
 async function getActiveVaults(): Promise<VaultAccount[]> {
@@ -211,51 +245,78 @@ async function getMarketActors(conditionalMints: Set<string>): Promise<{
 }
 
 async function processTokenAccounts(
-  pairs: ActorMintPair[],
-  conditionalMintPubkeys: Map<string, PublicKey>
+  enhancedPairs: EnhancedActorMintPair[]
 ): Promise<{ tokenAccountCount: number; updatedBalanceCount: number; errorCount: number }> {
   let tokenAccountCount = 0;
   let updatedBalanceCount = 0;
   let errorCount = 0;
 
-  const actorProcessLimit = pLimit(2);
   const batches = [];
-  
-  for (let i = 0; i < pairs.length; i += BATCH_SIZE) {
-    batches.push(pairs.slice(i, i + BATCH_SIZE));
+  for (let i = 0; i < enhancedPairs.length; i += BATCH_SIZE) {
+    batches.push(enhancedPairs.slice(i, i + BATCH_SIZE));
   }
   
-  logger.info(`Processing ${batches.length} batches of actor-mint pairs`);
+  logger.info(`Processing ${batches.length} batches of enhanced pairs`);
   
   for (const batch of batches) {
     try {
-      const tokenAccounts = batch.map(({ actorAddrStr, mintStr }) => 
-        createTokenAccount(actorAddrStr, mintStr, conditionalMintPubkeys)
-      );
+      // Extract token accounts for RPC call
+      const tokenAccounts = batch.map(pair => pair.tokenAcct);
       
-      const validTokenAccounts = tokenAccounts.filter((account): account is PublicKey => account !== null);
-      const tokenAccountInfos = await splToken.getMultipleAccounts(connection, validTokenAccounts);
+      // Get account info for all token accounts
+      const accountInfos = await connection.getMultipleAccountsInfo(tokenAccounts);
       
-      for (let i = 0; i < tokenAccountInfos.length; i++) {
-        const tokenAccountInfo = tokenAccountInfos[i];
-        const { actorAddrStr, mintStr } = batch[i];
+      // Process each account
+      for (let i = 0; i < batch.length; i++) {
+        const pair = batch[i];
+        const accountInfo = accountInfos[i];
+        
+        tokenAccountCount++;
+        
+        if (accountInfo) {
+          // Account exists - try to unpack it
+          try {
+            const tokenAccountData = splToken.unpackAccount(
+              pair.tokenAcct,
+              accountInfo,
+              splToken.TOKEN_PROGRAM_ID
+            );
+            
+            // Update token balance in DB
+            await updateOrInsertTokenBalance(
+              db,
+              pair.tokenAcct,
+              BigInt(tokenAccountData.amount.toString() || "0"),
+              pair.mintPubkey,
+              tokenAccountData.owner,
+              "market_actor_snapshot",
+              "0",
+              Math.floor(Date.now() / 1000)
+            );
 
-        if (tokenAccountInfo) {
-          const mintPubkey = conditionalMintPubkeys.get(mintStr);
-          if (!mintPubkey) continue;
+            updatedBalanceCount++;
+          } catch (error) {
+            logger.error(`Error unpacking account ${pair.tokenAcct.toString()}: ${error}`);
+            errorCount++;
+          }
+        } else {
+          // Account is closed or doesn't exist - insert with zero balance
+          logger.debug(`Token account ${pair.tokenAcct.toString()} is closed or doesn't exist`);
+          
           await updateOrInsertTokenBalance(
             db,
-            validTokenAccounts[i],
-            BigInt(tokenAccountInfo.amount.toString() ?? "0"),
-            mintPubkey,
-            tokenAccountInfo.owner, // TODO: This should be actor acct given we're likely going to insert even if it doesn't exist as we expect it to...
+            pair.tokenAcct,
+            BigInt(0),  // Zero balance for closed accounts
+            pair.mintPubkey,
+            pair.actorPubkey, // Use actor as owner for closed accounts
             "market_actor_snapshot",
             "0",
             Math.floor(Date.now() / 1000)
           );
+          
+          logger.debug(`Inserted zero balance for closed token account: ${pair.tokenAcct.toString()}`);
           updatedBalanceCount++;
         }
-        tokenAccountCount++;
       }
       
       await delay(RPC_DELAY_MS);
@@ -273,17 +334,39 @@ async function filterRecentlyUpdatedPairs(
   conditionalMintPubkeys: Map<string, PublicKey>
 ): Promise<ActorMintPair[]> {
   try {
-    const tokenAccountsToProcess = pairs.map(({ actorAddrStr, mintStr }) => {
-      const actorPubkey = new PublicKey(actorAddrStr);
-      const mintPubkey = conditionalMintPubkeys.get(mintStr);
-      if (!mintPubkey) return null;
-      
-      return splToken.getAssociatedTokenAddressSync(
-        mintPubkey,
-        actorPubkey,
-        true
-      ).toString();
-    }).filter((account): account is string => account !== null);
+    if (pairs.length === 0) {
+      return [];
+    }
+    
+    // Calculate token accounts only for database lookup purposes
+    const tokenAccountsMap = new Map<string, string>(); // key: actorAddr-mintAddr, value: tokenAcct
+    
+    for (const pair of pairs) {
+      try {
+        const actorPubkey = new PublicKey(pair.actorAddrStr);
+        const mintPubkey = conditionalMintPubkeys.get(pair.mintStr);
+        if (!mintPubkey) continue;
+        
+        const tokenAcct = splToken.getAssociatedTokenAddressSync(
+          mintPubkey,
+          actorPubkey,
+          true
+        ).toString();
+        
+        // Create a unique key for this pair
+        const pairKey = `${pair.actorAddrStr}-${pair.mintStr}`;
+        tokenAccountsMap.set(pairKey, tokenAcct);
+      } catch (error) {
+        logger.debug(`Error creating token account for actor ${pair.actorAddrStr} and mint ${pair.mintStr}: ${error}`);
+      }
+    }
+    
+    // Get all token accounts for filtering
+    const tokenAccountsToProcess = Array.from(tokenAccountsMap.values());
+    
+    if (tokenAccountsToProcess.length === 0) {
+      return [];
+    }
 
     const recentUpdates = await db.select({
       tokenAcct: schema.tokenAccts.tokenAcct,
@@ -300,18 +383,14 @@ async function filterRecentlyUpdatedPairs(
         .map(account => account.tokenAcct)
     );
 
-    const filteredPairs = pairs.filter(({ actorAddrStr, mintStr }) => {
-      const actorPubkey = new PublicKey(actorAddrStr);
-      const mintPubkey = conditionalMintPubkeys.get(mintStr);
-      if (!mintPubkey) return false;
-
-      const tokenAccount = splToken.getAssociatedTokenAddressSync(
-        mintPubkey,
-        actorPubkey,
-        true
-      ).toString();
-
-      return !recentlyUpdatedAccounts.has(tokenAccount);
+    // Filter pairs without creating token accounts
+    const filteredPairs = pairs.filter(pair => {
+      const pairKey = `${pair.actorAddrStr}-${pair.mintStr}`;
+      const tokenAccount = tokenAccountsMap.get(pairKey);
+      
+      // Include pairs that don't have token accounts yet (calculation failed) or
+      // if the token account doesn't appear in recently updated accounts
+      return !tokenAccount || !recentlyUpdatedAccounts.has(tokenAccount);
     });
 
     logger.info(`Filtered out ${pairs.length - filteredPairs.length} pairs that were updated in the last ${UPDATE_THRESHOLD_HOURS} hours`);
@@ -327,18 +406,36 @@ async function filterZeroBalanceAccounts(
   conditionalMintPubkeys: Map<string, PublicKey>
 ): Promise<ActorMintPair[]> {
   try {
-    const tokenAccountsToProcess = pairs.map(({ actorAddrStr, mintStr }) => {
-      const actorPubkey = new PublicKey(actorAddrStr);
-      const mintPubkey = conditionalMintPubkeys.get(mintStr);
-      if (!mintPubkey) return null;
-      
-      return splToken.getAssociatedTokenAddressSync(
-        mintPubkey,
-        actorPubkey,
-        true
-      ).toString();
-    }).filter((account): account is string => account !== null);
-
+    if (pairs.length === 0) {
+      return pairs;
+    }
+    
+    // Calculate token accounts only for database lookup purposes
+    const tokenAccountsMap = new Map<string, string>(); // key: actorAddr-mintAddr, value: tokenAcct
+    
+    for (const pair of pairs) {
+      try {
+        const actorPubkey = new PublicKey(pair.actorAddrStr);
+        const mintPubkey = conditionalMintPubkeys.get(pair.mintStr);
+        if (!mintPubkey) continue;
+        
+        const tokenAcct = splToken.getAssociatedTokenAddressSync(
+          mintPubkey,
+          actorPubkey,
+          true
+        ).toString();
+        
+        // Create a unique key for this pair
+        const pairKey = `${pair.actorAddrStr}-${pair.mintStr}`;
+        tokenAccountsMap.set(pairKey, tokenAcct);
+      } catch (error) {
+        logger.debug(`Error creating token account for actor ${pair.actorAddrStr} and mint ${pair.mintStr}: ${error}`);
+      }
+    }
+    
+    // Get all token accounts for filtering
+    const tokenAccountsToProcess = Array.from(tokenAccountsMap.values());
+    
     if (tokenAccountsToProcess.length === 0) {
       return pairs;
     }
@@ -358,18 +455,14 @@ async function filterZeroBalanceAccounts(
       zeroBalanceAccounts.map(account => account.tokenAcct)
     );
 
-    const filteredPairs = pairs.filter(({ actorAddrStr, mintStr }) => {
-      const actorPubkey = new PublicKey(actorAddrStr);
-      const mintPubkey = conditionalMintPubkeys.get(mintStr);
-      if (!mintPubkey) return false;
-
-      const tokenAccount = splToken.getAssociatedTokenAddressSync(
-        mintPubkey,
-        actorPubkey,
-        true
-      ).toString();
-
-      return !zeroBalanceSet.has(tokenAccount);
+    // Filter pairs without creating token accounts
+    const filteredPairs = pairs.filter(pair => {
+      const pairKey = `${pair.actorAddrStr}-${pair.mintStr}`;
+      const tokenAccount = tokenAccountsMap.get(pairKey);
+      
+      // Include pairs that don't have token accounts yet (calculation failed) or
+      // if the token account doesn't appear in zero balance accounts
+      return !tokenAccount || !zeroBalanceSet.has(tokenAccount);
     });
 
     logger.info(`Filtered out ${pairs.length - filteredPairs.length} pairs with zero balances`);
@@ -402,16 +495,19 @@ export async function captureTokenBalanceSnapshotV3(): Promise<{message: string,
       }
     }
 
-    // Filter out recently updated pairs
+    // Filter pairs first - without calculating token accounts
+    logger.info(`Filtering ${allActorMintPairs.length} actor-mint pairs by last update time`);
     const filteredByTimePairs = await filterRecentlyUpdatedPairs(allActorMintPairs, conditionalMintPubkeys);
     
-    // Filter out zero balance accounts
+    logger.info(`Filtering ${filteredByTimePairs.length} actor-mint pairs by zero balance`);
     const fullyFilteredPairs = await filterZeroBalanceAccounts(filteredByTimePairs, conditionalMintPubkeys);
+    
+    // Create enhanced pairs only for the filtered pairs that will actually be processed
+    logger.info(`Creating token account info for ${fullyFilteredPairs.length} filtered actor-mint pairs`);
+    const enhancedPairs = createEnhancedPairs(fullyFilteredPairs, conditionalMintPubkeys);
 
-    const { tokenAccountCount, updatedBalanceCount, errorCount } = await processTokenAccounts(
-      fullyFilteredPairs,
-      conditionalMintPubkeys
-    );
+    // Process token accounts with pre-calculated information
+    const { tokenAccountCount, updatedBalanceCount, errorCount } = await processTokenAccounts(enhancedPairs);
 
     let totalMintChecks = 0;
     for (const mintSet of actorToMintsMap.values()) {

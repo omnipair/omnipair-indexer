@@ -268,7 +268,7 @@ async function processUserMintTokenAccounts(
   let updated = 0;
   let errors = 0;
   
-  const allTokenAccounts: { account: PublicKey, mint: PublicKey, mintStr: string }[] = [];
+  const allTokenAccounts: { account: PublicKey, mint: PublicKey, userPubkey: PublicKey }[] = [];
   
   for (const [mintStr, ammToUsersMap] of mintToAmmToUsersMap.entries()) {
     const mintPubkey = conditionalMintPubkeys.get(mintStr);
@@ -305,7 +305,7 @@ async function processUserMintTokenAccounts(
         allTokenAccounts.push({ 
           account: tokenAccount, 
           mint: mintPubkey,
-          mintStr 
+          userPubkey
         });
       } catch (error) {
         logger.debug(`Error creating token account for user ${userAddr} and mint ${mintStr}: ${error}`);
@@ -367,33 +367,62 @@ async function processUserMintTokenAccounts(
         // Extract just the PublicKey objects for the API call
         const accountPublicKeys = batch.map(item => item.account);
         
-        // Get token account info for the batch (max 100 accounts)
-        const tokenAccountInfos = await splToken.getMultipleAccounts(connection, accountPublicKeys);
+        const accountInfos = await connection.getMultipleAccountsInfo(accountPublicKeys);
         
-        const successCount = tokenAccountInfos.filter(info => info !== null).length;
-        logger.info(`Retrieved ${successCount}/${batch.length} token account details (batch ${batchIndex + 1}/${accountBatches.length})`);
+        logger.info(`Retrieved account info for batch ${batchIndex + 1}/${accountBatches.length}`);
         
-        // Update database with token balances
-        for (let i = 0; i < tokenAccountInfos.length; i++) {
-          const info = tokenAccountInfos[i];
-          if (!info) continue;
-          
-          const { account, mint, mintStr } = batch[i];
+        // Process each account in the batch
+        for (let i = 0; i < batch.length; i++) {
+          const { account, mint, userPubkey } = batch[i];
+          const accountInfo = accountInfos[i];
           
           try {
-            await updateOrInsertTokenBalance(
-              db,
-              account,
-              BigInt(info.amount.toString() ?? "0"),
-              mint,
-              info.owner,
-              "market_actor_snapshot",
-              "0",
-              Math.floor(Date.now() / 1000)
-            );
-            updated++;
+            if (accountInfo) {
+              // Account exists - try to unpack it
+              try {
+                const tokenAccountData = splToken.unpackAccount(
+                  account,
+                  accountInfo,
+                  splToken.TOKEN_PROGRAM_ID
+                );
+                
+                // Comment out DB update for testing
+                await updateOrInsertTokenBalance(
+                  db,
+                  account,
+                  BigInt(tokenAccountData.amount.toString() || "0"),
+                  mint,
+                  tokenAccountData.owner,
+                  "market_actor_snapshot",
+                  "0",
+                  Math.floor(Date.now() / 1000)
+                );
+                
+                updated++;
+              } catch (error) {
+                logger.error(`Error unpacking account ${account.toString()}: ${error}`);
+                errors++;
+              }
+            } else {
+              // Account is closed or doesn't exist - insert with zero balance
+              logger.info(`Token account ${account.toString()} is closed or doesn't exist`);
+              
+              // Comment out DB update for testing
+              await updateOrInsertTokenBalance(
+                db,
+                account,
+                BigInt(0),  // Zero balance for closed accounts
+                mint,
+                userPubkey, // Use user as owner for closed accounts
+                "market_actor_snapshot",
+                "0",
+                Math.floor(Date.now() / 1000)
+              );
+              
+              updated++;
+            }
           } catch (error) {
-            logger.error(`Error updating token balance: ${error}`);
+            logger.error(`Error processing token account ${account.toString()}: ${error}`);
             errors++;
           }
         }

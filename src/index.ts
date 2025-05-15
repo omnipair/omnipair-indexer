@@ -71,8 +71,8 @@ async function main() {
   startCron("backfillV4", "*/12 * * * *", backfillV4);
   startCron("gapFillV4", "*/14 * * * *", gapFillV4);
   startCron("priceHandler", "* * * * *", priceHandler);
-  startCron("snapshotV3", "*/6 * * * *", snapshotV3);
-  startCron("snapshotV4", "*/6 * * * *", snapshotV4);
+  startCron("snapshotV3", "0 */6 * * *", snapshotV3);
+  startCron("snapshotV4", "0 */6 * * *", snapshotV4);
 
   //start tx log subscription
   subscribeAll();

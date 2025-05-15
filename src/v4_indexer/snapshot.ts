@@ -387,18 +387,17 @@ async function processUserMintTokenAccounts(
                 );
                 
                 // Comment out DB update for testing
-                // await updateOrInsertTokenBalance(
-                //   db,
-                //   account,
-                //   BigInt(tokenAccountData.amount.toString() || "0"),
-                //   mint,
-                //   tokenAccountData.owner,
-                //   "market_actor_snapshot",
-                //   "0",
-                //   Math.floor(Date.now() / 1000)
-                // );
+                await updateOrInsertTokenBalance(
+                  db,
+                  account,
+                  BigInt(tokenAccountData.amount.toString() || "0"),
+                  mint,
+                  tokenAccountData.owner,
+                  "market_actor_snapshot",
+                  "0",
+                  Math.floor(Date.now() / 1000)
+                );
                 
-                logger.info(`[TEST] Would insert token balance: account=${account.toString()}, amount=${tokenAccountData.amount.toString()}, mint=${mint.toString()}, owner=${tokenAccountData.owner.toString()}`);
                 updated++;
               } catch (error) {
                 logger.error(`Error unpacking account ${account.toString()}: ${error}`);
@@ -409,18 +408,17 @@ async function processUserMintTokenAccounts(
               logger.info(`Token account ${account.toString()} is closed or doesn't exist`);
               
               // Comment out DB update for testing
-              // await updateOrInsertTokenBalance(
-              //   db,
-              //   account,
-              //   BigInt(0),  // Zero balance for closed accounts
-              //   mint,
-              //   userPubkey, // Use user as owner for closed accounts
-              //   "market_actor_snapshot",
-              //   "0",
-              //   Math.floor(Date.now() / 1000)
-              // );
+              await updateOrInsertTokenBalance(
+                db,
+                account,
+                BigInt(0),  // Zero balance for closed accounts
+                mint,
+                userPubkey, // Use user as owner for closed accounts
+                "market_actor_snapshot",
+                "0",
+                Math.floor(Date.now() / 1000)
+              );
               
-              logger.info(`[TEST] Would insert zero balance for closed account: account=${account.toString()}, amount=0, mint=${mint.toString()}, owner=${userPubkey.toString()}`);
               updated++;
             }
           } catch (error) {

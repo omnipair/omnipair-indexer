@@ -110,47 +110,26 @@ async function getActiveVaults(): Promise<VaultAccount[]> {
     
     for (const batch of batches) {
       const underlyingTokenAccounts = batch.map(vault => vault.account.underlyingTokenAccount);
+      const underlyingAccounts = await splToken.getMultipleAccounts(connection, underlyingTokenAccounts);
       
-      try {
-        // Get account info and handle possible closed accounts
-        const accountInfos = await connection.getMultipleAccountsInfo(underlyingTokenAccounts);
-        const underlyingAccounts = [];
+      const vaultMap = new Map(
+        batch.map(vault => [vault.publicKey.toBase58(), vault])
+      );
+      
+      for (const underlyingAccount of underlyingAccounts) {
+        const vaultKey = underlyingAccount.owner.toBase58();
+        const vault = vaultMap.get(vaultKey);
         
-        for (let i = 0; i < underlyingTokenAccounts.length; i++) {
-          const tokenAccount = underlyingTokenAccounts[i];
-          const accountInfo = accountInfos[i];
-          
-          if (accountInfo) {
-            try {
-              const account = splToken.unpackAccount(tokenAccount, accountInfo, splToken.TOKEN_PROGRAM_ID);
-              underlyingAccounts.push(account);
-            } catch (error) {
-              logger.debug(`Error unpacking account ${tokenAccount.toString()}: ${error}`);
-            }
+        if (vault) {
+          if (underlyingAccount.amount > 0) {
+            activeVaults.push({
+              publicKey: vaultKey,
+              account: vault.account
+            });
+          } else {
+            inactiveVaults.push(vaultKey);
           }
         }
-        
-        const vaultMap = new Map(
-          batch.map(vault => [vault.publicKey.toBase58(), vault])
-        );
-        
-        for (const underlyingAccount of underlyingAccounts) {
-          const vaultKey = underlyingAccount.owner.toBase58();
-          const vault = vaultMap.get(vaultKey);
-          
-          if (vault) {
-            if (underlyingAccount.amount > 0) {
-              activeVaults.push({
-                publicKey: vaultKey,
-                account: vault.account
-              });
-            } else {
-              inactiveVaults.push(vaultKey);
-            }
-          }
-        }
-      } catch (error) {
-        logger.error(`Error processing batch of underlying accounts: ${error}`);
       }
       
       await delay(RPC_DELAY_MS);

@@ -10,13 +10,15 @@ const logger = log.child({
   module: "priceHandler",
 });
 
-interface PriceData {
-  id: string;
-  type: string;
-  price: string;
+interface PriceDataV3 {
+  usdPrice: number;
+  blockId: number;
+  decimals: number;
+  priceChange24h: number;
 }
-
-const baseUrl = "https://api.jup.ag/price/v2?ids=";
+// Jupiter pro url if we want to use it in the future
+// const baseUrl = "https://api.jup.ag/price/v3?ids=";
+const baseUrl = "https://lite-api.jup.ag/price/v3?ids=";
 
 export async function updatePrices(): Promise<{
   message: string;
@@ -88,13 +90,15 @@ export async function updatePrices(): Promise<{
 
     let missingPrices = [];
     let errors = [];
-    for (const [tokenId, priceData] of Object.entries(data.data)) {
+    
+    // v3 response structure is different - no nested data object
+    for (const [tokenId, priceData] of Object.entries(data)) {
       if (priceData) {
-        const pd = priceData as PriceData;
+        const pd = priceData as PriceDataV3;
 
         const newPrice: PricesRecord = {
-          marketAcct: pd.id,
-          price: pd.price,
+          marketAcct: tokenId,
+          price: pd.usdPrice.toString(),
           pricesType: PricesType.Spot,
           createdBy: "jupiter-quotes-indexer",
           updatedSlot: slot?.toString() ?? "0",

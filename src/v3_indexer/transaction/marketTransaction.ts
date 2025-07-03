@@ -10,6 +10,7 @@ import { BN } from "@coral-xyz/anchor";
 import { log } from "../../logger/logger";
 import { PriceMath } from "@metadaoproject/futarchy/v0.3";
 import { getHumanPrice } from "./utils";
+import { insertMarketIfNotExists, Market } from "../../v4_indexer/processor";
 
 const logger = log.child({
   module: "marketTransaction"
@@ -112,9 +113,30 @@ export class MarketTransaction extends BaseTransaction {
       quoteToken = tokens.find(token => token.mintAcct === ammMarketAccount.quoteMint.toString());
     }
 
+    const marketExists = await db.select()
+      .from(schema.markets)
+      .where(eq(schema.markets.marketAcct, account.toBase58()))
+      .execute();
+
+    if (!marketExists || marketExists.length === 0) {
+      logger.warn("Market not found in database, cannot insert price without market record", account.toBase58());
+      try {        
+        await insertMarketIfNotExists(db, {
+          marketAcct: account.toBase58(),
+          baseMint: ammMarketAccount.baseMint.toString(),
+          quoteMint: ammMarketAccount.quoteMint.toString(),
+        });
+        
+        logger.error("Market record needs to be created but implementation is incomplete. Please add required fields for market insertion.");
+        return false;
+      } catch (e) {
+        logger.error("Failed to insert market record", e);
+        return false;
+      }
+    }
+
     // if we don't have an oracle.aggregator of 0 let's run this mf
     if (!ammMarketAccount.oracle.aggregator.isZero()) {
-      // indexing the twap
       const market = await db.select()
         .from(schema.markets)
         .where(eq(schema.markets.marketAcct, account.toBase58()))

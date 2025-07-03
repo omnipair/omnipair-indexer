@@ -14,7 +14,7 @@ const logger = log.child({
   module: "v4_processor"
 });
 
-type Market = {
+export type Market = {
   marketAcct: string;
   baseMint: string;
   quoteMint: string;
@@ -661,7 +661,7 @@ async function insertTokenAccountIfNotExists(db: DBConnection, event: Initialize
   }
 }
 
-async function insertMarketIfNotExists(db: DBConnection, market: Market) {
+export async function insertMarketIfNotExists(db: DBConnection, market: Market) {
   const existingMarket = await db.select()
     .from(schema.markets)
     .where(eq(schema.markets.marketAcct, market.marketAcct))

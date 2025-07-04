@@ -119,16 +119,26 @@ export class MarketTransaction extends BaseTransaction {
       .execute();
 
     if (!marketExists || marketExists.length === 0) {
-      logger.warn("Market not found in database, cannot insert price without market record", account.toBase58());
-      try {        
+      logger.warn("Market not found in database, attempting to create", account.toBase58());
+      
+      try {
+        // Check if we have all required fields
+        if (!ammMarketAccount.baseMint || !ammMarketAccount.quoteMint) {
+          logger.error("Cannot create market - missing required mint fields", {
+            marketAcct: account.toBase58(),
+            hasBaseMint: !!ammMarketAccount.baseMint,
+            hasQuoteMint: !!ammMarketAccount.quoteMint
+          });
+          return false;
+        }
+        
         await insertMarketIfNotExists(db, {
           marketAcct: account.toBase58(),
           baseMint: ammMarketAccount.baseMint.toString(),
           quoteMint: ammMarketAccount.quoteMint.toString(),
         });
         
-        logger.error("Market record needs to be created but implementation is incomplete. Please add required fields for market insertion.");
-        return false;
+        logger.info("Market record created successfully", account.toBase58());
       } catch (e) {
         logger.error("Failed to insert market record", e);
         return false;

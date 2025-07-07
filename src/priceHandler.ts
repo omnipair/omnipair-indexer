@@ -5,6 +5,7 @@ import {
 } from "@metadaoproject/indexer-db/lib/schema";
 import { connection } from "./connection";
 import { log } from "./logger/logger";
+import env from "dotenv";
 
 const logger = log.child({
   module: "priceHandler",
@@ -17,8 +18,10 @@ interface PriceDataV3 {
   priceChange24h: number;
 }
 // Jupiter pro url if we want to use it in the future
-// const baseUrl = "https://api.jup.ag/price/v3?ids=";
-const baseUrl = "https://lite-api.jup.ag/price/v3?ids=";
+const baseUrl =
+  process.env.JUPITER_API_KEY && process.env.JUPITER_API_KEY.length > 0
+    ? "https://api.jup.ag/price/v3?ids="
+    : "https://lite-api.jup.ag/price/v3?ids=";
 
 export async function updatePrices(): Promise<{
   message: string;
@@ -69,14 +72,20 @@ export async function updatePrices(): Promise<{
     }
 
     const url = baseUrl + ids;
-    const apiKey = process.env.JUPITER_API_KEY || "";
+    const apiKey = process.env.JUPITER_API_KEY;
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+    
+    if (apiKey && apiKey.length > 0) {
+      headers["x-api-key"] = apiKey;
+    }
 
     const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-      },
+      headers: headers,
     });
+    
     if (!response.ok) {
       logger.error(`Error fetching prices: ${response.statusText}`);
       return {

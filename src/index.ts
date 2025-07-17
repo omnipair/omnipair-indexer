@@ -80,9 +80,9 @@ async function main() {
   // end = new Date();
   // ({ message, error } = res);
   // healthMap.set("gapFillV5", new CronRunResult("gapFillV5", message, error, start, end, error ? 1 : 0));
-  // backfillV5();
-  // gapFillV5();
-  // snapshotV5();
+  backfillV5();
+  gapFillV5();
+  snapshotV5();
 
   //lets start our crons now
   

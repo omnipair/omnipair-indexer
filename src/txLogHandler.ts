@@ -53,8 +53,8 @@ async function subscribe(accountPubKey: PublicKey) {
 export async function subscribeAll() {
   const programIds = [
     V5_LAUNCHPAD_PROGRAM_ID,
-    // V5_AMM_PROGRAM_ID,
-    // V5_AUTOCRAT_PROGRAM_ID,
+    V5_AMM_PROGRAM_ID,
+    V5_AUTOCRAT_PROGRAM_ID,
     // V4_LAUNCHPAD_PROGRAM_ID,
     // V4_AMM_PROGRAM_ID,
     // V4_AUTOCRAT_PROGRAM_ID,

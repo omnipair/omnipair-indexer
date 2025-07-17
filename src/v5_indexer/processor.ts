@@ -910,7 +910,6 @@ async function handleLaunchCompletedEvent(event: LaunchCompletedEvent, signature
 
       await trx.update(schema.v0_5_launches).set({ 
         state: launchState,
-        committedAmount: BigInt(event.totalCommitted.toString()),
         latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
         daoAddr: launchState === V05LaunchState.Complete ? event.dao?.toString() : null,
         updatedAtSlot: BigInt(event.common.slot.toString()),
@@ -966,7 +965,6 @@ async function handleLaunchFundedEvent(event: LaunchFundedEvent, signature: stri
       }).onConflictDoNothing();
 
       await trx.update(schema.v0_5_launches).set({
-        committedAmount: BigInt(event.totalCommitted.toString()),
         latestLaunchSeqNumApplied: BigInt(event.common.launchSeqNum.toString()),
         updatedAtSlot: BigInt(event.common.slot.toString()),
       }).where(eq(schema.v0_5_launches.launchAddr, event.launch.toString()));

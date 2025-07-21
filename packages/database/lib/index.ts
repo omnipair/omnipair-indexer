@@ -28,6 +28,9 @@ const poolConfig = {
 
 const pool = new Pool(poolConfig);
 
+const drizzleDB = drizzle(pool, { schema: schemaDefs });
+export const db = drizzleDB;
+
 // Add pool error listeners
 pool.on('error', (err) => {
   console.error('Unexpected pool error:', err);
@@ -136,3 +139,5 @@ export {
   isNull,
   inArray,
 } from "drizzle-orm";
+
+export { alias } from "drizzle-orm/pg-core/alias";

@@ -68,6 +68,12 @@ async function handleCreateAmmEvent(event: CreateAmmEvent) {
       quoteReserves: 0n,
     }).onConflictDoNothing();
 
+    const amm = await db.select().from(schema.v0_4_amms).where(eq(schema.v0_4_amms.ammAddr, event.common.amm.toString())).limit(1);
+        
+    if (amm.length > 0) {
+      await insertPriceIfNotDuplicate(db, amm, event);
+    }
+
   } catch (error) {
     logger.error(error, "Error in handleCreateAmmEvent");
   }
@@ -689,7 +695,7 @@ export async function insertMarketIfNotExists(db: DBConnection, market: Market) 
   }
 }
 
-async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: AddLiquidityEvent | SwapEvent | RemoveLiquidityEvent) {
+async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: AddLiquidityEvent | SwapEvent | RemoveLiquidityEvent | CreateAmmEvent) {
   logger.info("insertPriceIfNotDuplicate::event", event);
   const existingPrice = await db.select()
     .from(schema.prices)

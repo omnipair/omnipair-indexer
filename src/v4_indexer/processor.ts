@@ -713,7 +713,7 @@ export async function insertMarketIfNotExists(db: DBConnection, market: Market) 
   }
 }
 
-async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: AddLiquidityEvent | SwapEvent | RemoveLiquidityEvent | CreateAmmEvent) {
+async function insertPriceIfNotDuplicate(db: DBConnection, amm: any[], event: AddLiquidityEvent | SwapEvent | RemoveLiquidityEvent) {
   logger.info("insertPriceIfNotDuplicate::event", event);
   const existingPrice = await db.select()
     .from(schema.prices)

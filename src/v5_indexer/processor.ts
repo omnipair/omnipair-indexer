@@ -1,5 +1,5 @@
 import { AddLiquidityEvent, AmmEvent, ConditionalVaultEvent, CreateAmmEvent, getVaultAddr, InitializeConditionalVaultEvent, InitializeQuestionEvent, SwapEvent, PriceMath, RedeemTokensEvent, SplitTokensEvent, MergeTokensEvent, RemoveLiquidityEvent, ResolveQuestionEvent, LaunchpadEvent, LaunchInitializedEvent, LaunchClaimEvent, LaunchCompletedEvent, LaunchFundedEvent, LaunchRefundedEvent, LaunchStartedEvent, CrankThatTwapEvent, AutocratEvent, InitializeProposalEvent, UpdateDaoEvent, InitializeDaoEvent, FinalizeProposalEvent, ExecuteProposalEvent, Dao, Proposal } from "@metadaoproject/futarchy/v0.5";
-import { MigrateEvent, TOKEN_MIGRATOR_PROGRAM_ID } from "@metadaoproject/token-migrator/v0.1";
+import { TokenMigrationEvents, TOKEN_MIGRATOR_PROGRAM_ID, MigrateEvent } from "@metadaoproject/token-migrator/v0.1";
 import { schema, db, eq, and, or, DBTransaction } from "@metadaoproject/indexer-db";
 import { PublicKey } from "@solana/web3.js";
 import type { VersionedTransactionResponse } from "@solana/web3.js";
@@ -1331,9 +1331,9 @@ async function upsertProposal(proposalAcct: Proposal, proposalAddr: PublicKey, s
   });
 }
 
-export async function processTokenMigratorEvent(event: { name: string; data: MigrateEvent }, signature: string, transactionResponse: VersionedTransactionResponse) {
+export async function processTokenMigratorEvent(event: { name: string; data: TokenMigrationEvents }, signature: string, transactionResponse: VersionedTransactionResponse) {
   switch (event.name) {
-    case "MigrateEvent":
+    case "migrateEvent":
       await handleMigrateEvent(event.data as MigrateEvent, signature, transactionResponse); // here
       break;
     default:

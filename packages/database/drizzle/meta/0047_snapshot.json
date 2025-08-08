@@ -1,5 +1,5 @@
 {
-  "id": "a09b24d8-54dc-446c-930b-a393c2a14770",
+  "id": "12c1f73c-d740-430b-8464-4076e65bb730",
   "prevId": "5729007d-f42a-488f-8efe-07a2dfc5ab71",
   "version": "7",
   "dialect": "postgresql",
@@ -3468,21 +3468,21 @@
       "name": "v0_1_conversions",
       "schema": "",
       "columns": {
+        "signature": {
+          "name": "signature",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "converter_address": {
           "name": "converter_address",
           "type": "varchar(44)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "user": {
           "name": "user",
           "type": "varchar(44)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "signature": {
-          "name": "signature",
-          "type": "varchar(88)",
           "primaryKey": false,
           "notNull": true
         },
@@ -3496,31 +3496,31 @@
           "name": "block_time",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "mint_from": {
           "name": "mint_from",
           "type": "varchar(44)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "mint_to": {
           "name": "mint_to",
           "type": "varchar(44)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "deposit_amount": {
           "name": "deposit_amount",
           "type": "numeric(20, 0)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "withdraw_amount": {
           "name": "withdraw_amount",
           "type": "numeric(20, 0)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -3532,19 +3532,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "v0_1_conversions_converter_address_v0_1_converters_converter_address_fk": {
-          "name": "v0_1_conversions_converter_address_v0_1_converters_converter_address_fk",
-          "tableFrom": "v0_1_conversions",
-          "tableTo": "v0_1_converters",
-          "columnsFrom": [
-            "converter_address"
-          ],
-          "columnsTo": [
-            "converter_address"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "v0_1_conversions_signature_signatures_signature_fk": {
           "name": "v0_1_conversions_signature_signatures_signature_fk",
           "tableFrom": "v0_1_conversions",
@@ -3554,6 +3541,19 @@
           ],
           "columnsTo": [
             "signature"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "v0_1_conversions_converter_address_v0_1_converters_converter_address_fk": {
+          "name": "v0_1_conversions_converter_address_v0_1_converters_converter_address_fk",
+          "tableFrom": "v0_1_conversions",
+          "tableTo": "v0_1_converters",
+          "columnsFrom": [
+            "converter_address"
+          ],
+          "columnsTo": [
+            "converter_address"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -3572,7 +3572,7 @@
         "converter_address": {
           "name": "converter_address",
           "type": "varchar(44)",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true
         },
         "vault_address": {

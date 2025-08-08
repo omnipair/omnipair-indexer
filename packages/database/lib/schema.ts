@@ -1587,9 +1587,8 @@ export const v0_5_funds = pgTable("v0_5_funds", {
   pk: primaryKey({ columns: [table.fundingRecordAddr, table.fundingRecordSeqNum]}),
 }));
 
-export const v0_1_converters = pgTable("v0_1_converters", {
-  converterAddr: pubkey("converter_address").primaryKey().notNull(),
-  vaultAddr: pubkey("vault_address").notNull(),
+export const v0_1_migrators = pgTable("v0_1_migrators", {
+  migratorAddr: pubkey("migrator_address").primaryKey().notNull(),
   mintFrom: pubkey("mint_from").notNull(),
   mintTo: pubkey("mint_to").notNull(),
   oldAmount: numeric("old_amount", { precision: 20, scale: 0 }).notNull(), 
@@ -1600,13 +1599,13 @@ export const v0_1_converters = pgTable("v0_1_converters", {
     .default(sql`now()`),
 });
 
-export const v0_1_conversions = pgTable("v0_1_conversions", {
+export const v0_1_migrations = pgTable("v0_1_migrations", {
   signature: transaction("signature")
     .notNull()
     .references(() => signatures.signature),
-  converterAddr: pubkey("converter_address")
+  migratorAddr: pubkey("migrator_address")
     .notNull()
-    .references(() => v0_1_converters.converterAddr),
+    .references(() => v0_1_migrations.migratorAddr),
   user: pubkey("user").notNull(),
   slot: slot("slot").notNull(),
   blockTime: timestamp("block_time", { withTimezone: true }).notNull(),

@@ -87,7 +87,7 @@ async function processLogs(logs: Logs, ctx: Context, programId: PublicKey) {
 
   if (programId.equals(V4_AMM_PROGRAM_ID) || programId.equals(V4_AUTOCRAT_PROGRAM_ID) || programId.equals(V4_LAUNCHPAD_PROGRAM_ID)) {
     await indexV4(logs, ctx, programId);
-  } else if (programId.equals(V5_AMM_PROGRAM_ID) || programId.equals(V5_AUTOCRAT_PROGRAM_ID) || programId.equals(V5_LAUNCHPAD_PROGRAM_ID)) {
+  } else if (programId.equals(V5_AMM_PROGRAM_ID) || programId.equals(V5_AUTOCRAT_PROGRAM_ID) || programId.equals(V5_LAUNCHPAD_PROGRAM_ID) || programId.equals(TOKEN_MIGRATOR_PROGRAM_ID)) {
     await indexV5(logs, ctx, programId);
   } else if (programId.equals(V3_AMM_PROGRAM_ID) || programId.equals(V3_CONDITIONAL_VAULT_PROGRAM_ID)) {
     await indexV3(logs, ctx, programId);

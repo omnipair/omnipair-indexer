@@ -1587,6 +1587,34 @@ export const v0_5_funds = pgTable("v0_5_funds", {
   pk: primaryKey({ columns: [table.fundingRecordAddr, table.fundingRecordSeqNum]}),
 }));
 
+export const v0_1_converters = pgTable("v0_1_converters", {
+  converterAddr: pubkey("converter_address").notNull(),
+  vaultAddr: pubkey("vault_address").notNull(),
+  mintFrom: pubkey("mint_from").notNull(),
+  mintTo: pubkey("mint_to").notNull(),
+  oldAmount: numeric("old_amount", { precision: 20, scale: 0 }).notNull(), 
+  newAmount: numeric("new_amount", { precision: 20, scale: 0 }).notNull(),
+  strategy: jsonb("strategy"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
+});
+
+export const v0_1_conversions = pgTable("v0_1_conversions", {
+  converterAddr: pubkey("converter_address").references(() => v0_1_converters.converterAddr),
+  user: pubkey("user"),
+  signature: transaction("signature").notNull().references(() => signatures.signature),
+  slot: slot("slot").notNull(),
+  blockTime: timestamp("block_time", { withTimezone: true }),
+  mintFrom: pubkey("mint_from"),
+  mintTo: pubkey("mint_to"),
+  depositAmount: numeric("deposit_amount", { precision: 20, scale: 0 }),
+  withdrawAmount: numeric("withdraw_amount", { precision: 20, scale: 0 }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
+})
+
 // TODO: This is commented out give these are timescale views, but I wanted to include them
 export const twapChartData = pgView("twap_chart_data", {
   interv: timestamp("interv", { withTimezone: true }),

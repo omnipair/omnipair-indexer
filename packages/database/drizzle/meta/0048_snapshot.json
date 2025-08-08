@@ -1,5 +1,5 @@
 {
-  "id": "a4ae0b90-70da-4327-9c3f-49de2a72bb83",
+  "id": "cc18e2f3-1adf-422c-89bb-3c26b2e9277a",
   "prevId": "12c1f73c-d740-430b-8464-4076e65bb730",
   "version": "7",
   "dialect": "postgresql",
@@ -3545,10 +3545,10 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "v0_1_migrations_migrator_address_v0_1_migrations_migrator_address_fk": {
-          "name": "v0_1_migrations_migrator_address_v0_1_migrations_migrator_address_fk",
+        "v0_1_migrations_migrator_address_v0_1_migrators_migrator_address_fk": {
+          "name": "v0_1_migrations_migrator_address_v0_1_migrators_migrator_address_fk",
           "tableFrom": "v0_1_migrations",
-          "tableTo": "v0_1_migrations",
+          "tableTo": "v0_1_migrators",
           "columnsFrom": [
             "migrator_address"
           ],

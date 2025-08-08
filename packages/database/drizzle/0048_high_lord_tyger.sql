@@ -13,7 +13,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "v0_1_migrations" ADD CONSTRAINT "v0_1_migrations_migrator_address_v0_1_migrations_migrator_address_fk" FOREIGN KEY ("migrator_address") REFERENCES "public"."v0_1_migrations"("migrator_address") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "v0_1_migrations" ADD CONSTRAINT "v0_1_migrations_migrator_address_v0_1_migrators_migrator_address_fk" FOREIGN KEY ("migrator_address") REFERENCES "public"."v0_1_migrators"("migrator_address") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

@@ -1605,7 +1605,7 @@ export const v0_1_migrations = pgTable("v0_1_migrations", {
     .references(() => signatures.signature),
   migratorAddr: pubkey("migrator_address")
     .notNull()
-    .references(() => v0_1_migrations.migratorAddr),
+    .references(() => v0_1_migrators.migratorAddr),
   user: pubkey("user").notNull(),
   slot: slot("slot").notNull(),
   blockTime: timestamp("block_time", { withTimezone: true }).notNull(),

@@ -1337,7 +1337,8 @@ export async function processTokenMigratorEvent(event: { name: string; data: Mig
       await handleMigrateEvent(event.data as MigrateEvent, signature, transactionResponse); // here
       break;
     default:
-      logger.info("Unknown Autocrat event", event.name);
+      logger.info("Unknown Token Migration event", event.name);
+      logger.info("Event log", event);
   }
 }
 

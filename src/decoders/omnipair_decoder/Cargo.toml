@@ -1,12 +1,12 @@
 [package]
-name = "carbon-pumpfun-decoder"
+name = "carbon-omnipair-decoder"
 version = "0.9.1"
-description = "Pumpfun Decoder"
+description = "Omnipair Decoder"
 license = { workspace = true }
 edition = { workspace = true }
 readme = "README.md"
 repository = { workspace = true }
-keywords = ["solana", "decoder", "pumpfun"]
+keywords = ["solana", "decoder", "omnipair"]
 categories = ["encoding"]
 
 [lib]

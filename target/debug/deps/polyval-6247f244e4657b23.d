@@ -1,0 +1,10 @@
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\libpolyval-6247f244e4657b23.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\soft64.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\mulx.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\autodetect.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\clmul.rs
+
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\polyval-6247f244e4657b23.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\soft64.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\mulx.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\autodetect.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\clmul.rs
+
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\lib.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\soft64.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\mulx.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\autodetect.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\polyval-0.6.2\src\backend\clmul.rs:

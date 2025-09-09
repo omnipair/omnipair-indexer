@@ -1,0 +1,5 @@
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\libsolana_genesis_config-023193374fab4fd1.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-genesis-config-2.3.0\src\lib.rs
+
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\solana_genesis_config-023193374fab4fd1.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-genesis-config-2.3.0\src\lib.rs
+
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-genesis-config-2.3.0\src\lib.rs:

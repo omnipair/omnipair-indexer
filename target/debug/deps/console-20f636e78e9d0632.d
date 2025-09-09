@@ -1,0 +1,11 @@
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\libconsole-20f636e78e9d0632.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\common_term.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\kb.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\term.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\utils.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\windows_term\mod.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\ansi.rs
+
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\console-20f636e78e9d0632.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\common_term.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\kb.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\term.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\utils.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\windows_term\mod.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\ansi.rs
+
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\lib.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\common_term.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\kb.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\term.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\utils.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\windows_term\mod.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\console-0.15.11\src\ansi.rs:

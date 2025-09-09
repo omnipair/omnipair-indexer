@@ -1,1 +1,0 @@
-ALTER TABLE "proposal_details" ADD COLUMN "discussion_link" text;

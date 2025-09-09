@@ -1,2 +1,0 @@
-ALTER TABLE "v0_4_metric_decisions" ADD COLUMN "is_binary" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "v0_4_metric_decisions" ADD COLUMN "completed_at" timestamp with time zone;

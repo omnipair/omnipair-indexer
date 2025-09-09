@@ -7,6 +7,41 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Database artifacts
+packages/database/drizzle/
+packages/database/sql/
+packages/database/*.db
+src/omnipair-rs
+src/omnipair-rs/target
+src/jupiter-swap-alerts
+
+# Bun and Node output
+.bun*
+bun.lockb
+
+# VSCode settings
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.swp
+*.swo
+*.bak
+*.orig
+*.tmp
+*.temp
+# End Generation Here
+
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 

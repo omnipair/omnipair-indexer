@@ -1,1 +1,0 @@
-ALTER TABLE "v0_4_daos" ADD COLUMN "updated_at_slot" bigint DEFAULT 0 NOT NULL;

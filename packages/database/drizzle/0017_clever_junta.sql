@@ -1,1 +1,0 @@
-ALTER TABLE "v0_4_daos" ADD COLUMN "twap_start_delay_slots" bigint NOT NULL;

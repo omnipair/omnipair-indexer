@@ -1,0 +1,9 @@
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\num_enum_derive-b572df6c03b7a625.dll: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\enum_attributes.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\parsing.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\utils.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\variant_attributes.rs
+
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\num_enum_derive-b572df6c03b7a625.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\enum_attributes.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\parsing.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\utils.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\variant_attributes.rs
+
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\lib.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\enum_attributes.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\parsing.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\utils.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\num_enum_derive-0.7.4\src\variant_attributes.rs:

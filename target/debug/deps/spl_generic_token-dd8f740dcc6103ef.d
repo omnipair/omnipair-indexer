@@ -1,0 +1,9 @@
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\libspl_generic_token-dd8f740dcc6103ef.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\associated_token_account.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\generic_token.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\token.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\token_2022.rs
+
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\spl_generic_token-dd8f740dcc6103ef.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\associated_token_account.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\generic_token.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\token.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\token_2022.rs
+
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\lib.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\associated_token_account.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\generic_token.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\token.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-generic-token-2.0.1\src\token_2022.rs:

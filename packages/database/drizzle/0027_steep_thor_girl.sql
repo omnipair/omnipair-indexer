@@ -1,1 +1,0 @@
-ALTER TABLE "organizations" ADD COLUMN "telegram_channel" text;

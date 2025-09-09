@@ -1,0 +1,11 @@
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\librusty_fork-4c9c5acbc4b31b31.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\sugar.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\fork_test.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\error.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\cmdline.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\fork.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\child_wrapper.rs
+
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\rusty_fork-4c9c5acbc4b31b31.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\sugar.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\fork_test.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\error.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\cmdline.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\fork.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\child_wrapper.rs
+
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\lib.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\sugar.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\fork_test.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\error.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\cmdline.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\fork.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rusty-fork-0.3.0\src\child_wrapper.rs:

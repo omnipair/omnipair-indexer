@@ -1,5 +1,5 @@
 {
-  "name": "futarchy-indexer-v2",
+  "name": "omnipair-indexer",
   "module": "index.ts",
   "type": "module",
   "devDependencies": {
@@ -10,14 +10,12 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "start": "bun src/index.ts"
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.29.0",
-    "@metadaoproject/futarchy": "^0.5.0-alpha.5",
-    "@metadaoproject/futarchy-sdk": "^4.0.0-alpha.54",
-    "@metadaoproject/indexer-db": "file:./packages/database",
-    "@metadaoproject/token-migrator": "0.1.0-alpha.5",
+    "@coral-xyz/anchor": "0.31.1",
+    "@omnipair/indexer-db": "file:./packages/database",
     "@solana/spl-token": "^0.3.8",
     "@solana/web3.js": "^1.90.0",
     "@types/bs58": "^4.0.4",

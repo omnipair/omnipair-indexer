@@ -1,0 +1,1 @@
+cargo:rustc-env=MIME_TYPES_GENERATED_PATH=C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\release\build\mime_guess-329bc3ef91b93104\out\mime_types_generated.rs

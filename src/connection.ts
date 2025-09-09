@@ -1,38 +1,49 @@
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Wallet } from "@coral-xyz/anchor";
-import { ConditionalVaultClient, AmmClient, LaunchpadClient, AutocratClient } from "@metadaoproject/futarchy/v0.4";
 import dns from 'dns';
 import { promisify } from 'util';
 
 const resolve4 = promisify(dns.resolve4);
 
-export const RPC_ENDPOINT = process.env.RPC_ENDPOINT ?? "";
+// Get RPC endpoint from environment variables
+export const RPC_ENDPOINT = process.env.SOLANA_RPC_URL ?? process.env.RPC_ENDPOINT ?? "https://api.mainnet-beta.solana.com";
+export const WS_ENDPOINT = process.env.SOLANA_WS_URL ?? process.env.WS_ENDPOINT ?? "wss://api.mainnet-beta.solana.com";
 
-if (!RPC_ENDPOINT) {
-  throw new Error("RPC_ENDPOINT is not set");
-}
+// Create Solana connection
+export const connection: Connection = new Connection(RPC_ENDPOINT, {
+  commitment: "confirmed",
+  wsEndpoint: WS_ENDPOINT,
+});
 
-export const connection: Connection = new Connection(RPC_ENDPOINT, "confirmed");
-
-
+// Log connection details
 try {
   const hostname = new URL(RPC_ENDPOINT).hostname;
   const addresses = await resolve4(hostname);
-  console.log("IP we're connecting to: ", addresses[0]);
+  console.log("Connecting to Solana RPC at IP:", addresses[0]);
 } catch (error) {
-  console.error('Error resolving IP:', error);
+  console.error('Error resolving RPC IP:', error);
   const hostname = new URL(RPC_ENDPOINT).hostname;
-  console.log("Hostname we're connecting to: ", hostname);
+  console.log("Connecting to Solana RPC at hostname:", hostname);
 }
 
+// Create a readonly wallet for the indexer (we only read, never write)
+export const readonlyWallet: Wallet = {
+  publicKey: PublicKey.default,
+  signTransaction: async () => {
+    throw new Error("Indexer is read-only and cannot sign transactions");
+  },
+  signAllTransactions: async () => {
+    throw new Error("Indexer is read-only and cannot sign transactions");
+  },
+} as Wallet;
 
-// the indexer will only be reading, not writing
-export const readonlyWallet: Wallet = undefined as unknown as Wallet;
+// Create Anchor provider
 export const provider = new AnchorProvider(connection, readonlyWallet, {
   commitment: "confirmed",
 });
 
-export const ammClient = AmmClient.createClient({ provider });
-export const conditionalVaultClient = ConditionalVaultClient.createClient({ provider });
-export const launchpadClient = LaunchpadClient.createClient({ provider });
-export const autocratClient = AutocratClient.createClient({ provider });
+// Omnipair program ID (from the Rust program)
+export const OMNIPAIR_PROGRAM_ID = new PublicKey("3tJrAXnjofAw8oskbMaSo9oMAYuzdBgVbW3TvQLdMEBd");
+
+// Export connection for use in other modules
+export default connection;

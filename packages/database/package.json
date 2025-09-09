@@ -1,6 +1,6 @@
 {
-  "name": "@metadaoproject/indexer-db",
-  "description": "indexer database schema and migration runner",
+  "name": "@omnipair/indexer-db",
+  "description": "omnipair indexer database schema and migration runner",
   "private": "true",
   "main": "lib",
   "scripts": {

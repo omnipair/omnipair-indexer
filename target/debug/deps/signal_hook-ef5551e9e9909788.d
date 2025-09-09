@@ -1,0 +1,9 @@
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\libsignal_hook-ef5551e9e9909788.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\flag.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\mod.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\channel.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\signal_details.rs
+
+C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\signal_hook-ef5551e9e9909788.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\flag.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\mod.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\channel.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\signal_details.rs
+
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\lib.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\flag.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\mod.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\channel.rs:
+C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\signal-hook-0.3.18\src\low_level\signal_details.rs:

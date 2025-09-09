@@ -1,9 +1,0 @@
-C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\libspl_type_length_value-80633ad2ae26b798.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\error.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\length.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\state.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\variable_len_pack.rs
-
-C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\spl_type_length_value-80633ad2ae26b798.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\error.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\length.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\state.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\variable_len_pack.rs
-
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\lib.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\error.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\length.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\state.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\spl-type-length-value-0.7.0\src\variable_len_pack.rs:

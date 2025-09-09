@@ -1,9 +1,0 @@
-C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\libsolana_metrics-339190fc2e7fe6d6.rmeta: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\counter.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\datapoint.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\metrics.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\poh_timing_point.rs
-
-C:\Users\User\Desktop\Repos\Exinity\repos\omnipair-indexer\target\debug\deps\solana_metrics-339190fc2e7fe6d6.d: C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\lib.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\counter.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\datapoint.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\metrics.rs C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\poh_timing_point.rs
-
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\lib.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\counter.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\datapoint.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\metrics.rs:
-C:\Users\User\.cargo\registry\src\index.crates.io-6f17d22bba15001f\solana-metrics-2.2.20\src\poh_timing_point.rs:

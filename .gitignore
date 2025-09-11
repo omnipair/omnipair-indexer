@@ -13,13 +13,14 @@ lerna-debug.log*
 !.env.example
 !.env.template
 
+# Rust artifacts
+target/
+Cargo.lock
+
 # Database artifacts
 packages/database/drizzle/
 packages/database/sql/
 packages/database/*.db
-src/omnipair-rs
-src/omnipair-rs/target
-src/jupiter-swap-alerts
 
 # Bun and Node output
 .bun*

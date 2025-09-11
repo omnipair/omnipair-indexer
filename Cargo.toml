@@ -1,5 +1,14 @@
 [workspace]
-members = ["crates/core", "crates/macros", "crates/proc-macros", "crates/test-utils", "metrics/log-metrics", "datasources/rpc-program-subscribe-datasource", "decoders/omnipair_decoder", "src/omnipair-carbon-indexer"]
+members = [
+    "crates/core", 
+    "crates/macros", 
+    "crates/proc-macros", 
+    "crates/test-utils", 
+    "packages/metrics/*", 
+    "packages/datasources/*", 
+    "packages/decoders/*", 
+    "src/omnipair-carbon-indexer"
+]
 resolver = "2"
 
 [workspace.package]
@@ -16,9 +25,9 @@ carbon-core = { path = "crates/core", version = "0.9.1" }
 carbon-macros = { path = "crates/macros", version = "0.9.1" }
 carbon-proc-macros = { path = "crates/proc-macros", version = "0.9.1" }
 carbon-test-utils = { path = "crates/test-utils", version = "0.9.1" }
-carbon-log-metrics = { path = "metrics/log-metrics", version = "0.9.1" }
-carbon-rpc-program-subscribe-datasource = { path = "datasources/rpc-program-subscribe-datasource", version = "0.9.1" }
-carbon-omnipair-decoder = { path = "decoders/omnipair_decoder", version = "0.9.1" }
+carbon-log-metrics = { path = "packages/metrics/log-metrics", version = "0.9.1" }
+carbon-rpc-program-subscribe-datasource = { path = "packages/datasources/rpc-program-subscribe-datasource", version = "0.9.1" }
+carbon-omnipair-decoder = { path = "packages/decoders/omnipair_decoder", version = "0.9.1" }
 
 # misc
 anyhow = "1.0.96"
@@ -32,6 +41,8 @@ env_logger = "0.11.5"
 futures = "0.3.30"
 hex = "0.4.3"
 log = "0.4.25"
+metrics = "0.23"
+metrics-exporter-prometheus = "0.15"
 proc-macro2 = "1"
 quote = "1.0"
 serde = { version = "1.0.208", features = ["derive"] }

@@ -1,6 +1,6 @@
 # Carbon Pipeline Example
 
-This project demonstrates how to set up and run a Carbon pipeline that processes Solana accounts using the Sharky decoder. It leverages the custom `GpaBackfillDatasource` to fetch program accounts and the `RpcProgramSubscribe` as a data source to track live account updates for the specified program ID. The pipeline is designed to process account updates using the `SharkyAccountProcessor`.
+This project demonstrates how to set up and run a Carbon pipeline that processes Solana accounts using the Sharky decoder. It leverages the custom `GpaBackfillDatasource` to fetch program accounts and the `RpcProgramSubscribe` as a data source to track live account updates for the specified program ID. The pipeline is designed to process account updates using the `OmnipairAccountProcessor`.
 
 ## Setup Instructions
 
@@ -8,18 +8,14 @@ This project demonstrates how to set up and run a Carbon pipeline that processes
 
 To get started, clone the repository:
 
-```sh
-git clone git@github.com:sevenlabs-hq/carbon.git
-cd examples/sharky-activities
-```
-
 ### Step 2: Set Environment Variables
 
 Create a `.env` file in the root of your project and set the following environment variables:
 
 ```env
-RPC_URL=...
-RUST_LOG=...
+RPC_HTTP_URL=...
+RPC_WS_URL=...
+RUST_LOG=info
 ```
 
 - `RPC_URL` should point to the Solana RPC URL you want to use for Solana program accounts crawling and live updates.

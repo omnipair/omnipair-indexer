@@ -1,0 +1,69 @@
+[workspace]
+members = [
+    "crates/core", 
+    "crates/macros", 
+    "crates/proc-macros", 
+    "crates/test-utils", 
+    "packages/metrics/*", 
+    "packages/datasources/*", 
+    "packages/decoders/*", 
+    "src/omnipair-carbon-indexer"
+]
+resolver = "2"
+
+[workspace.package]
+rust-version = "1.82"
+version = "0.2.1"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/omnipair/omnipair-indexer"
+
+[workspace.dependencies]
+
+# carbon crates (local)
+carbon-core = { path = "crates/core", version = "0.9.1" }
+carbon-macros = { path = "crates/macros", version = "0.9.1" }
+carbon-proc-macros = { path = "crates/proc-macros", version = "0.9.1" }
+carbon-test-utils = { path = "crates/test-utils", version = "0.9.1" }
+carbon-log-metrics = { path = "packages/metrics/log-metrics", version = "0.9.1" }
+carbon-rpc-program-subscribe-datasource = { path = "packages/datasources/rpc-program-subscribe-datasource", version = "0.9.1" }
+carbon-omnipair-decoder = { path = "packages/decoders/omnipair_decoder", version = "0.9.1" }
+
+# misc
+anyhow = "1.0.96"
+async-trait = { version = "0.1.86" }
+base64 = "0.22.1"
+borsh = { version = "0.10.4" }
+borsh-derive-internal = "0.10.3"
+bs58 = { version = "0.5.1", default-features = false }
+dotenv = "0.15.0"
+env_logger = "0.11.5"
+futures = "0.3.30"
+hex = "0.4.3"
+log = "0.4.25"
+metrics = "0.23"
+metrics-exporter-prometheus = "0.15"
+proc-macro2 = "1"
+quote = "1.0"
+serde = { version = "1.0.208", features = ["derive"] }
+serde_json = "1.0.138"
+syn = { version = "1.0", features = ["full"] }
+thiserror = { version = "2.0.12", default-features = false }
+tokio = { version = "1.43.0", features = ["rt", "time", "signal", "macros"] }
+tokio-util = "0.7.13"
+uuid = { version = "1.6.1", features = ["serde", "v7"] }
+
+# solana
+solana-account = "~2.2"
+solana-account-decoder = "~2.2" 
+solana-account-decoder-client-types = "~2.2"
+solana-client = "~2.2"
+solana-hash = "~2.2"
+solana-instruction = { version = "~2.2", default-features = false }
+solana-message = "~2.2"
+solana-program = "~2.2"
+solana-pubkey = { version = "~2.2", features = ["serde", "borsh", "curve25519"] }
+solana-signature = { version = "~2.2", features = ["rand"] }
+solana-transaction = "~2.2"
+solana-transaction-context = "~2.2"
+solana-transaction-status = "~2.2"

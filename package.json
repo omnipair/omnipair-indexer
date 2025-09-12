@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.31.1",
-    "@omnipair/indexer-db": "file:./packages/database",
+    "@omnipair/indexer-db": "file:./database",
     "@solana/spl-token": "^0.3.8",
     "@solana/web3.js": "^1.90.0",
     "@types/bs58": "^4.0.4",

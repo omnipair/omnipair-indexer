@@ -3,7 +3,7 @@ try {
   console.log('Testing schema compilation...');
   
   // Try to import the schema
-  const schema = require('./packages/database/lib/schema.ts');
+  const schema = require('./database/lib/schema.ts');
   console.log('✅ Schema imported successfully');
   
   // Check if key tables exist

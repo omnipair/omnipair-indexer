@@ -1,13 +1,13 @@
 [workspace]
 members = [
-    "crates/core", 
-    "crates/macros", 
-    "crates/proc-macros", 
-    "crates/test-utils", 
-    "packages/metrics/*", 
-    "packages/datasources/*", 
-    "packages/decoders/*", 
-    "src/omnipair-carbon-indexer"
+    "indexer/crates/core", 
+    "indexer/crates/macros", 
+    "indexer/crates/proc-macros", 
+    "indexer/crates/test-utils", 
+    "indexer/metrics/*", 
+    "indexer/datasources/*", 
+    "indexer/decoders/*", 
+    "indexer"
 ]
 resolver = "2"
 
@@ -21,13 +21,13 @@ repository = "https://github.com/omnipair/omnipair-indexer"
 [workspace.dependencies]
 
 # carbon crates (local)
-carbon-core = { path = "crates/core", version = "0.9.1" }
-carbon-macros = { path = "crates/macros", version = "0.9.1" }
-carbon-proc-macros = { path = "crates/proc-macros", version = "0.9.1" }
-carbon-test-utils = { path = "crates/test-utils", version = "0.9.1" }
-carbon-log-metrics = { path = "packages/metrics/log-metrics", version = "0.9.1" }
-carbon-rpc-program-subscribe-datasource = { path = "packages/datasources/rpc-program-subscribe-datasource", version = "0.9.1" }
-carbon-omnipair-decoder = { path = "packages/decoders/omnipair_decoder", version = "0.9.1" }
+carbon-core = { path = "indexer/crates/core", version = "0.9.1" }
+carbon-macros = { path = "indexer/crates/macros", version = "0.9.1" }
+carbon-proc-macros = { path = "indexer/crates/proc-macros", version = "0.9.1" }
+carbon-test-utils = { path = "indexer/crates/test-utils", version = "0.9.1" }
+carbon-log-metrics = { path = "indexer/metrics/log-metrics", version = "0.9.1" }
+carbon-rpc-program-subscribe-datasource = { path = "indexer/datasources/rpc-program-subscribe-datasource", version = "0.9.1" }
+carbon-omnipair-decoder = { path = "indexer/decoders/omnipair_decoder", version = "0.9.1" }
 
 # misc
 anyhow = "1.0.96"

@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "cargo build --release"
+
+[deploy]
+startCommand = "./target/release/omnipair-carbon-indexer"
+restartPolicyType = "always"
+numReplicas = 1
+
+[env]
+RUST_LOG = "info"

@@ -1,0 +1,1145 @@
+{
+  "id": "2328b849-b48d-4f06-8f62-c5040641e592",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.liquidations": {
+      "name": "liquidations",
+      "schema": "",
+      "columns": {
+        "liquidation_id": {
+          "name": "liquidation_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "time": {
+          "name": "time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position_address": {
+          "name": "position_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_address": {
+          "name": "user_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "liquidator_address": {
+          "name": "liquidator_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collateral0_liquidated": {
+          "name": "collateral0_liquidated",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collateral1_liquidated": {
+          "name": "collateral1_liquidated",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "debt0_liquidated": {
+          "name": "debt0_liquidated",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "debt1_liquidated": {
+          "name": "debt1_liquidated",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collateral_price": {
+          "name": "collateral_price",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "liquidation_bonus_applied": {
+          "name": "liquidation_bonus_applied",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "k0": {
+          "name": "k0",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "k1": {
+          "name": "k1",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tx_signature": {
+          "name": "tx_signature",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "liquidations_position_address_user_positions_position_address_fk": {
+          "name": "liquidations_position_address_user_positions_position_address_fk",
+          "tableFrom": "liquidations",
+          "tableTo": "user_positions",
+          "columnsFrom": [
+            "position_address"
+          ],
+          "columnsTo": [
+            "position_address"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "liquidations_pair_address_pairs_pair_address_fk": {
+          "name": "liquidations_pair_address_pairs_pair_address_fk",
+          "tableFrom": "liquidations",
+          "tableTo": "pairs",
+          "columnsFrom": [
+            "pair_address"
+          ],
+          "columnsTo": [
+            "pair_address"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.liquidity_events": {
+      "name": "liquidity_events",
+      "schema": "",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "time": {
+          "name": "time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_address": {
+          "name": "user_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount0": {
+          "name": "amount0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount1": {
+          "name": "amount1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "liquidity": {
+          "name": "liquidity",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tx_signature": {
+          "name": "tx_signature",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "liquidity_events_pair_address_pairs_pair_address_fk": {
+          "name": "liquidity_events_pair_address_pairs_pair_address_fk",
+          "tableFrom": "liquidity_events",
+          "tableTo": "pairs",
+          "columnsFrom": [
+            "pair_address"
+          ],
+          "columnsTo": [
+            "pair_address"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.market_state": {
+      "name": "market_state",
+      "schema": "",
+      "columns": {
+        "time": {
+          "name": "time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reserve0": {
+          "name": "reserve0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reserve1": {
+          "name": "reserve1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_supply": {
+          "name": "total_supply",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price0_ema": {
+          "name": "price0_ema",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price1_ema": {
+          "name": "price1_ema",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate0": {
+          "name": "rate0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate1": {
+          "name": "rate1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_debt0": {
+          "name": "total_debt0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_debt1": {
+          "name": "total_debt1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_debt0_shares": {
+          "name": "total_debt0_shares",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_debt1_shares": {
+          "name": "total_debt1_shares",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_collateral0": {
+          "name": "total_collateral0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_collateral1": {
+          "name": "total_collateral1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tvl_usd": {
+          "name": "tvl_usd",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume_24h_usd": {
+          "name": "volume_24h_usd",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tx_signature": {
+          "name": "tx_signature",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "market_state_time_pair_address_pk": {
+          "name": "market_state_time_pair_address_pk",
+          "columns": [
+            "time",
+            "pair_address"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pairs": {
+      "name": "pairs",
+      "schema": "",
+      "columns": {
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token0_address": {
+          "name": "token0_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token1_address": {
+          "name": "token1_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token0_decimals": {
+          "name": "token0_decimals",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token1_decimals": {
+          "name": "token1_decimals",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config_address": {
+          "name": "config_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate_model_address": {
+          "name": "rate_model_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "swap_fee_bps": {
+          "name": "swap_fee_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "half_life": {
+          "name": "half_life",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pool_deployer_fee_bps": {
+          "name": "pool_deployer_fee_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.price_feeds": {
+      "name": "price_feeds",
+      "schema": "",
+      "columns": {
+        "time": {
+          "name": "time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price0": {
+          "name": "price0",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price1": {
+          "name": "price1",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "volume_24h": {
+          "name": "volume_24h",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tx_count_24h": {
+          "name": "tx_count_24h",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'spot_swap'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "price_feeds_time_pair_address_pk": {
+          "name": "price_feeds_time_pair_address_pk",
+          "columns": [
+            "time",
+            "pair_address"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transaction_details": {
+      "name": "transaction_details",
+      "schema": "",
+      "columns": {
+        "time": {
+          "name": "time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tx_signature": {
+          "name": "tx_signature",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_address": {
+          "name": "user_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_type": {
+          "name": "transaction_type",
+          "type": "transaction_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount0_in": {
+          "name": "amount0_in",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "amount1_in": {
+          "name": "amount1_in",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "amount0_out": {
+          "name": "amount0_out",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "amount1_out": {
+          "name": "amount1_out",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "swap_fee_amount0": {
+          "name": "swap_fee_amount0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "swap_fee_amount1": {
+          "name": "swap_fee_amount1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "collateral_change0": {
+          "name": "collateral_change0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "collateral_change1": {
+          "name": "collateral_change1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "debt_change0": {
+          "name": "debt_change0",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "debt_change1": {
+          "name": "debt_change1",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "liquidity_change": {
+          "name": "liquidity_change",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "liquidator_address": {
+          "name": "liquidator_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "liquidation_bonus": {
+          "name": "liquidation_bonus",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price0": {
+          "name": "price0",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price1": {
+          "name": "price1",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume_usd": {
+          "name": "volume_usd",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fees_usd": {
+          "name": "fees_usd",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_data": {
+          "name": "event_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "txn_details_pair_time_index": {
+          "name": "txn_details_pair_time_index",
+          "columns": [
+            {
+              "expression": "pair_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "txn_details_user_time_index": {
+          "name": "txn_details_user_time_index",
+          "columns": [
+            {
+              "expression": "user_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "transaction_details_time_tx_signature_pk": {
+          "name": "transaction_details_time_tx_signature_pk",
+          "columns": [
+            "time",
+            "tx_signature"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transaction_watchers": {
+      "name": "transaction_watchers",
+      "schema": "",
+      "columns": {
+        "acct": {
+          "name": "acct",
+          "type": "varchar(44)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "latest_tx_sig": {
+          "name": "latest_tx_sig",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_tx_sig": {
+          "name": "first_tx_sig",
+          "type": "varchar(88)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "checked_up_to_slot": {
+          "name": "checked_up_to_slot",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "watch_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'disabled'"
+        },
+        "failure_log": {
+          "name": "failure_log",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "transaction_watchers_latest_tx_sig_transactions_tx_signature_fk": {
+          "name": "transaction_watchers_latest_tx_sig_transactions_tx_signature_fk",
+          "tableFrom": "transaction_watchers",
+          "tableTo": "transactions",
+          "columnsFrom": [
+            "latest_tx_sig"
+          ],
+          "columnsTo": [
+            "tx_signature"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transaction_watchers_first_tx_sig_transactions_tx_signature_fk": {
+          "name": "transaction_watchers_first_tx_sig_transactions_tx_signature_fk",
+          "tableFrom": "transaction_watchers",
+          "tableTo": "transactions",
+          "columnsFrom": [
+            "first_tx_sig"
+          ],
+          "columnsTo": [
+            "tx_signature"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transactions": {
+      "name": "transactions",
+      "schema": "",
+      "columns": {
+        "tx_signature": {
+          "name": "tx_signature",
+          "type": "varchar(88)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "block_time": {
+          "name": "block_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot": {
+          "name": "slot",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_address": {
+          "name": "user_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_type": {
+          "name": "transaction_type",
+          "type": "transaction_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'success'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "txn_slot_index": {
+          "name": "txn_slot_index",
+          "columns": [
+            {
+              "expression": "slot",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "txn_pair_index": {
+          "name": "txn_pair_index",
+          "columns": [
+            {
+              "expression": "pair_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "txn_user_index": {
+          "name": "txn_user_index",
+          "columns": [
+            {
+              "expression": "user_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transactions_pair_address_pairs_pair_address_fk": {
+          "name": "transactions_pair_address_pairs_pair_address_fk",
+          "tableFrom": "transactions",
+          "tableTo": "pairs",
+          "columnsFrom": [
+            "pair_address"
+          ],
+          "columnsTo": [
+            "pair_address"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_positions": {
+      "name": "user_positions",
+      "schema": "",
+      "columns": {
+        "position_address": {
+          "name": "position_address",
+          "type": "varchar(44)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_address": {
+          "name": "user_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collateral0_amount": {
+          "name": "collateral0_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "collateral1_amount": {
+          "name": "collateral1_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "debt0_shares": {
+          "name": "debt0_shares",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "debt1_shares": {
+          "name": "debt1_shares",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "collateral0_applied_min_cf_bps": {
+          "name": "collateral0_applied_min_cf_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "collateral1_applied_min_cf_bps": {
+          "name": "collateral1_applied_min_cf_bps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_positions_pair_address_pairs_pair_address_fk": {
+          "name": "user_positions_pair_address_pairs_pair_address_fk",
+          "tableFrom": "user_positions",
+          "tableTo": "pairs",
+          "columnsFrom": [
+            "pair_address"
+          ],
+          "columnsTo": [
+            "pair_address"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.source": {
+      "name": "source",
+      "schema": "public",
+      "values": [
+        "spot_swap",
+        "oracle",
+        "aggregated"
+      ]
+    },
+    "public.status": {
+      "name": "status",
+      "schema": "public",
+      "values": [
+        "success",
+        "failed"
+      ]
+    },
+    "public.transaction_type": {
+      "name": "transaction_type",
+      "schema": "public",
+      "values": [
+        "swap",
+        "borrow",
+        "repay",
+        "add_collateral",
+        "remove_collateral",
+        "add_liquidity",
+        "remove_liquidity",
+        "liquidate"
+      ]
+    },
+    "public.watch_status": {
+      "name": "watch_status",
+      "schema": "public",
+      "values": [
+        "active",
+        "failed",
+        "disabled"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {
+    "public.user_positions_analytics": {
+      "columns": {
+        "position_address": {
+          "name": "position_address",
+          "type": "varchar(44)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_address": {
+          "name": "user_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_address": {
+          "name": "pair_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token0_address": {
+          "name": "token0_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token1_address": {
+          "name": "token1_address",
+          "type": "varchar(44)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "collateral0_amount": {
+          "name": "collateral0_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "collateral1_amount": {
+          "name": "collateral1_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "debt0_shares": {
+          "name": "debt0_shares",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "debt1_shares": {
+          "name": "debt1_shares",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "definition": "select \"user_positions\".\"position_address\", \"user_positions\".\"user_address\", \"user_positions\".\"pair_address\", \"pairs\".\"token0_address\", \"pairs\".\"token1_address\", \"user_positions\".\"collateral0_amount\", \"user_positions\".\"collateral1_amount\", \"user_positions\".\"debt0_shares\", \"user_positions\".\"debt1_shares\", 0 as \"collateral_value\", 0 as \"debt_value\", 0 as \"health_factor\" from \"user_positions\" left join \"pairs\" on \"user_positions\".\"pair_address\" = \"pairs\".\"pair_address\"",
+      "name": "user_positions_analytics",
+      "schema": "public",
+      "isExisting": false,
+      "materialized": false
+    }
+  },
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

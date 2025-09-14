@@ -10,17 +10,30 @@ ignored = ["serde", "solana-instruction"]
 carbon-core = { workspace = true }
 carbon-log-metrics = { workspace = true }
 carbon-rpc-program-subscribe-datasource = { workspace = true }
+carbon-helius-atlas-ws-datasource = { workspace = true }
 carbon-omnipair-decoder = { workspace = true }
 solana-account-decoder.workspace = true
 solana-client.workspace = true
 solana-instruction = { workspace = true, default-features = false }
 solana-pubkey = { workspace = true }
+solana-signature = { workspace = true }
+solana-transaction-status = { workspace = true }
 
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 dotenv = { workspace = true }
 env_logger = { workspace = true }
+futures = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tokio-util = { workspace = true }
+
+# CLI and HTTP server dependencies
+clap = { version = "4.4", features = ["derive"] }
+axum = "0.7"
+chrono = { version = "0.4", features = ["serde"] }
+
+# Helius types for transaction filtering
+helius = { workspace = true }

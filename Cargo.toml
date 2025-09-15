@@ -27,7 +27,7 @@ carbon-proc-macros = { path = "indexer/crates/proc-macros", version = "0.9.1" }
 carbon-test-utils = { path = "indexer/crates/test-utils", version = "0.9.1" }
 carbon-log-metrics = { path = "indexer/metrics/log-metrics", version = "0.9.1" }
 carbon-rpc-program-subscribe-datasource = { path = "indexer/datasources/rpc-program-subscribe-datasource", version = "0.9.1" }
-carbon-rpc-block-crawler-datasource = { path = "indexer/datasources/rpc-block-crawler-datasource", version = "0.9.1" }
+carbon-rpc-transaction-crawler-datasource = { path = "indexer/datasources/rpc-transaction-crawler-datasource", version = "0.9.1" }
 carbon-helius-atlas-ws-datasource = { path = "indexer/datasources/helius-atlas-ws-datasource", version = "0.9.1" }
 carbon-omnipair-decoder = { path = "indexer/decoders/omnipair_decoder", version = "0.9.1" }
 

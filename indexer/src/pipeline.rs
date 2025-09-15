@@ -5,7 +5,7 @@ use carbon_log_metrics::LogMetrics;
 
 use crate::{
     config::Config,
-    datasources::{create_helius_datasource, create_historical_crawler_datasource},
+    datasources::{create_helius_datasource, create_transaction_crawler_datasource},
     processors::OmnipairInstructionProcessor,
 };
 
@@ -22,15 +22,15 @@ pub fn create_pipeline(config: &Config) -> CarbonResult<Pipeline> {
     // Create Atlas WebSocket datasource
     let atlas_datasource = create_helius_datasource(api_key, OMNIPAIR_PROGRAM_ID);
 
-    // Create historical crawler datasource
-    let historical_crawler_datasource = create_historical_crawler_datasource(config.http_rpc_url.clone(), config.start_slot);
+    // Create transaction crawler datasource (more efficient than block crawler)
+    let transaction_crawler_datasource = create_transaction_crawler_datasource(config.http_rpc_url.clone(), OMNIPAIR_PROGRAM_ID);
 
     // Create instruction processor
     let instruction_processor = OmnipairInstructionProcessor::new();
 
     // Build the pipeline
     let pipeline = Pipeline::builder()
-        .datasource(historical_crawler_datasource)
+        .datasource(transaction_crawler_datasource)
         // .datasource(atlas_datasource)
         .metrics(Arc::new(LogMetrics::new()))
         .metrics_flush_interval(3)
@@ -38,7 +38,7 @@ pub fn create_pipeline(config: &Config) -> CarbonResult<Pipeline> {
         .shutdown_strategy(carbon_core::pipeline::ShutdownStrategy::ProcessPending)
         .build()?;
     
-    log::info!("Pipeline configured: realtime events via Helius Atlas WS (TransactionUpdate)");
+    log::info!("Pipeline configured: historical transactions via RPC Transaction Crawler (TransactionUpdate)");
 
     Ok(pipeline)
 }

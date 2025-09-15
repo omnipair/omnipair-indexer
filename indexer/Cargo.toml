@@ -10,10 +10,12 @@ ignored = ["serde", "solana-instruction"]
 carbon-core = { workspace = true }
 carbon-log-metrics = { workspace = true }
 carbon-rpc-program-subscribe-datasource = { workspace = true }
+carbon-rpc-block-crawler-datasource = { workspace = true }
 carbon-helius-atlas-ws-datasource = { workspace = true }
 carbon-omnipair-decoder = { workspace = true }
 solana-account-decoder.workspace = true
 solana-client.workspace = true
+solana-commitment-config.workspace = true
 solana-instruction = { workspace = true, default-features = false }
 solana-pubkey = { workspace = true }
 solana-signature = { workspace = true }

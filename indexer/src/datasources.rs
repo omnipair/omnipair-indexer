@@ -6,6 +6,7 @@ use carbon_core::{
     datasource::{AccountUpdate, Datasource, DatasourceId, Update, UpdateType},
 };
 use carbon_helius_atlas_ws_datasource::{Filters, HeliusWebsocket};
+use carbon_rpc_block_crawler_datasource::{RpcBlockCrawler, RpcBlockConfig};
 use helius::types::{
     Cluster, RpcTransactionsConfig, TransactionSubscribeFilter, 
     TransactionSubscribeOptions, TransactionCommitment, 
@@ -15,6 +16,8 @@ use solana_client::{
     nonblocking::rpc_client::RpcClient,
     rpc_config::RpcProgramAccountsConfig,
 };
+use solana_commitment_config::CommitmentConfig;
+use solana_transaction_status::{UiTransactionEncoding, TransactionDetails as SolanaTransactionDetails};
 use solana_pubkey::Pubkey;
 use tokio::sync::{mpsc::Sender, RwLock};
 use tokio_util::sync::CancellationToken;
@@ -47,6 +50,24 @@ pub fn create_helius_datasource(api_key: &str, program_id: Pubkey) -> HeliusWebs
         filters,
         Arc::new(RwLock::new(HashSet::new())), // track deletions if you later add accounts
         Cluster::MainnetBeta,
+    )
+}
+
+pub fn create_historical_crawler_datasource(htt_rpc_url: String, start_slot: u64) -> RpcBlockCrawler {
+    RpcBlockCrawler::new(
+        htt_rpc_url,
+        start_slot,
+        None,
+        None,
+        RpcBlockConfig {
+            commitment: Some(CommitmentConfig::confirmed()),
+            encoding: Some(UiTransactionEncoding::Base64),
+            transaction_details: Some(SolanaTransactionDetails::Full),
+            max_supported_transaction_version: Some(0),
+            rewards: None,
+        },
+        Some(5),
+        Some(10),
     )
 }
 

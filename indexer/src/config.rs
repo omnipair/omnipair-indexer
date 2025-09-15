@@ -4,6 +4,14 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about = "Omnipair Indexer Daemon")]
 pub struct Args {
+    /// RPC HTTP URL (falls back to RPC_HTTP_URL env) - used for historical data
+    #[arg(long)]
+    pub http_rpc_url: Option<String>,
+
+    /// Start slot for historical crawling (falls back to START_SLOT env)
+    #[arg(long)]
+    pub start_slot: Option<u64>,
+
     /// RPC WebSocket URL (falls back to RPC_WS_URL env) - used for account monitoring
     #[arg(long)]
     pub rpc_ws_url: Option<String>,
@@ -23,6 +31,8 @@ pub struct Args {
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub http_rpc_url: String,
+    pub start_slot: u64,
     pub helius_api_key: Option<String>,
     pub rpc_ws_url: Option<String>,
     pub health_port: u16,
@@ -31,6 +41,11 @@ pub struct Config {
 impl Config {
     pub fn from_args(args: Args) -> Self {
         let helius_api_key = args.helius_api_key.or_else(|| env::var("HELIUS_API_KEY").ok());
+        let http_rpc_url = args.http_rpc_url.or_else(|| env::var("HTTP_RPC_URL").ok())
+            .unwrap_or_else(|| "https://api.mainnet-beta.solana.com/".to_string());
+        let start_slot = args.start_slot.or_else(|| {
+            env::var("START_SLOT").ok().and_then(|s| s.parse().ok())
+        }).unwrap_or(0);
         
         let rpc_ws_url = if args.enable_account_monitoring {
             Some(args.rpc_ws_url.unwrap_or_else(|| {
@@ -41,6 +56,8 @@ impl Config {
         };
 
         Self {
+            http_rpc_url,
+            start_slot,
             helius_api_key,
             rpc_ws_url,
             health_port: args.health_port,

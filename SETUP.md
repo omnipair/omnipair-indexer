@@ -266,7 +266,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./packages/database/sql:/docker-entrypoint-initdb.d
+      - ./database/sql:/docker-entrypoint-initdb.d
 
   indexer:
     build: .

@@ -4,6 +4,7 @@ use carbon_core::error::CarbonResult;
 use carbon_omnipair_decoder::PROGRAM_ID as OMNIPAIR_PROGRAM_ID;
 
 mod config;
+mod database;
 mod datasources;
 mod health;
 mod pipeline;
@@ -35,6 +36,13 @@ pub async fn main() -> CarbonResult<()> {
 
     // Log configuration
     config.log_configuration();
+
+    // Initialize database connection pool
+    log::info!("Initializing database connection pool...");
+    if let Err(e) = database::init_db_pool().await {
+        log::error!("Failed to initialize database pool: {}", e);
+        return Err(e);
+    }
 
     // Start health check server if enabled
     if config.health_port != 0 {

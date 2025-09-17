@@ -30,8 +30,8 @@ pub fn create_pipeline(config: &Config) -> CarbonResult<Pipeline> {
 
     // Build the pipeline
     let pipeline = Pipeline::builder()
-        .datasource(transaction_crawler_datasource)
-        // .datasource(atlas_datasource)
+        //.datasource(transaction_crawler_datasource)
+        .datasource(atlas_datasource)
         .metrics(Arc::new(LogMetrics::new()))
         .metrics_flush_interval(3)
         .instruction(OmnipairDecoder, instruction_processor)

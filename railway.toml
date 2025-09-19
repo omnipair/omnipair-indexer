@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "../Dockerfile.indexer"
+dockerfilePath = "Dockerfile.indexer"
 
 [deploy]
 startCommand = "./omnipair-carbon-indexer"
@@ -11,5 +11,5 @@ healthcheckTimeout = 10
 
 [env]
 RUST_LOG = "info"
-RUST_BACKTRACE = "1"
+RUST_BACKTRACE = "1" 
 HEALTH_PORT = "8080"

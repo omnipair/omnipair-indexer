@@ -6,8 +6,6 @@ dockerfilePath = "Dockerfile.indexer"
 startCommand = "./omnipair-carbon-indexer"
 restartPolicyType = "always"
 numReplicas = 1
-healthcheckPath = "/health"
-healthcheckTimeout = 10
 
 [env]
 RUST_LOG = "info"

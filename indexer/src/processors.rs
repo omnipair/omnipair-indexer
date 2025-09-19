@@ -58,7 +58,7 @@ impl OmnipairInstructionProcessor {
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
         
-        if let Err(e) = database::insert_swap_event(&swap_event, &tx_signature, slot).await {
+        if let Err(e) = database::upsert_swap_event(&swap_event, &tx_signature, slot).await {
             log::error!("Failed to insert swap event: {}", e);
             return Err(e);
         }

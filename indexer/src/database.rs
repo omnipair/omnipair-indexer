@@ -33,20 +33,30 @@ pub fn get_db_pool() -> CarbonResult<&'static PgPool> {
         .ok_or_else(|| carbon_core::error::Error::Custom("Database pool not initialized. Call init_db_pool() first".to_string()))
 }
 
-/// Insert a swap event into the database
-pub async fn insert_swap_event(
+/// Upsert a swap event into the database (handles duplicate tx_sig)
+pub async fn upsert_swap_event(
     swap_event: &SwapEvent,
     tx_signature: &str,
     slot: i64,
 ) -> CarbonResult<()> {
     let pool = get_db_pool()?;
     
-    let insert_result = sqlx::query(
+    let upsert_result = sqlx::query(
         r#"
         INSERT INTO swaps (
             pair, user_address, is_token0_in, amount_in, amount_out, 
             reserve0, reserve1, timestamp, tx_sig, slot
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (tx_sig) DO UPDATE SET
+            pair = EXCLUDED.pair,
+            user_address = EXCLUDED.user_address,
+            is_token0_in = EXCLUDED.is_token0_in,
+            amount_in = EXCLUDED.amount_in,
+            amount_out = EXCLUDED.amount_out,
+            reserve0 = EXCLUDED.reserve0,
+            reserve1 = EXCLUDED.reserve1,
+            timestamp = EXCLUDED.timestamp,
+            slot = EXCLUDED.slot
         "#
     )
     .bind(swap_event.pair.to_string())
@@ -63,9 +73,9 @@ pub async fn insert_swap_event(
     .execute(pool)
     .await;
     
-    if let Err(e) = insert_result {
-        log::error!("Failed to insert into swaps table: {}", e);
-        return Err(carbon_core::error::Error::Custom(format!("Failed to insert swap: {}", e)));
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into swaps table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert swap: {}", e)));
     }
     
     Ok(())

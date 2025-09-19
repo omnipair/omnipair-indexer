@@ -13,7 +13,7 @@ pub mod signals;
 
 // Re-export commonly used types for convenience
 pub use config::{Args, Config};
-pub use database::{init_db_pool, insert_swap_event};
+pub use database::{init_db_pool, upsert_swap_event};
 pub use processors::OmnipairInstructionProcessor;
 pub use datasources::{create_helius_datasource, GpaBackfillDatasource};
 pub use pipeline::{create_pipeline, run_pipeline};

@@ -248,28 +248,44 @@ export class DataController {
     }
   }
 
+  private static async getChartPricesWithParams(
+    bucketInterval: string, 
+    timeInterval: string, 
+    periodLabel: string, 
+    intervalLabel: string
+  ): Promise<any> {
+    const result = await pool.query(`
+      SELECT
+        time_bucket_gapfill($1, timestamp,
+          start => now() - interval '${timeInterval}',
+          finish => now()
+        ) AS bucket,
+        LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS price
+      FROM swaps
+      WHERE timestamp >= now() - interval '${timeInterval}'
+      GROUP BY bucket
+      ORDER BY bucket
+    `, [bucketInterval]);
+
+    return {
+      prices: result.rows,
+      period: periodLabel,
+      interval: intervalLabel
+    };
+  }
+
   static async getChartPrices(req: Request, res: Response): Promise<void> {
     try {
-      const result = await pool.query(`
-        SELECT
-          time_bucket_gapfill('1 minute', timestamp,
-            start => now() - interval '24 hours',
-            finish => now()
-          ) AS bucket,
-          LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS price
-        FROM swaps
-        WHERE timestamp >= now() - interval '24 hours'
-        GROUP BY bucket
-        ORDER BY bucket
-      `);
+      const data = await DataController.getChartPricesWithParams(
+        '1 minute', 
+        '24 hours', 
+        '24 hours', 
+        '1 minute'
+      );
 
       const response: ApiResponse = {
         success: true,
-        data: {
-          prices: result.rows,
-          period: '24 hours',
-          interval: '1 minute'
-        }
+        data
       };
 
       res.json(response);
@@ -278,6 +294,84 @@ export class DataController {
       const response: ApiResponse = {
         success: false,
         error: 'Failed to fetch chart prices'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // 1m: 1 minute intervals, 24h period
+  static async getChartPrices1m(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await DataController.getChartPricesWithParams(
+        '1 minute', 
+        '24 hours', 
+        '24 hours', 
+        '1 minute'
+      );
+
+      const response: ApiResponse = {
+        success: true,
+        data
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching 1m chart prices:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch 1m chart prices'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // 1h: 1 hour intervals, 7 days period
+  static async getChartPrices1h(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await DataController.getChartPricesWithParams(
+        '1 hour', 
+        '7 days', 
+        '7 days', 
+        '1 hour'
+      );
+
+      const response: ApiResponse = {
+        success: true,
+        data
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching 1h chart prices:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch 1h chart prices'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // 1d: 1 day intervals, 30 days period
+  static async getChartPrices1d(req: Request, res: Response): Promise<void> {
+    try {
+      const data = await DataController.getChartPricesWithParams(
+        '1 day', 
+        '30 days', 
+        '30 days', 
+        '1 day'
+      );
+
+      const response: ApiResponse = {
+        success: true,
+        data
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching 1d chart prices:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch 1d chart prices'
       };
       res.status(500).json(response);
     }

@@ -16,7 +16,8 @@ router.get('/', (req, res) => {
       'swap-volume-24hr': '/api/swap-volume/24hr',
       'swap-volume-1day': '/api/swap-volume/1day',
       'swap-volume-1week': '/api/swap-volume/1week',
-      'swap-volume-1month': '/api/swap-volume/1month'
+      'swap-volume-1month': '/api/swap-volume/1month',
+      'chart-prices': '/api/chart-prices'
     }
   });
 });

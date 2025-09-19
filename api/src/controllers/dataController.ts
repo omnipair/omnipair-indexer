@@ -247,4 +247,39 @@ export class DataController {
       res.status(500).json(response);
     }
   }
+
+  static async getChartPrices(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT
+          time_bucket_gapfill('1 minute', timestamp,
+            start => now() - interval '24 hours',
+            finish => now()
+          ) AS bucket,
+          LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS price
+        FROM swaps
+        WHERE timestamp >= now() - interval '24 hours'
+        GROUP BY bucket
+        ORDER BY bucket
+      `);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          prices: result.rows,
+          period: '24 hours',
+          interval: '1 minute'
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching chart prices:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch chart prices'
+      };
+      res.status(500).json(response);
+    }
+  }
 }

@@ -74,27 +74,27 @@ export class DataController {
         const result = await pool.query(`
           SELECT 
             -- 24hr volumes
-            SUM(CASE WHEN timestamp::bigint > $1 AND is_token0_in = true THEN amount_in::numeric 
-                     WHEN timestamp::bigint > $1 AND is_token0_in = false THEN amount_out::numeric 
+            SUM(CASE WHEN timestamp > to_timestamp($1) AND is_token0_in = true THEN amount_in::numeric 
+                     WHEN timestamp > to_timestamp($1) AND is_token0_in = false THEN amount_out::numeric 
                      ELSE 0 END) as vol0_24hr,
-            SUM(CASE WHEN timestamp::bigint > $1 AND is_token0_in = false THEN amount_in::numeric 
-                     WHEN timestamp::bigint > $1 AND is_token0_in = true THEN amount_out::numeric 
+            SUM(CASE WHEN timestamp > to_timestamp($1) AND is_token0_in = false THEN amount_in::numeric 
+                     WHEN timestamp > to_timestamp($1) AND is_token0_in = true THEN amount_out::numeric 
                      ELSE 0 END) as vol1_24hr,
             
             -- 1 week volumes  
-            SUM(CASE WHEN timestamp::bigint > $2 AND is_token0_in = true THEN amount_in::numeric 
-                     WHEN timestamp::bigint > $2 AND is_token0_in = false THEN amount_out::numeric 
+            SUM(CASE WHEN timestamp > to_timestamp($2) AND is_token0_in = true THEN amount_in::numeric 
+                     WHEN timestamp > to_timestamp($2) AND is_token0_in = false THEN amount_out::numeric 
                      ELSE 0 END) as vol0_1week,
-            SUM(CASE WHEN timestamp::bigint > $2 AND is_token0_in = false THEN amount_in::numeric 
-                     WHEN timestamp::bigint > $2 AND is_token0_in = true THEN amount_out::numeric 
+            SUM(CASE WHEN timestamp > to_timestamp($2) AND is_token0_in = false THEN amount_in::numeric 
+                     WHEN timestamp > to_timestamp($2) AND is_token0_in = true THEN amount_out::numeric 
                      ELSE 0 END) as vol1_1week,
             
             -- 1 month volumes
-            SUM(CASE WHEN timestamp::bigint > $3 AND is_token0_in = true THEN amount_in::numeric 
-                     WHEN timestamp::bigint > $3 AND is_token0_in = false THEN amount_out::numeric 
+            SUM(CASE WHEN timestamp > to_timestamp($3) AND is_token0_in = true THEN amount_in::numeric 
+                     WHEN timestamp > to_timestamp($3) AND is_token0_in = false THEN amount_out::numeric 
                      ELSE 0 END) as vol0_1month,
-            SUM(CASE WHEN timestamp::bigint > $3 AND is_token0_in = false THEN amount_in::numeric 
-                     WHEN timestamp::bigint > $3 AND is_token0_in = true THEN amount_out::numeric 
+            SUM(CASE WHEN timestamp > to_timestamp($3) AND is_token0_in = false THEN amount_in::numeric 
+                     WHEN timestamp > to_timestamp($3) AND is_token0_in = true THEN amount_out::numeric 
                      ELSE 0 END) as vol1_1month
           FROM swaps 
           WHERE timestamp IS NOT NULL
@@ -147,7 +147,7 @@ export class DataController {
         SUM(CASE WHEN is_token0_in = true THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume0,
         SUM(CASE WHEN is_token0_in = false THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume1
       FROM swaps 
-      WHERE timestamp::bigint > $1
+      WHERE timestamp > to_timestamp($1)
     `, [timestamp]);
 
     return {

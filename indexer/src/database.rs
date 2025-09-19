@@ -2,6 +2,7 @@ use carbon_core::error::CarbonResult;
 use carbon_omnipair_decoder::instructions::swap_event::SwapEvent;
 use sqlx::PgPool;
 use tokio::sync::OnceCell;
+use chrono::{DateTime, Utc};
 
 static DB_POOL: OnceCell<PgPool> = OnceCell::const_new();
 
@@ -55,7 +56,8 @@ pub async fn insert_swap_event(
     .bind(bigdecimal::BigDecimal::from(swap_event.amount_out))
     .bind(bigdecimal::BigDecimal::from(swap_event.reserve0))
     .bind(bigdecimal::BigDecimal::from(swap_event.reserve1))
-    .bind(bigdecimal::BigDecimal::from(swap_event.timestamp))
+    .bind(DateTime::<Utc>::from_timestamp(swap_event.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
     .execute(pool)

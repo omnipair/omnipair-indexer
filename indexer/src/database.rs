@@ -59,14 +59,14 @@ pub async fn upsert_swap_event(
             slot = EXCLUDED.slot
         "#
     )
-    .bind(swap_event.pair.to_string())
-    .bind(swap_event.user.to_string())
+    .bind(swap_event.metadata.pair.to_string())
+    .bind(swap_event.metadata.signer.to_string())
     .bind(swap_event.is_token0_in)
     .bind(bigdecimal::BigDecimal::from(swap_event.amount_in))
     .bind(bigdecimal::BigDecimal::from(swap_event.amount_out))
     .bind(bigdecimal::BigDecimal::from(swap_event.reserve0))
     .bind(bigdecimal::BigDecimal::from(swap_event.reserve1))
-    .bind(DateTime::<Utc>::from_timestamp(swap_event.timestamp, 0)
+    .bind(DateTime::<Utc>::from_timestamp(swap_event.metadata.timestamp, 0)
         .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))

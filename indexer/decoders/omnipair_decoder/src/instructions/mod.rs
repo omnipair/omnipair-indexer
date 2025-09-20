@@ -3,8 +3,6 @@
 
 
 use super::OmnipairDecoder;
-use crate::PROGRAM_ID;
-use carbon_core::log::warn;
 pub mod add_collateral;
 pub mod add_collateral_and_borrow;
 pub mod add_liquidity;
@@ -69,10 +67,6 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairDecoder {
         &self,
         instruction: &solana_instruction::Instruction,
     ) -> Option<carbon_core::instruction::DecodedInstruction<Self::InstructionType>> {
-        if !instruction.program_id.eq(&PROGRAM_ID) {
-            warn!("instruction program id does not match: {:?}", instruction.program_id);
-            return None;
-        }
         carbon_core::try_decode_instructions!(instruction,
             OmnipairInstruction::AddCollateral => add_collateral::AddCollateral,
             OmnipairInstruction::AddCollateralAndBorrow => add_collateral_and_borrow::AddCollateralAndBorrow,

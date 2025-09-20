@@ -14,6 +14,8 @@ pub mod burn_event;
 pub use burn_event::*;
 pub mod emit_value_args;
 pub use emit_value_args::*;
+pub mod event_metadata;
+pub use event_metadata::*;
 pub mod futarchy_authority;
 pub use futarchy_authority::*;
 pub mod init_futarchy_authority_args;

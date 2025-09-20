@@ -65,8 +65,8 @@ impl OmnipairInstructionProcessor {
         
         log::info!(
             "Successfully processed SwapEvent - Pair: {}, User: {}, TxSig: {}", 
-            swap_event.pair, 
-            swap_event.user, 
+            swap_event.metadata.pair, 
+            swap_event.metadata.signer, 
             tx_signature
         );
         

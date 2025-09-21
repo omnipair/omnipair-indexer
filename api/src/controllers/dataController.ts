@@ -376,4 +376,200 @@ export class DataController {
       res.status(500).json(response);
     }
   }
+
+  static async getFeePaid(req: Request, res: Response): Promise<void> {
+    try {
+      const cacheKey = 'fee_paid_all';
+      const cachedData = cache.get(cacheKey);
+      
+      if (cachedData) {
+        const response: ApiResponse = {
+          success: true,
+          data: cachedData
+        };
+        res.json(response);
+        return;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const day = 24 * 60 * 60;
+      const timestamps = {
+        hour24: now - day,
+        week1: now - (7 * day),
+        month1: now - (30 * day)
+      };
+
+      const result = await pool.query(`
+        SELECT 
+          -- 24hr fee paid
+          SUM(CASE WHEN timestamp > to_timestamp($1) THEN fee_paid0::numeric ELSE 0 END) as fee_paid0_24hr,
+          SUM(CASE WHEN timestamp > to_timestamp($1) THEN fee_paid1::numeric ELSE 0 END) as fee_paid1_24hr,
+          
+          -- 1 week fee paid
+          SUM(CASE WHEN timestamp > to_timestamp($2) THEN fee_paid0::numeric ELSE 0 END) as fee_paid0_1week,
+          SUM(CASE WHEN timestamp > to_timestamp($2) THEN fee_paid1::numeric ELSE 0 END) as fee_paid1_1week,
+          
+          -- 1 month fee paid
+          SUM(CASE WHEN timestamp > to_timestamp($3) THEN fee_paid0::numeric ELSE 0 END) as fee_paid0_1month,
+          SUM(CASE WHEN timestamp > to_timestamp($3) THEN fee_paid1::numeric ELSE 0 END) as fee_paid1_1month
+        FROM swaps 
+        WHERE timestamp IS NOT NULL AND fee_paid0 IS NOT NULL AND fee_paid1 IS NOT NULL
+      `, [timestamps.hour24, timestamps.week1, timestamps.month1]);
+
+      const row = result.rows[0];
+      const feeData = {
+        '24hr': {
+          fee_paid0: row.fee_paid0_24hr || '0',
+          fee_paid1: row.fee_paid1_24hr || '0'
+        },
+        '1week': {
+          fee_paid0: row.fee_paid0_1week || '0',
+          fee_paid1: row.fee_paid1_1week || '0'
+        },
+        '1month': {
+          fee_paid0: row.fee_paid0_1month || '0',
+          fee_paid1: row.fee_paid1_1month || '0'
+        }
+      };
+
+      cache.set(cacheKey, feeData, 15 * 1000);
+    
+      const response: ApiResponse = {
+        success: true,
+        data: feeData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching fee paid:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch fee paid'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  private static async getFeePaidForPeriod(hours: number): Promise<{ fee_paid0: string, fee_paid1: string }> {
+    const now = Math.floor(Date.now() / 1000);
+    const timestamp = now - (hours * 60 * 60);
+    
+    const result = await pool.query(`
+      SELECT 
+        SUM(fee_paid0::numeric) as total_fee_paid0,
+        SUM(fee_paid1::numeric) as total_fee_paid1
+      FROM swaps 
+      WHERE timestamp > to_timestamp($1) AND fee_paid0 IS NOT NULL AND fee_paid1 IS NOT NULL
+    `, [timestamp]);
+
+    return {
+      fee_paid0: result.rows[0].total_fee_paid0 || '0',
+      fee_paid1: result.rows[0].total_fee_paid1 || '0'
+    };
+  }
+
+  static async getFeePaid24hr(req: Request, res: Response): Promise<void> {
+    try {
+      const feeData = await DataController.getFeePaidForPeriod(24);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          ...feeData,
+          period: '24hr'
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching 24hr fee paid:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch 24hr fee paid'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  static async getFeePaid1week(req: Request, res: Response): Promise<void> {
+    try {
+      const feeData = await DataController.getFeePaidForPeriod(7 * 24);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          ...feeData,
+          period: '1week'
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching 1week fee paid:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch 1week fee paid'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  static async getFeePaid1month(req: Request, res: Response): Promise<void> {
+    try {
+      const feeData = await DataController.getFeePaidForPeriod(30 * 24);
+      
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          ...feeData,
+          period: '1month'
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching 1month fee paid:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch 1month fee paid'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  // New endpoint to get total fees by token type
+  static async getTotalFees(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          SUM(fee_paid0::numeric) as total_fee_paid0,
+          SUM(fee_paid1::numeric) as total_fee_paid1,
+          COUNT(*) as total_swaps
+        FROM swaps 
+        WHERE fee_paid0 IS NOT NULL AND fee_paid1 IS NOT NULL
+      `);
+
+      const row = result.rows[0];
+      const feeData = {
+        total_fee_paid0: row.total_fee_paid0 || '0',
+        total_fee_paid1: row.total_fee_paid1 || '0',
+        total_swaps: parseInt(row.total_swaps) || 0
+      };
+
+      const response: ApiResponse = {
+        success: true,
+        data: feeData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching total fees:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch total fees'
+      };
+      res.status(500).json(response);
+    }
+  }
+
 }

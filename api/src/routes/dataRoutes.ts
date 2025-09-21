@@ -19,4 +19,11 @@ router.get('/chart-prices/1m', DataController.getChartPrices1m);
 router.get('/chart-prices/1h', DataController.getChartPrices1h);
 router.get('/chart-prices/1d', DataController.getChartPrices1d);
 
+// Fee paid endpoints
+router.get('/fee-paid', DataController.getFeePaid);
+router.get('/fee-paid/24hr', DataController.getFeePaid24hr);
+router.get('/fee-paid/1week', DataController.getFeePaid1week);
+router.get('/fee-paid/1month', DataController.getFeePaid1month);
+router.get('/fee-paid/total', DataController.getTotalFees);
+
 export default router;

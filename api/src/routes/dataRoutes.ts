@@ -26,4 +26,7 @@ router.get('/fee-paid/1week', DataController.getFeePaid1week);
 router.get('/fee-paid/1month', DataController.getFeePaid1month);
 router.get('/fee-paid/total', DataController.getTotalFees);
 
+// APR endpoints
+router.get('/apr', DataController.getAPR);
+
 export default router;

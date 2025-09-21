@@ -572,4 +572,101 @@ export class DataController {
     }
   }
 
+  static async getAPR(req: Request, res: Response): Promise<void> {
+    try {
+      const cacheKey = 'apr_data';
+      const cachedData = cache.get(cacheKey);
+      
+      if (cachedData) {
+        const response: ApiResponse = {
+          success: true,
+          data: cachedData
+        };
+        res.json(response);
+        return;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const day = 24 * 60 * 60;
+      const year = 365 * day;
+
+      // Get fees from the last 24 hours and calculate average liquidity
+      const result = await pool.query(`
+        WITH daily_stats AS (
+          SELECT 
+            SUM(fee_paid0::numeric) as daily_fee0,
+            SUM(fee_paid1::numeric) as daily_fee1,
+            AVG(reserve0::numeric) as avg_reserve0,
+            AVG(reserve1::numeric) as avg_reserve1
+          FROM swaps 
+          WHERE timestamp > to_timestamp($1) 
+            AND fee_paid0 IS NOT NULL 
+            AND fee_paid1 IS NOT NULL
+            AND reserve0 > 0 
+            AND reserve1 > 0
+        )
+        SELECT 
+          ds.daily_fee0,
+          ds.daily_fee1,
+          ds.avg_reserve0,
+          ds.avg_reserve1
+        FROM daily_stats ds
+      `, [now - day]);
+
+      if (result.rows.length === 0) {
+        const response: ApiResponse = {
+          success: true,
+          data: {
+            apr: '0',
+            apr_breakdown: {
+              token0_apr: '0',
+              token1_apr: '0'
+            }
+          }
+        };
+        res.json(response);
+        return;
+      }
+
+      const row = result.rows[0];
+      const dailyFee0 = parseFloat(row.daily_fee0 || '0');
+      const dailyFee1 = parseFloat(row.daily_fee1 || '0');
+      const avgReserve0 = parseFloat(row.avg_reserve0 || '0');
+      const avgReserve1 = parseFloat(row.avg_reserve1 || '0');
+
+      // APR = (Daily Fees / Liquidity) * 365 * 100
+      const token0APR = avgReserve0 > 0 ? (dailyFee0 / avgReserve0) * 365 * 100 : 0;
+      const token1APR = avgReserve1 > 0 ? (dailyFee1 / avgReserve1) * 365 * 100 : 0;
+
+      const totalLiquidity = avgReserve0 + avgReserve1;
+      const combinedAPR = totalLiquidity > 0 
+        ? ((dailyFee0 + dailyFee1) / totalLiquidity) * 365 * 100 
+        : 0;
+
+      const aprData = {
+        apr: combinedAPR,
+        apr_breakdown: {
+          token0_apr: token0APR,
+          token1_apr: token1APR
+        }
+      };
+
+      // Cache for 15 seconds
+      cache.set(cacheKey, aprData, 15 * 1000);
+
+      const response: ApiResponse = {
+        success: true,
+        data: aprData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error calculating APR:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to calculate APR'
+      };
+      res.status(500).json(response);
+    }
+  }
 }

@@ -45,8 +45,8 @@ pub async fn upsert_swap_event(
         r#"
         INSERT INTO swaps (
             pair, user_address, is_token0_in, amount_in, amount_out, 
-            reserve0, reserve1, timestamp, tx_sig, slot
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            reserve0, reserve1, timestamp, tx_sig, slot, fee_paid
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (tx_sig) DO UPDATE SET
             pair = EXCLUDED.pair,
             user_address = EXCLUDED.user_address,
@@ -56,7 +56,8 @@ pub async fn upsert_swap_event(
             reserve0 = EXCLUDED.reserve0,
             reserve1 = EXCLUDED.reserve1,
             timestamp = EXCLUDED.timestamp,
-            slot = EXCLUDED.slot
+            slot = EXCLUDED.slot,
+            fee_paid = EXCLUDED.fee_paid
         "#
     )
     .bind(swap_event.metadata.pair.to_string())
@@ -70,6 +71,7 @@ pub async fn upsert_swap_event(
         .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
+    .bind(bigdecimal::BigDecimal::from(swap_event.amount_in - swap_event.amount_in_after_fee))
     .execute(pool)
     .await;
     

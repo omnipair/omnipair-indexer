@@ -17,4 +17,6 @@ export interface Swap {
   timestamp: string | null;
   tx_sig: string | null;
   slot: string | null;
+  fee_paid0: string | null;
+  fee_paid1: string | null;
 }

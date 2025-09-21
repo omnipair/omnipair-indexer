@@ -419,16 +419,16 @@ export class DataController {
       const row = result.rows[0];
       const feeData = {
         '24hr': {
-          fee_paid0: row.fee_paid0_24hr || '0',
-          fee_paid1: row.fee_paid1_24hr || '0'
+          total_fee_paid_in_token0: row.fee_paid0_24hr || '0',
+          total_fee_paid_in_token1: row.fee_paid1_24hr || '0'
         },
         '1week': {
-          fee_paid0: row.fee_paid0_1week || '0',
-          fee_paid1: row.fee_paid1_1week || '0'
+          total_fee_paid_in_token0: row.fee_paid0_1week || '0',
+          total_fee_paid_in_token1: row.fee_paid1_1week || '0'
         },
         '1month': {
-          fee_paid0: row.fee_paid0_1month || '0',
-          fee_paid1: row.fee_paid1_1month || '0'
+          total_fee_paid_in_token0: row.fee_paid0_1month || '0',
+          total_fee_paid_in_token1: row.fee_paid1_1month || '0'
         }
       };
 
@@ -450,7 +450,7 @@ export class DataController {
     }
   }
 
-  private static async getFeePaidForPeriod(hours: number): Promise<{ fee_paid0: string, fee_paid1: string }> {
+  private static async getFeePaidForPeriod(hours: number): Promise<{ total_fee_paid_in_token0: string, total_fee_paid_in_token1: string }> {
     const now = Math.floor(Date.now() / 1000);
     const timestamp = now - (hours * 60 * 60);
     
@@ -463,8 +463,8 @@ export class DataController {
     `, [timestamp]);
 
     return {
-      fee_paid0: result.rows[0].total_fee_paid0 || '0',
-      fee_paid1: result.rows[0].total_fee_paid1 || '0'
+      total_fee_paid_in_token0: result.rows[0].total_fee_paid0 || '0',
+      total_fee_paid_in_token1: result.rows[0].total_fee_paid1 || '0'
     };
   }
 
@@ -551,8 +551,8 @@ export class DataController {
 
       const row = result.rows[0];
       const feeData = {
-        total_fee_paid0: row.total_fee_paid0 || '0',
-        total_fee_paid1: row.total_fee_paid1 || '0',
+        total_fee_paid_in_token0: row.total_fee_paid0 || '0',
+        total_fee_paid_in_token1: row.total_fee_paid1 || '0',
         total_swaps: parseInt(row.total_swaps) || 0
       };
 
@@ -634,17 +634,17 @@ export class DataController {
       const avgReserve0 = parseFloat(row.avg_reserve0 || '0');
       const avgReserve1 = parseFloat(row.avg_reserve1 || '0');
 
-      // APR = (Daily Fees / Liquidity) * 365 * 100
-      const token0APR = avgReserve0 > 0 ? (dailyFee0 / avgReserve0) * 365 * 100 : 0;
-      const token1APR = avgReserve1 > 0 ? (dailyFee1 / avgReserve1) * 365 * 100 : 0;
-
-      const totalLiquidity = avgReserve0 + avgReserve1;
-      const combinedAPR = totalLiquidity > 0 
-        ? ((dailyFee0 + dailyFee1) / totalLiquidity) * 365 * 100 
-        : 0;
+      /**
+       * dailyFee0 is the total fees paid represented in token0
+       * avgReserve0 is average reserve of token0
+       * APR = total fees paid (in token0 or in token1) / total liquidity (2 * (reserve0 or reserve1)) * 365 * 100
+       * the only difference between token0APR and token1APR is the change in token prices but both should be almost the same depending on timeframe
+       */
+      const token0APR = avgReserve0 > 0 ? (dailyFee0 / (avgReserve0 * 2)) * 365 * 100 : 0;
+      const token1APR = avgReserve1 > 0 ? (dailyFee1 / (avgReserve1 * 2)) * 365 * 100 : 0;
 
       const aprData = {
-        apr: combinedAPR,
+        apr: (token0APR + token1APR) / 2,
         apr_breakdown: {
           token0_apr: token0APR,
           token1_apr: token1APR

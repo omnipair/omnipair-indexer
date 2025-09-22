@@ -12,12 +12,22 @@ router.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       swaps: '/api/swaps',
-      'swap-volume-all': '/api/swap-volume',
-      'swap-volume-24hr': '/api/swap-volume/24hr',
-      'swap-volume-1day': '/api/swap-volume/1day',
-      'swap-volume-1week': '/api/swap-volume/1week',
-      'swap-volume-1month': '/api/swap-volume/1month',
-      'chart-prices': '/api/chart-prices'
+      'swap-volume': '/api/swap-volume (default: 24hrs)',
+      'swap-volume-dynamic': '/api/swap-volume/:hours (e.g. /api/swap-volume/48)',
+      'chart-prices': '/api/chart-prices (default: 24hrs)',
+      'chart-prices-dynamic': '/api/chart-prices/:hours (e.g. /api/chart-prices/168)',
+      'fee-paid': '/api/fee-paid (default: 24hrs)',
+      'fee-paid-dynamic': '/api/fee-paid/:hours (e.g. /api/fee-paid/720)',
+      'swap-apr': '/api/swap-apr'
+    },
+    examples: {
+      '24 hours data': '/api/swap-volume/24',
+      '7 days data': '/api/chart-prices/168',
+      '30 days data': '/api/fee-paid/720'
+    },
+    notes: {
+      'dynamic-endpoints': 'All endpoints accept hours as parameter for custom time ranges',
+      'chart-intervals': 'Chart automatically selects intervals: ≤24hrs=1min, ≤168hrs=1hr, >168hrs=1day'
     }
   });
 });

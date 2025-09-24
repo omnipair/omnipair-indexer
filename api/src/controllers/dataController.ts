@@ -6,14 +6,26 @@ import { cache } from '../utils/cache';
 export class DataController {
   static async getSwaps(req: Request, res: Response): Promise<void> {
     try {
+      const pairAddress = req.params.pairAddress;
       const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); 
       const offset = parseInt(req.query.offset as string) || 0;
-      const countResult = await pool.query('SELECT COUNT(*) FROM swaps');
+
+      // Validate pair address
+      if (!pairAddress) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Pair address is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const countResult = await pool.query('SELECT COUNT(*) FROM swaps WHERE pair = $1', [pairAddress]);
       const totalCount = parseInt(countResult.rows[0].count);
       
       const result = await pool.query(
-        'SELECT * FROM swaps ORDER BY id DESC LIMIT $1 OFFSET $2',
-        [limit, offset]
+        'SELECT * FROM swaps WHERE pair = $1 ORDER BY id DESC LIMIT $2 OFFSET $3',
+        [pairAddress, limit, offset]
       );
       
       const response: ApiResponse<{
@@ -24,6 +36,7 @@ export class DataController {
           offset: number;
           hasNext: boolean;
         };
+        pairAddress: string;
       }> = {
         success: true,
         data: {
@@ -33,7 +46,8 @@ export class DataController {
             limit,
             offset,
             hasNext: offset + limit < totalCount
-          }
+          },
+          pairAddress
         }
       };
 
@@ -50,7 +64,18 @@ export class DataController {
 
   static async getSwapVolume(req: Request, res: Response): Promise<void> {
     try {
+      const pairAddress = req.params.pairAddress;
       const hours = req.params.hours ? parseInt(req.params.hours) : 24;
+
+      // Validate pair address
+      if (!pairAddress) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Pair address is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
       
       if (isNaN(hours) || hours <= 0) {
         const response: ApiResponse = {
@@ -61,7 +86,7 @@ export class DataController {
         return;
       }
 
-      const cacheKey = `swap_volume_${hours}hrs`;
+      const cacheKey = `swap_volume_${pairAddress}_${hours}hrs`;
       const cachedData = cache.get(cacheKey);
       
       if (cachedData) {
@@ -73,7 +98,7 @@ export class DataController {
         return;
       }
 
-      // Calculate volume for the specified period
+      // Calculate volume for the specified period and pair
       const now = Math.floor(Date.now() / 1000);
       const timestamp = now - (hours * 60 * 60);
       
@@ -82,8 +107,8 @@ export class DataController {
           SUM(CASE WHEN is_token0_in = true THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume0,
           SUM(CASE WHEN is_token0_in = false THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume1
         FROM swaps 
-        WHERE timestamp > to_timestamp($1)
-      `, [timestamp]);
+        WHERE timestamp > to_timestamp($1) AND pair = $2
+      `, [timestamp, pairAddress]);
 
       const volumeData = {
         volume0: result.rows[0].total_volume0 || '0',
@@ -93,7 +118,8 @@ export class DataController {
       const responseData = {
         ...volumeData,
         period: `${hours}hrs`,
-        hours: hours
+        hours: hours,
+        pairAddress
       };
 
       cache.set(cacheKey, responseData, 15 * 1000);
@@ -116,7 +142,18 @@ export class DataController {
 
   static async getChartPrices(req: Request, res: Response): Promise<void> {
     try {
+      const pairAddress = req.params.pairAddress;
       const hours = req.params.hours ? parseInt(req.params.hours) : 24;
+
+      // Validate pair address
+      if (!pairAddress) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Pair address is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
       
       if (isNaN(hours) || hours <= 0) {
         const response: ApiResponse = {
@@ -142,7 +179,7 @@ export class DataController {
         intervalLabel = '1 day';
       }
 
-      // Get chart prices for the specified period
+      // Get chart prices for the specified period and pair
       const timeInterval = `${hours} hours`;
       const result = await pool.query(`
         SELECT
@@ -152,16 +189,17 @@ export class DataController {
           ) AS bucket,
           LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS price
         FROM swaps
-        WHERE timestamp >= now() - interval '${timeInterval}'
+        WHERE timestamp >= now() - interval '${timeInterval}' AND pair = $2
         GROUP BY bucket
         ORDER BY bucket
-      `, [bucketInterval]);
+      `, [bucketInterval, pairAddress]);
 
       const data = {
         prices: result.rows,
         period: `${hours} hours`,
         interval: intervalLabel,
-        hours: hours
+        hours: hours,
+        pairAddress
       };
 
       const response: ApiResponse = {
@@ -182,7 +220,18 @@ export class DataController {
 
   static async getFeePaid(req: Request, res: Response): Promise<void> {
     try {
+      const pairAddress = req.params.pairAddress;
       const hours = req.params.hours ? parseInt(req.params.hours) : 24;
+
+      // Validate pair address
+      if (!pairAddress) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Pair address is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
       
       if (isNaN(hours) || hours <= 0) {
         const response: ApiResponse = {
@@ -193,7 +242,7 @@ export class DataController {
         return;
       }
 
-      const cacheKey = `fee_paid_${hours}hrs`;
+      const cacheKey = `fee_paid_${pairAddress}_${hours}hrs`;
       const cachedData = cache.get(cacheKey);
       
       if (cachedData) {
@@ -205,7 +254,7 @@ export class DataController {
         return;
       }
 
-      // Calculate fee paid for the specified period
+      // Calculate fee paid for the specified period and pair
       const now = Math.floor(Date.now() / 1000);
       const timestamp = now - (hours * 60 * 60);
       
@@ -214,8 +263,8 @@ export class DataController {
           SUM(fee_paid0::numeric) as total_fee_paid0,
           SUM(fee_paid1::numeric) as total_fee_paid1
         FROM swaps 
-        WHERE timestamp > to_timestamp($1)
-      `, [timestamp]);
+        WHERE timestamp > to_timestamp($1) AND pair = $2
+      `, [timestamp, pairAddress]);
 
       const feeData = {
         total_fee_paid_in_token0: result.rows[0].total_fee_paid0 || '0',
@@ -225,7 +274,8 @@ export class DataController {
       const responseData = {
         ...feeData,
         period: `${hours}hrs`,
-        hours: hours
+        hours: hours,
+        pairAddress
       };
 
       cache.set(cacheKey, responseData, 15 * 1000);
@@ -248,7 +298,19 @@ export class DataController {
 
   static async getAPR(req: Request, res: Response): Promise<void> {
     try {
-      const cacheKey = 'apr_data';
+      const pairAddress = req.params.pairAddress;
+
+      // Validate pair address
+      if (!pairAddress) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Pair address is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const cacheKey = `apr_data_${pairAddress}`;
       const cachedData = cache.get(cacheKey);
       
       if (cachedData) {
@@ -263,7 +325,7 @@ export class DataController {
       const now = Math.floor(Date.now() / 1000);
       const day = 24 * 60 * 60;
 
-      // Get fees from the last 24 hours and calculate average liquidity
+      // Get fees from the last 24 hours and calculate average liquidity for the specific pair
       const result = await pool.query(`
         WITH daily_stats AS (
           SELECT 
@@ -275,6 +337,7 @@ export class DataController {
           WHERE timestamp > to_timestamp($1) 
             AND reserve0 > 0 
             AND reserve1 > 0
+            AND pair = $2
         )
         SELECT 
           ds.daily_fee0,
@@ -282,7 +345,7 @@ export class DataController {
           ds.avg_reserve0,
           ds.avg_reserve1
         FROM daily_stats ds
-      `, [now - day]);
+      `, [now - day, pairAddress]);
 
       if (result.rows.length === 0) {
         const response: ApiResponse = {
@@ -292,7 +355,8 @@ export class DataController {
             apr_breakdown: {
               token0_apr: '0',
               token1_apr: '0'
-            }
+            },
+            pairAddress
           }
         };
         res.json(response);
@@ -319,7 +383,8 @@ export class DataController {
         apr_breakdown: {
           token0_apr: token0APR,
           token1_apr: token1APR
-        }
+        },
+        pairAddress
       };
 
       // Cache for 15 seconds

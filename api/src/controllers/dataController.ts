@@ -7,48 +7,68 @@ export class DataController {
   static async getSwaps(req: Request, res: Response): Promise<void> {
     try {
       const pairAddress = req.params.pairAddress;
+      const userAddress = req.params.address || req.params.userAddress; // Support both parameter names
       const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000); 
       const offset = parseInt(req.query.offset as string) || 0;
 
-      // Validate pair address
-      if (!pairAddress) {
+      // Validate that at least one filter is provided
+      if (!pairAddress && !userAddress) {
         const response: ApiResponse = {
           success: false,
-          error: 'Pair address is required'
+          error: 'Either pair address or user address is required'
         };
         res.status(400).json(response);
         return;
       }
 
-      const countResult = await pool.query('SELECT COUNT(*) FROM swaps WHERE pair = $1', [pairAddress]);
+      // Build query based on available parameters
+      let countQuery: string;
+      let dataQuery: string;
+      let queryParams: any[];
+      let countParams: any[];
+
+      if (pairAddress && userAddress) {
+        // Filter by both pair and user address
+        countQuery = 'SELECT COUNT(*) FROM swaps WHERE pair = $1 AND user_address = $2';
+        dataQuery = 'SELECT * FROM swaps WHERE pair = $1 AND user_address = $2 ORDER BY id DESC LIMIT $3 OFFSET $4';
+        queryParams = [pairAddress, userAddress, limit, offset];
+        countParams = [pairAddress, userAddress];
+      } else if (pairAddress) {
+        // Filter by pair only
+        countQuery = 'SELECT COUNT(*) FROM swaps WHERE pair = $1';
+        dataQuery = 'SELECT * FROM swaps WHERE pair = $1 ORDER BY id DESC LIMIT $2 OFFSET $3';
+        queryParams = [pairAddress, limit, offset];
+        countParams = [pairAddress];
+      } else {
+        // Filter by user only
+        countQuery = 'SELECT COUNT(*) FROM swaps WHERE user_address = $1';
+        dataQuery = 'SELECT * FROM swaps WHERE user_address = $1 ORDER BY id DESC LIMIT $2 OFFSET $3';
+        queryParams = [userAddress, limit, offset];
+        countParams = [userAddress];
+      }
+
+      const countResult = await pool.query(countQuery, countParams);
       const totalCount = parseInt(countResult.rows[0].count);
       
-      const result = await pool.query(
-        'SELECT * FROM swaps WHERE pair = $1 ORDER BY id DESC LIMIT $2 OFFSET $3',
-        [pairAddress, limit, offset]
-      );
+      const result = await pool.query(dataQuery, queryParams);
       
-      const response: ApiResponse<{
-        swaps: Swap[];
+      // Build response data dynamically based on what filters were used
+      const responseData: any = {
+        swaps: result.rows,
         pagination: {
-          total: number;
-          limit: number;
-          offset: number;
-          hasNext: boolean;
-        };
-        pairAddress: string;
-      }> = {
-        success: true,
-        data: {
-          swaps: result.rows,
-          pagination: {
-            total: totalCount,
-            limit,
-            offset,
-            hasNext: offset + limit < totalCount
-          },
-          pairAddress
+          total: totalCount,
+          limit,
+          offset,
+          hasNext: offset + limit < totalCount
         }
+      };
+
+      if (pairAddress) responseData.pairAddress = pairAddress;
+      if (userAddress) responseData.userAddress = userAddress;
+
+      const response: ApiResponse = {
+        success: true,
+        data: responseData
       };
 
       res.json(response);

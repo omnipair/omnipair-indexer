@@ -31,6 +31,36 @@ impl Processor for OmnipairInstructionProcessor {
             OmnipairInstruction::SwapEvent(swap_event) => {
                 self.process_swap_event(swap_event, &metadata).await?;
             }
+            OmnipairInstruction::AdjustCollateralEvent(event) => {
+                self.process_adjust_collateral_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::AdjustDebtEvent(event) => {
+                self.process_adjust_debt_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::AdjustLiquidityEvent(event) => {
+                self.process_adjust_liquidity_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::BurnEvent(event) => {
+                self.process_burn_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::MintEvent(event) => {
+                self.process_mint_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::PairCreatedEvent(event) => {
+                self.process_pair_created_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::UpdatePairEvent(event) => {
+                self.process_update_pair_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::UserPositionCreatedEvent(event) => {
+                self.process_user_position_created_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::UserPositionLiquidatedEvent(event) => {
+                self.process_user_position_liquidated_event(event, &metadata).await?;
+            }
+            OmnipairInstruction::UserPositionUpdatedEvent(event) => {
+                self.process_user_position_updated_event(event, &metadata).await?;
+            }
             _ => {
                 log::debug!("Unhandled instruction type: {:?}", instruction.data);
             }
@@ -67,6 +97,257 @@ impl OmnipairInstructionProcessor {
             "Successfully processed SwapEvent - Pair: {}, User: {}, TxSig: {}", 
             swap_event.metadata.pair, 
             swap_event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_adjust_collateral_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::adjust_collateral_event::AdjustCollateralEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "AdjustCollateralEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed AdjustCollateralEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.amount0,
+            event.amount1,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_adjust_debt_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::adjust_debt_event::AdjustDebtEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "AdjustDebtEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed AdjustDebtEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.amount0,
+            event.amount1,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_adjust_liquidity_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::adjust_liquidity_event::AdjustLiquidityEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "AdjustLiquidityEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed AdjustLiquidityEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.amount0,
+            event.amount1,
+            event.liquidity,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_burn_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::burn_event::BurnEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "BurnEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed BurnEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.amount0,
+            event.amount1,
+            event.liquidity,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_mint_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::mint_event::MintEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "MintEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed MintEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.amount0,
+            event.amount1,
+            event.liquidity,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_pair_created_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::pair_created_event::PairCreatedEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "PairCreatedEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.token0,
+            event.token1,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_update_pair_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::update_pair_event::UpdatePairEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "UpdatePairEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed UpdatePairEvent - Price0 EMA: {}, Price1 EMA: {}, Rate0: {}, Rate1: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.price0_ema,
+            event.price1_ema,
+            event.rate0,
+            event.rate1,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_user_position_created_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::user_position_created_event::UserPositionCreatedEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "UserPositionCreatedEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed UserPositionCreatedEvent - Position: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.position,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_user_position_liquidated_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::user_position_liquidated_event::UserPositionLiquidatedEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "UserPositionLiquidatedEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed UserPositionLiquidatedEvent - Position: {}, Liquidator: {}, Collateral0 Liquidated: {}, Collateral1 Liquidated: {}, Debt0 Liquidated: {}, Debt1 Liquidated: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.position,
+            event.liquidator,
+            event.collateral0_liquidated,
+            event.collateral1_liquidated,
+            event.debt0_liquidated,
+            event.debt1_liquidated,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_user_position_updated_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::user_position_updated_event::UserPositionUpdatedEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "UserPositionUpdatedEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        
+        log::info!(
+            "Successfully processed UserPositionUpdatedEvent - Position: {}, Collateral0: {}, Collateral1: {}, Debt0 Shares: {}, Debt1 Shares: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.position,
+            event.collateral0,
+            event.collateral1,
+            event.debt0_shares,
+            event.debt1_shares,
+            event.metadata.pair, 
+            event.metadata.signer, 
             tx_signature
         );
         

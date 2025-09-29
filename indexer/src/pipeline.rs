@@ -21,10 +21,10 @@ pub fn create_pipeline(config: &Config, websocket_state: Option<WebSocketServerS
     log::info!("Using Helius Atlas WebSocket for realtime transaction monitoring");
 
     // Create Atlas WebSocket datasource
-    let atlas_datasource = create_helius_datasource(api_key, OMNIPAIR_PROGRAM_ID);
+    let atlas_datasource = create_helius_datasource(api_key, *OMNIPAIR_PROGRAM_ID);
 
     // Create transaction crawler datasource (more efficient than block crawler)
-    let _transaction_crawler_datasource = create_transaction_crawler_datasource(config.http_rpc_url.clone(), OMNIPAIR_PROGRAM_ID);
+    let _transaction_crawler_datasource = create_transaction_crawler_datasource(config.http_rpc_url.clone(), *OMNIPAIR_PROGRAM_ID);
 
     // Create instruction processor with optional WebSocket state
     let instruction_processor = match websocket_state {
@@ -34,7 +34,7 @@ pub fn create_pipeline(config: &Config, websocket_state: Option<WebSocketServerS
 
     // Build the pipeline
     let pipeline = Pipeline::builder()
-        //.datasource(transaction_crawler_datasource)
+        //.datasource(_transaction_crawler_datasource)
         .datasource(atlas_datasource)
         .metrics(Arc::new(LogMetrics::new()))
         .metrics_flush_interval(3)

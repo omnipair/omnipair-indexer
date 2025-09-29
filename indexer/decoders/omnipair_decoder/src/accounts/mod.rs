@@ -5,6 +5,7 @@ use carbon_core::deserialize::CarbonDeserialize;
 
 use super::OmnipairDecoder; 
 pub mod futarchy_authority; 
+pub mod leveraged_position; 
 pub mod pair; 
 pub mod pair_config; 
 pub mod rate_model; 
@@ -12,6 +13,7 @@ pub mod user_position;
 
 pub enum OmnipairAccount { 
         FutarchyAuthority(futarchy_authority::FutarchyAuthority), 
+        LeveragedPosition(leveraged_position::LeveragedPosition), 
         Pair(pair::Pair), 
         PairConfig(pair_config::PairConfig), 
         RateModel(rate_model::RateModel), 
@@ -27,6 +29,16 @@ impl<'a> AccountDecoder<'a> for OmnipairDecoder {
             return Some(carbon_core::account::DecodedAccount { 
                 lamports: account.lamports, 
                 data: OmnipairAccount::FutarchyAuthority(decoded_account), 
+                owner: account.owner, 
+                executable: account.executable, 
+                rent_epoch: account.rent_epoch, 
+            }); 
+        } 
+         
+            if let Some(decoded_account) = leveraged_position::LeveragedPosition::deserialize(account.data.as_slice()) { 
+            return Some(carbon_core::account::DecodedAccount { 
+                lamports: account.lamports, 
+                data: OmnipairAccount::LeveragedPosition(decoded_account), 
                 owner: account.owner, 
                 executable: account.executable, 
                 rent_epoch: account.rent_epoch, 

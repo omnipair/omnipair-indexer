@@ -26,7 +26,7 @@ pub async fn main() -> CarbonResult<()> {
     let config = Config::from_args(args);
     
     log::info!("Starting Omnipair Indexer Daemon");
-    log::info!("Program ID: {}", OMNIPAIR_PROGRAM_ID);
+    log::info!("Program ID: {:?}", *OMNIPAIR_PROGRAM_ID);
 
     // Validate configuration
     if let Err(e) = config.validate() {

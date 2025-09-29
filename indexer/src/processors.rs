@@ -7,9 +7,25 @@ use carbon_core::{
     instruction::{DecodedInstruction, InstructionMetadata, NestedInstructions},
 };
 use carbon_omnipair_decoder::instructions::OmnipairInstruction;
-use crate::database;
+use crate::{database, websocket_server::WebSocketServerState};
 
-pub struct OmnipairInstructionProcessor;
+pub struct OmnipairInstructionProcessor {
+    websocket_state: Option<WebSocketServerState>,
+}
+
+impl OmnipairInstructionProcessor {
+    pub fn new() -> Self {
+        Self {
+            websocket_state: None,
+        }
+    }
+
+    pub fn with_websocket_state(websocket_state: WebSocketServerState) -> Self {
+        Self {
+            websocket_state: Some(websocket_state),
+        }
+    }
+}
 
 #[async_trait]
 impl Processor for OmnipairInstructionProcessor {
@@ -71,10 +87,6 @@ impl Processor for OmnipairInstructionProcessor {
 }
 
 impl OmnipairInstructionProcessor {
-    pub fn new() -> Self {
-        Self
-    }
-
     async fn process_swap_event(
         &self, 
         swap_event: carbon_omnipair_decoder::instructions::swap_event::SwapEvent,
@@ -91,6 +103,12 @@ impl OmnipairInstructionProcessor {
         if let Err(e) = database::upsert_swap_event(&swap_event, &tx_signature, slot).await {
             log::error!("Failed to insert swap event: {}", e);
             return Err(e);
+        }
+
+        // Broadcast to WebSocket clients if WebSocket server is running
+        if let Some(ref ws_state) = self.websocket_state {
+            ws_state.broadcast_swap_event(&swap_event, &tx_signature, slot);
+            log::debug!("Broadcasted SwapEvent to {} WebSocket clients", ws_state.client_count());
         }
         
         log::info!(

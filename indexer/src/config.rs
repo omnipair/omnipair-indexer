@@ -27,6 +27,10 @@ pub struct Args {
     /// Health check port (0 disables /health endpoint)
     #[arg(long, default_value_t = 8080)]
     pub health_port: u16,
+
+    /// WebSocket server port (0 disables WebSocket server)
+    #[arg(long, default_value_t = 8081)]
+    pub websocket_port: u16,
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +40,7 @@ pub struct Config {
     pub helius_api_key: Option<String>,
     pub rpc_ws_url: Option<String>,
     pub health_port: u16,
+    pub websocket_port: u16,
 }
 
 impl Config {
@@ -61,6 +66,7 @@ impl Config {
             helius_api_key,
             rpc_ws_url,
             health_port: args.health_port,
+            websocket_port: args.websocket_port,
         }
     }
 
@@ -90,6 +96,12 @@ impl Config {
             log::info!("  Health check server: Port {}", self.health_port);
         } else {
             log::info!("  Health check server: Disabled");
+        }
+
+        if self.websocket_port != 0 {
+            log::info!("  WebSocket server: Port {}", self.websocket_port);
+        } else {
+            log::info!("  WebSocket server: Disabled");
         }
     }
 }

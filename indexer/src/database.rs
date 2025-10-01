@@ -1,5 +1,9 @@
 use carbon_core::error::CarbonResult;
-use carbon_omnipair_decoder::instructions::swap_event::SwapEvent;
+use carbon_omnipair_decoder::instructions::{
+    swap_event::SwapEvent,
+    leverage_position_created_event::LeveragePositionCreatedEvent,
+    leverage_position_updated_event::LeveragePositionUpdatedEvent,
+};
 use sqlx::PgPool;
 use tokio::sync::OnceCell;
 use chrono::{DateTime, Utc};
@@ -95,6 +99,107 @@ pub async fn upsert_swap_event(
     if let Err(e) = upsert_result {
         log::error!("Failed to upsert into swaps table: {}", e);
         return Err(carbon_core::error::Error::Custom(format!("Failed to upsert swap: {}", e)));
+    }
+    
+    Ok(())
+}
+
+pub async fn upsert_leverage_position_created_event(
+    event: &LeveragePositionCreatedEvent,
+    tx_signature: &str,
+    slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO leverage_position_created_events (
+            position_address, pair_address, user_address, timestamp, tx_signature, slot
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (tx_signature) DO UPDATE SET
+            position_address = EXCLUDED.position_address,
+            pair_address = EXCLUDED.pair_address,
+            user_address = EXCLUDED.user_address,
+            timestamp = EXCLUDED.timestamp,
+            slot = EXCLUDED.slot
+        "#
+    )
+    .bind(event.position.to_string())
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(tx_signature)
+    .bind(bigdecimal::BigDecimal::from(slot))
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into leverage_position_created_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert leverage position created event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+pub async fn upsert_leverage_position_updated_event(
+    event: &LeveragePositionUpdatedEvent,
+    tx_signature: &str,
+    slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO leverage_position_updated_events (
+            position_address, pair_address, user_address, long_token0, target_leverage_bps,
+            debt_delta, debt_amount, collateral_deposited, collateral_delta, 
+            collateral_position_size, collateral_leverage_multiplier_bps, applied_cf_bps,
+            liquidation_price_nad, entry_price_nad, timestamp, tx_signature, slot
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        ON CONFLICT (tx_signature) DO UPDATE SET
+            position_address = EXCLUDED.position_address,
+            pair_address = EXCLUDED.pair_address,
+            user_address = EXCLUDED.user_address,
+            long_token0 = EXCLUDED.long_token0,
+            target_leverage_bps = EXCLUDED.target_leverage_bps,
+            debt_delta = EXCLUDED.debt_delta,
+            debt_amount = EXCLUDED.debt_amount,
+            collateral_deposited = EXCLUDED.collateral_deposited,
+            collateral_delta = EXCLUDED.collateral_delta,
+            collateral_position_size = EXCLUDED.collateral_position_size,
+            collateral_leverage_multiplier_bps = EXCLUDED.collateral_leverage_multiplier_bps,
+            applied_cf_bps = EXCLUDED.applied_cf_bps,
+            liquidation_price_nad = EXCLUDED.liquidation_price_nad,
+            entry_price_nad = EXCLUDED.entry_price_nad,
+            timestamp = EXCLUDED.timestamp,
+            slot = EXCLUDED.slot
+        "#
+    )
+    .bind(event.position.to_string())
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(event.long_token0)
+    .bind(event.target_leverage_bps as i32)
+    .bind(event.debt_delta)
+    .bind(bigdecimal::BigDecimal::from(event.debt_amount))
+    .bind(bigdecimal::BigDecimal::from(event.collateral_deposited))
+    .bind(event.collateral_delta)
+    .bind(bigdecimal::BigDecimal::from(event.collateral_position_size))
+    .bind(event.collateral_leverage_multiplier_bps as i16)
+    .bind(event.applied_cf_bps as i16)
+    .bind(bigdecimal::BigDecimal::from(event.liquidation_price_nad))
+    .bind(bigdecimal::BigDecimal::from(event.entry_price_nad))
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(tx_signature)
+    .bind(bigdecimal::BigDecimal::from(slot))
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into leverage_position_updated_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert leverage position updated event: {}", e)));
     }
     
     Ok(())

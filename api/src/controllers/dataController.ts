@@ -207,7 +207,8 @@ export class DataController {
             start => now() - interval '${timeInterval}',
             finish => now()
           ) AS bucket,
-          LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS price
+          LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS avg_price,
+          LOCF((reserve1::numeric / NULLIF(reserve0,0)) ORDER BY timestamp DESC) AS close_price
         FROM swaps
         WHERE timestamp >= now() - interval '${timeInterval}' AND pair = $2
         GROUP BY bucket

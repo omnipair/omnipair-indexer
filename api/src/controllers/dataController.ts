@@ -207,16 +207,25 @@ export class DataController {
             start => now() - interval '${timeInterval}',
             finish => now()
           ) AS bucket,
-          LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS avg_price,
-          LOCF((reserve1::numeric / NULLIF(reserve0,0)) ORDER BY timestamp DESC) AS close_price
+          LOCF(AVG(reserve1::numeric / NULLIF(reserve0,0))) AS avg_price
         FROM swaps
         WHERE timestamp >= now() - interval '${timeInterval}' AND pair = $2
         GROUP BY bucket
         ORDER BY bucket
       `, [bucketInterval, pairAddress]);
 
+      // Get the latest price from the most recent swap
+      const latestPriceResult = await pool.query(`
+        SELECT reserve1::numeric / NULLIF(reserve0,0) AS latest_price
+        FROM swaps
+        WHERE pair = $1
+        ORDER BY timestamp DESC
+        LIMIT 1
+      `, [pairAddress]);
+
       const data = {
         prices: result.rows,
+        latestPrice: latestPriceResult.rows[0]?.latest_price || null,
         period: `${hours} hours`,
         interval: intervalLabel,
         hours: hours,

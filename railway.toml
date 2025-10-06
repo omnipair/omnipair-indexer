@@ -11,3 +11,4 @@ numReplicas = 1
 RUST_LOG = "info"
 RUST_BACKTRACE = "1" 
 HEALTH_PORT = "8080"
+WEBSOCKET_PORT = "8081"

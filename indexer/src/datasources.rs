@@ -44,11 +44,17 @@ pub fn create_helius_datasource(api_key: &str, program_id: Pubkey) -> HeliusWebs
         }),
     };
 
+    // Determine cluster based on environment variable
+    let cluster = match std::env::var("CLUSTER").unwrap_or_default().to_lowercase().as_str() {
+        "devnet" => Cluster::Devnet,
+        _ => Cluster::MainnetBeta,
+    };
+
     HeliusWebsocket::new(
         api_key.to_string(),
         filters,
         Arc::new(RwLock::new(HashSet::new())), // track deletions if you later add accounts
-        Cluster::MainnetBeta,
+        cluster,
     )
 }
 

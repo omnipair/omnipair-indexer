@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/database';
 import { ApiResponse, Swap } from '../types';
 import { cache } from '../utils/cache';
+import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 
 export class DataController {
   static async getSwaps(req: Request, res: Response): Promise<void> {
@@ -461,15 +462,16 @@ export class DataController {
         return;
       }
 
-      const result = await pool.query(`
-        SELECT reserve0, reserve1, timestamp
+      // Get latest swap data for reserves
+      const swapResult = await pool.query(`
+        SELECT reserve0, reserve1, timestamp, ema_price
         FROM swaps 
         WHERE pair = $1
         ORDER BY id DESC
-        LIMIT 1
+        LIMIT 2
       `, [pairAddress]);
 
-      if (result.rows.length === 0) {
+      if (swapResult.rows.length === 0) {
         const response: ApiResponse = {
           success: false,
           error: 'No swap data found for this pair address'
@@ -478,12 +480,36 @@ export class DataController {
         return;
       }
 
+      const reserve0 = parseFloat(swapResult.rows[0].reserve0);
+      const reserve1 = parseFloat(swapResult.rows[0].reserve1);
+
+      let currentEmaPrice0: number | null = null;
+      let currentEmaPrice1: number | null = null;
+      
+      if (swapResult.rows.length > 1 && swapResult.rows[1].ema_price) {
+        console.log('Calculating EMA prices using the latest swap data');
+        // Calculate current EMA prices using the latest swap data
+        const lastPrice0Ema = parseFloat(swapResult.rows[1].ema_price);
+        const lastPrice1Ema = parseFloat(swapResult.rows[1].ema_price);
+        const lastUpdate = Math.floor(new Date(swapResult.rows[1].timestamp).getTime() / 1000);
+        
+        const emaResult = calculateEmaFromPoolData(reserve0, reserve1, lastPrice0Ema, lastPrice1Ema, lastUpdate);
+        
+        currentEmaPrice0 = fromNad(emaResult.price0Ema);
+        currentEmaPrice1 = fromNad(emaResult.price1Ema);
+      } else {
+        console.log('No EMA prices found, using current spot prices');
+        console.log(swapResult.rows)
+      }
+      
       const poolData = {
-        price0: result.rows[0].reserve1 / result.rows[0].reserve0,
-        price1: result.rows[0].reserve0 / result.rows[0].reserve1,
-        reserve0: result.rows[0].reserve0,
-        reserve1: result.rows[0].reserve1,
-        timestamp: new Date(result.rows[0].timestamp).toISOString().replace('T', ' ').replace('Z', '+00'),
+        price0: reserve1 / reserve0,
+        price1: reserve0 / reserve1,
+        emaPrice0: currentEmaPrice0 !== undefined ? currentEmaPrice0 : reserve1 / reserve0,
+        emaPrice1: currentEmaPrice1 !== undefined ? currentEmaPrice1 : reserve0 / reserve1,
+        reserve0: reserve0,
+        reserve1: reserve1,
+        timestamp: new Date(swapResult.rows[0].timestamp).toISOString().replace('T', ' ').replace('Z', '+00'),
         pairAddress
       };
 

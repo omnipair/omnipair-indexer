@@ -21,6 +21,6 @@ router.get('/fee-paid/:pairAddress', DataController.getFeePaid); // Default to 2
 // APR endpoints - requires pair address
 router.get('/swap-apr/:pairAddress', DataController.getAPR);
 
-router.get('/poolInfo/:pairAddress', DataController.getPoolInfo);
+router.get('/pool-info/:pairAddress', DataController.getPoolInfo);
 
 export default router;

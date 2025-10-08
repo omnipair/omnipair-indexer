@@ -24,7 +24,7 @@ router.get('/', (req, res) => {
       'fee-paid': '/api/fee-paid/:pairAddress (default: 24hrs)',
       'fee-paid-dynamic': '/api/fee-paid/:pairAddress/:hours',
       'swap-apr': '/api/swap-apr/:pairAddress',
-      'pool-info': '/api/poolInfo/:pairAddress',
+      'pool-info': '/api/pool-info/:pairAddress',
       user : {
         'user-swaps': '/user/:address/swap-history'
       }
@@ -41,7 +41,7 @@ router.get('/', (req, res) => {
       'Get 7 days chart prices': '/api/chart-prices/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/168',
       'Get 30 days fee data': '/api/fee-paid/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/720',
       'Get APR for pair': '/api/swap-apr/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
-      'Get pool info for pair': '/api/poolInfo/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get pool info for pair': '/api/pool-info/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get swaps for user': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history'
     },
     notes: {

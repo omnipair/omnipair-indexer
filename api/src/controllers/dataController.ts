@@ -435,4 +435,73 @@ export class DataController {
       res.status(500).json(response);
     }
   }
+
+  static async getPoolInfo(req: Request, res: Response): Promise<void> {
+    try {
+      const pairAddress = req.params.pairAddress;
+
+      if (!pairAddress) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Pair address is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const cacheKey = `pool_info_${pairAddress}`;
+      const cachedData = cache.get(cacheKey);
+      
+      if (cachedData) {
+        const response: ApiResponse = {
+          success: true,
+          data: cachedData
+        };
+        res.json(response);
+        return;
+      }
+
+      const result = await pool.query(`
+        SELECT reserve0, reserve1, timestamp
+        FROM swaps 
+        WHERE pair = $1
+        ORDER BY id DESC
+        LIMIT 1
+      `, [pairAddress]);
+
+      if (result.rows.length === 0) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'No swap data found for this pair address'
+        };
+        res.status(404).json(response);
+        return;
+      }
+
+      const poolData = {
+        price0: result.rows[0].reserve1 / result.rows[0].reserve0,
+        price1: result.rows[0].reserve0 / result.rows[0].reserve1,
+        reserve0: result.rows[0].reserve0,
+        reserve1: result.rows[0].reserve1,
+        timestamp: new Date(result.rows[0].timestamp).toISOString().replace('T', ' ').replace('Z', '+00'),
+        pairAddress
+      };
+
+      cache.set(cacheKey, poolData, 5 * 1000);
+
+      const response: ApiResponse = {
+        success: true,
+        data: poolData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching pool info:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch pool info'
+      };
+      res.status(500).json(response);
+    }
+  }
 }

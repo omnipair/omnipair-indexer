@@ -354,14 +354,14 @@ export class DataController {
       }
 
       const now = Math.floor(Date.now() / 1000);
-      const day = 24 * 60 * 60;
+      const week = 7 * 24 * 60 * 60;
 
-      // Get fees from the last 24 hours and calculate average liquidity for the specific pair
+      // Get fees from the last 7 days and calculate average liquidity for the specific pair
       const result = await pool.query(`
-        WITH daily_stats AS (
+        WITH weekly_stats AS (
           SELECT 
-            SUM(fee_paid0::numeric) as daily_fee0,
-            SUM(fee_paid1::numeric) as daily_fee1,
+            SUM(fee_paid0::numeric) as weekly_fee0,
+            SUM(fee_paid1::numeric) as weekly_fee1,
             AVG(reserve0::numeric) as avg_reserve0,
             AVG(reserve1::numeric) as avg_reserve1
           FROM swaps 
@@ -371,12 +371,12 @@ export class DataController {
             AND pair = $2
         )
         SELECT 
-          ds.daily_fee0,
-          ds.daily_fee1,
-          ds.avg_reserve0,
-          ds.avg_reserve1
-        FROM daily_stats ds
-      `, [now - day, pairAddress]);
+          ws.weekly_fee0,
+          ws.weekly_fee1,
+          ws.avg_reserve0,
+          ws.avg_reserve1
+        FROM weekly_stats ws
+      `, [now - week, pairAddress]);
 
       if (result.rows.length === 0) {
         const response: ApiResponse = {
@@ -395,17 +395,19 @@ export class DataController {
       }
 
       const row = result.rows[0];
-      const dailyFee0 = parseFloat(row.daily_fee0 || '0');
-      const dailyFee1 = parseFloat(row.daily_fee1 || '0');
+      const weeklyFee0 = parseFloat(row.weekly_fee0 || '0');
+      const weeklyFee1 = parseFloat(row.weekly_fee1 || '0');
       const avgReserve0 = parseFloat(row.avg_reserve0 || '0');
       const avgReserve1 = parseFloat(row.avg_reserve1 || '0');
 
       /**
-       * dailyFee0 is the total fees paid represented in token0
+       * weeklyFee0 is the total fees paid represented in token0 over 7 days
        * avgReserve0 is average reserve of token0
        * APR = total fees paid (in token0 or in token1) / total liquidity (2 * (reserve0 or reserve1)) * 365 * 100
        * the only difference between token0APR and token1APR is the change in token prices but both should be almost the same depending on timeframe
        */
+      const dailyFee0 = weeklyFee0 / 7;
+      const dailyFee1 = weeklyFee1 / 7;
       const token0APR = avgReserve0 > 0 ? (dailyFee0 / (avgReserve0 * 2)) * 365 * 100 : 0;
       const token1APR = avgReserve1 > 0 ? (dailyFee1 / (avgReserve1 * 2)) * 365 * 100 : 0;
 

@@ -5,6 +5,119 @@ import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 
 export class DataController {
+  // Helper function to calculate APR for a given pair address
+  private static async calculateAPR(pairAddress: string): Promise<{
+    apr: number;
+    apr_breakdown: {
+      token0_apr: number;
+      token1_apr: number;
+    };
+  }> {
+    const cacheKey = `apr_calc_${pairAddress}`;
+    const cachedData = cache.get(cacheKey);
+    
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const week = 7 * 24 * 60 * 60;
+
+    // Get fees from the last 7 days and calculate average liquidity for the specific pair
+    const result = await pool.query(`
+      WITH weekly_stats AS (
+        SELECT 
+          SUM(fee_paid0::numeric) as weekly_fee0,
+          SUM(fee_paid1::numeric) as weekly_fee1,
+          AVG(reserve0::numeric) as avg_reserve0,
+          AVG(reserve1::numeric) as avg_reserve1
+        FROM swaps 
+        WHERE timestamp > to_timestamp($1) 
+          AND reserve0 > 0 
+          AND reserve1 > 0
+          AND pair = $2
+      )
+      SELECT 
+        ws.weekly_fee0,
+        ws.weekly_fee1,
+        ws.avg_reserve0,
+        ws.avg_reserve1
+      FROM weekly_stats ws
+    `, [now - week, pairAddress]);
+
+    let aprData = {
+      apr: 0,
+      apr_breakdown: {
+        token0_apr: 0,
+        token1_apr: 0
+      }
+    };
+
+    if (result.rows.length > 0) {
+      const row = result.rows[0];
+      const weeklyFee0 = parseFloat(row.weekly_fee0 || '0');
+      const weeklyFee1 = parseFloat(row.weekly_fee1 || '0');
+      const avgReserve0 = parseFloat(row.avg_reserve0 || '0');
+      const avgReserve1 = parseFloat(row.avg_reserve1 || '0');
+
+      const dailyFee0 = weeklyFee0 / 7;
+      const dailyFee1 = weeklyFee1 / 7;
+      const token0APR = avgReserve0 > 0 ? (dailyFee0 / (avgReserve0 * 2)) * 365 * 100 : 0;
+      const token1APR = avgReserve1 > 0 ? (dailyFee1 / (avgReserve1 * 2)) * 365 * 100 : 0;
+
+      aprData = {
+        apr: (token0APR + token1APR) / 2,
+        apr_breakdown: {
+          token0_apr: token0APR,
+          token1_apr: token1APR
+        }
+      };
+    }
+
+    // Cache for 5 minutes
+    cache.set(cacheKey, aprData, 5 * 60 * 1000);
+    
+    return aprData;
+  }
+
+  // Helper function to calculate total fees paid for a given pair address and time period
+  private static async calculateTotalFeesPaid(pairAddress: string, hours: number): Promise<{
+    total_fee_paid_in_token0: string;
+    total_fee_paid_in_token1: string;
+    period: string;
+  }> {
+    const cacheKey = `fees_calc_${pairAddress}_${hours}hrs`;
+    const cachedData = cache.get(cacheKey);
+    
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const timestamp = now - (hours * 60 * 60);
+    
+    const result = await pool.query(`
+      SELECT 
+        SUM(fee_paid0::numeric) as total_fee_paid0,
+        SUM(fee_paid1::numeric) as total_fee_paid1
+      FROM swaps 
+      WHERE timestamp > to_timestamp($1) AND pair = $2
+    `, [timestamp, pairAddress]);
+
+    const period = hours === 24 ? '24hrs' : `${hours}hrs`;
+
+    const feesData = {
+      total_fee_paid_in_token0: result.rows[0].total_fee_paid0 || '0',
+      total_fee_paid_in_token1: result.rows[0].total_fee_paid1 || '0',
+      period
+    };
+
+    // Cache for 1 minute
+    cache.set(cacheKey, feesData, 1 * 60 * 1000);
+
+    return feesData;
+  }
+
   static async getSwaps(req: Request, res: Response): Promise<void> {
     try {
       const pairAddress = req.params.pairAddress;
@@ -285,26 +398,9 @@ export class DataController {
         return;
       }
 
-      // Calculate fee paid for the specified period and pair
-      const now = Math.floor(Date.now() / 1000);
-      const timestamp = now - (hours * 60 * 60);
-      
-      const result = await pool.query(`
-        SELECT 
-          SUM(fee_paid0::numeric) as total_fee_paid0,
-          SUM(fee_paid1::numeric) as total_fee_paid1
-        FROM swaps 
-        WHERE timestamp > to_timestamp($1) AND pair = $2
-      `, [timestamp, pairAddress]);
-
-      const feeData = {
-        total_fee_paid_in_token0: result.rows[0].total_fee_paid0 || '0',
-        total_fee_paid_in_token1: result.rows[0].total_fee_paid1 || '0'
-      };
-      
+      const feeData = await this.calculateTotalFeesPaid(pairAddress, hours);
       const responseData = {
         ...feeData,
-        period: `${hours}hrs`,
         hours: hours,
         pairAddress
       };
@@ -353,79 +449,18 @@ export class DataController {
         return;
       }
 
-      const now = Math.floor(Date.now() / 1000);
-      const week = 7 * 24 * 60 * 60;
-
-      // Get fees from the last 7 days and calculate average liquidity for the specific pair
-      const result = await pool.query(`
-        WITH weekly_stats AS (
-          SELECT 
-            SUM(fee_paid0::numeric) as weekly_fee0,
-            SUM(fee_paid1::numeric) as weekly_fee1,
-            AVG(reserve0::numeric) as avg_reserve0,
-            AVG(reserve1::numeric) as avg_reserve1
-          FROM swaps 
-          WHERE timestamp > to_timestamp($1) 
-            AND reserve0 > 0 
-            AND reserve1 > 0
-            AND pair = $2
-        )
-        SELECT 
-          ws.weekly_fee0,
-          ws.weekly_fee1,
-          ws.avg_reserve0,
-          ws.avg_reserve1
-        FROM weekly_stats ws
-      `, [now - week, pairAddress]);
-
-      if (result.rows.length === 0) {
-        const response: ApiResponse = {
-          success: true,
-          data: {
-            apr: '0',
-            apr_breakdown: {
-              token0_apr: '0',
-              token1_apr: '0'
-            },
-            pairAddress
-          }
-        };
-        res.json(response);
-        return;
-      }
-
-      const row = result.rows[0];
-      const weeklyFee0 = parseFloat(row.weekly_fee0 || '0');
-      const weeklyFee1 = parseFloat(row.weekly_fee1 || '0');
-      const avgReserve0 = parseFloat(row.avg_reserve0 || '0');
-      const avgReserve1 = parseFloat(row.avg_reserve1 || '0');
-
-      /**
-       * weeklyFee0 is the total fees paid represented in token0 over 7 days
-       * avgReserve0 is average reserve of token0
-       * APR = total fees paid (in token0 or in token1) / total liquidity (2 * (reserve0 or reserve1)) * 365 * 100
-       * the only difference between token0APR and token1APR is the change in token prices but both should be almost the same depending on timeframe
-       */
-      const dailyFee0 = weeklyFee0 / 7;
-      const dailyFee1 = weeklyFee1 / 7;
-      const token0APR = avgReserve0 > 0 ? (dailyFee0 / (avgReserve0 * 2)) * 365 * 100 : 0;
-      const token1APR = avgReserve1 > 0 ? (dailyFee1 / (avgReserve1 * 2)) * 365 * 100 : 0;
-
-      const aprData = {
-        apr: (token0APR + token1APR) / 2,
-        apr_breakdown: {
-          token0_apr: token0APR,
-          token1_apr: token1APR
-        },
+      const aprData = await this.calculateAPR(pairAddress);
+      const responseData = {
+        ...aprData,
         pairAddress
       };
 
       // Cache for 15 seconds
-      cache.set(cacheKey, aprData, 15 * 1000);
+      cache.set(cacheKey, responseData, 15 * 1000);
 
       const response: ApiResponse = {
         success: true,
-        data: aprData
+        data: responseData
       };
 
       res.json(response);
@@ -528,6 +563,87 @@ export class DataController {
       const response: ApiResponse = {
         success: false,
         error: 'Failed to fetch pool info'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  static async getPools(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      // Get total count of pools
+      const countResult = await pool.query('SELECT COUNT(*) FROM pools');
+      const totalCount = parseInt(countResult.rows[0].count);
+
+      // Get pools with pagination
+      const result = await pool.query(`
+        SELECT id, pair_address, token0, token1 
+        FROM pools 
+        ORDER BY id ASC 
+        LIMIT $1 OFFSET $2
+      `, [limit, offset]);
+
+      // Calculate APR and total fees paid for each pool
+      const poolsWithData = await Promise.all(
+        result.rows.map(async (poolData) => {
+          const pairAddress = poolData.pair_address;
+          
+          try {
+            // Calculate APR and total fees paid (1 year = 8760 hours)
+            const [aprData, feesData] = await Promise.all([
+              this.calculateAPR(pairAddress),
+              this.calculateTotalFeesPaid(pairAddress, 8760) // 1 year
+            ]);
+
+            return {
+              ...poolData,
+              apr: aprData,
+              total_fees_paid: feesData
+            };
+          } catch (error) {
+            console.error(`Error calculating data for pool ${pairAddress}:`, error);
+            return {
+              ...poolData,
+              apr: {
+                apr: 0,
+                apr_breakdown: {
+                  token0_apr: 0,
+                  token1_apr: 0
+                }
+              },
+              total_fees_paid: {
+                total_fee_paid_in_token0: '0',
+                total_fee_paid_in_token1: '0',
+                period: '8760hrs'
+              }
+            };
+          }
+        })
+      );
+
+      const responseData = {
+        pools: poolsWithData,
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasNext: offset + limit < totalCount
+        }
+      };
+
+      const response: ApiResponse = {
+        success: true,
+        data: responseData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching pools:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch pools'
       };
       res.status(500).json(response);
     }

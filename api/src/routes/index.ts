@@ -25,6 +25,7 @@ router.get('/', (req, res) => {
       'fee-paid-dynamic': '/api/fee-paid/:pairAddress/:hours',
       'swap-apr': '/api/swap-apr/:pairAddress',
       'pool-info': '/api/pool-info/:pairAddress',
+      'pools': '/api/pools',
       user : {
         'user-swaps': '/user/:address/swap-history'
       }
@@ -32,7 +33,9 @@ router.get('/', (req, res) => {
     parameters: {
       pairAddress: 'Required - The address of the trading pair to query data for',
       hours: 'Optional - Number of hours to look back (defaults to 24)',
-      address: 'Required for user endpoints - The user address to query swaps for'
+      address: 'Required for user endpoints - The user address to query swaps for',
+      limit: 'Optional - Number of pools to return (defaults to 100, max 1000)',
+      offset: 'Optional - Number of pools to skip for pagination (defaults to 0)'
     },
     examples: {
       'Get swaps for pair': '/api/swaps/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
@@ -42,6 +45,7 @@ router.get('/', (req, res) => {
       'Get 30 days fee data': '/api/fee-paid/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/720',
       'Get APR for pair': '/api/swap-apr/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get pool info for pair': '/api/pool-info/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get all pools with APR and fees': '/api/pools?limit=10&offset=0',
       'Get swaps for user': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history'
     },
     notes: {

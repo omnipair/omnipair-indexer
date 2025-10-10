@@ -23,4 +23,7 @@ router.get('/swap-apr/:pairAddress', DataController.getAPR);
 
 router.get('/pool-info/:pairAddress', DataController.getPoolInfo);
 
+// Pools endpoint - returns all pools with pagination
+router.get('/pools', DataController.getPools);
+
 export default router;

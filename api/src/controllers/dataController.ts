@@ -81,30 +81,50 @@ export class DataController {
   }
 
   // Helper function to calculate total fees paid for a given pair address and time period
-  private static async calculateTotalFeesPaid(pairAddress: string, hours: number): Promise<{
+  private static async calculateTotalFeesPaid(pairAddress: string, hours?: number): Promise<{
     total_fee_paid_in_token0: string;
     total_fee_paid_in_token1: string;
     period: string;
   }> {
-    const cacheKey = `fees_calc_${pairAddress}_${hours}hrs`;
+    const cacheKey = `fees_calc_${pairAddress}_${hours ? `${hours}hrs` : 'all'}`;
     const cachedData = cache.get(cacheKey);
     
     if (cachedData) {
       return cachedData;
     }
 
-    const now = Math.floor(Date.now() / 1000);
-    const timestamp = now - (hours * 60 * 60);
-    
-    const result = await pool.query(`
-      SELECT 
-        SUM(fee_paid0::numeric) as total_fee_paid0,
-        SUM(fee_paid1::numeric) as total_fee_paid1
-      FROM swaps 
-      WHERE timestamp > to_timestamp($1) AND pair = $2
-    `, [timestamp, pairAddress]);
+    let query: string;
+    let queryParams: any[];
+    let period: string;
 
-    const period = hours === 24 ? '24hrs' : `${hours}hrs`;
+    if (hours !== undefined && hours !== null) {
+      // Time-limited query
+      const now = Math.floor(Date.now() / 1000);
+      const timestamp = now - (hours * 60 * 60);
+      
+      query = `
+        SELECT 
+          SUM(fee_paid0::numeric) as total_fee_paid0,
+          SUM(fee_paid1::numeric) as total_fee_paid1
+        FROM swaps 
+        WHERE timestamp > to_timestamp($1) AND pair = $2
+      `;
+      queryParams = [timestamp, pairAddress];
+      period = hours === 24 ? '24hrs' : `${hours}hrs`;
+    } else {
+      // No time limit - get all fees
+      query = `
+        SELECT 
+          SUM(fee_paid0::numeric) as total_fee_paid0,
+          SUM(fee_paid1::numeric) as total_fee_paid1
+        FROM swaps 
+        WHERE pair = $1
+      `;
+      queryParams = [pairAddress];
+      period = 'all';
+    }
+    
+    const result = await pool.query(query, queryParams);
 
     const feesData = {
       total_fee_paid_in_token0: result.rows[0].total_fee_paid0 || '0',
@@ -398,7 +418,7 @@ export class DataController {
         return;
       }
 
-      const feeData = await this.calculateTotalFeesPaid(pairAddress, hours);
+      const feeData = await DataController.calculateTotalFeesPaid(pairAddress, hours);
       const responseData = {
         ...feeData,
         hours: hours,
@@ -449,7 +469,7 @@ export class DataController {
         return;
       }
 
-      const aprData = await this.calculateAPR(pairAddress);
+      const aprData = await DataController.calculateAPR(pairAddress);
       const responseData = {
         ...aprData,
         pairAddress
@@ -593,8 +613,8 @@ export class DataController {
           try {
             // Calculate APR and total fees paid (1 year = 8760 hours)
             const [aprData, feesData] = await Promise.all([
-              this.calculateAPR(pairAddress),
-              this.calculateTotalFeesPaid(pairAddress, 8760) // 1 year
+              DataController.calculateAPR(pairAddress),
+              DataController.calculateTotalFeesPaid(pairAddress) // 1 year
             ]);
 
             return {

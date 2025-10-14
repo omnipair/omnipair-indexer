@@ -23,7 +23,11 @@ export interface Swap {
 
 export interface UserHistory {
   id: number;
-  pair: string | null;
+  pair: {
+    address: string | null;
+    token0: string | null;
+    token1: string | null;
+  };
   user_address: string | null;
   amount0: string | null;
   amount1: string | null;

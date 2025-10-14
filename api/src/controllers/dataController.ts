@@ -713,17 +713,34 @@ export class DataController {
       const countResult = await pool.query(countQuery, [userAddress, pair]);
       const totalCount = parseInt(countResult.rows[0].count);
 
-      // Build data query with sorting
+      // Build data query with sorting and join with pools table
       const dataQuery = `
-        SELECT * FROM adjust_liquidity 
-        WHERE user_address = $1 AND pair = $2 
-        ORDER BY ${sortBy} ${sortOrder.toUpperCase()} 
+        SELECT 
+          al.*,
+          p.token0,
+          p.token1
+        FROM adjust_liquidity al
+        LEFT JOIN pools p ON al.pair = p.pair_address
+        WHERE al.user_address = $1 AND al.pair = $2 
+        ORDER BY al.${sortBy} ${sortOrder.toUpperCase()} 
         LIMIT $3 OFFSET $4
       `;
       const result = await pool.query(dataQuery, [userAddress, pair, limit, offset]);
 
+      const transformedHistory = result.rows.map(row => {
+        const { token0, token1, ...rest } = row;
+        return {
+          ...rest,
+          pair: {
+            address: row.pair,
+            token0: token0,
+            token1: token1
+          }
+        };
+      });
+
       const responseData = {
-        userHistory: result.rows,
+        userHistory: transformedHistory,
         pagination: {
           total: totalCount,
           limit,

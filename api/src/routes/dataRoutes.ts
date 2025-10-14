@@ -26,4 +26,7 @@ router.get('/pool-info/:pairAddress', DataController.getPoolInfo);
 // Pools endpoint - returns all pools with pagination
 router.get('/pools', DataController.getPools);
 
+// User history endpoint - returns liquidity adjustment data for a specific user and pair
+router.get('/user-history/:userAddress/:pair', DataController.getUserHistory);
+
 export default router;

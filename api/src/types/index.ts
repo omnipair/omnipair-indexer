@@ -20,3 +20,15 @@ export interface Swap {
   fee_paid0: string | null;
   fee_paid1: string | null;
 }
+
+export interface UserHistory {
+  id: number;
+  pair: string | null;
+  user_address: string | null;
+  amount0: string | null;
+  amount1: string | null;
+  liquidity: string | null;
+  tx_sig: string | null;
+  timestamp: string | null;
+  event_type: string | null;
+}

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import { ApiResponse, Swap } from '../types';
+import { ApiResponse, Swap, UserHistory } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 
@@ -664,6 +664,91 @@ export class DataController {
       const response: ApiResponse = {
         success: false,
         error: 'Failed to fetch pools'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  static async getUserHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const userAddress = req.params.userAddress;
+      const pair = req.params.pair;
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const sortBy = req.query.sortBy as string || 'timestamp';
+      const sortOrder = req.query.sortOrder as string || 'desc';
+
+      // Validate required parameters
+      if (!userAddress || !pair) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Both user_address and pair are required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Validate sort parameters
+      const allowedSortFields = ['id', 'timestamp', 'amount0', 'amount1', 'liquidity'];
+      if (!allowedSortFields.includes(sortBy)) {
+        const response: ApiResponse = {
+          success: false,
+          error: `Invalid sortBy field. Allowed fields: ${allowedSortFields.join(', ')}`
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      if (!['asc', 'desc'].includes(sortOrder.toLowerCase())) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Invalid sortOrder. Must be "asc" or "desc"'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Build count query
+      const countQuery = 'SELECT COUNT(*) FROM adjust_liquidity WHERE user_address = $1 AND pair = $2';
+      const countResult = await pool.query(countQuery, [userAddress, pair]);
+      const totalCount = parseInt(countResult.rows[0].count);
+
+      // Build data query with sorting
+      const dataQuery = `
+        SELECT * FROM adjust_liquidity 
+        WHERE user_address = $1 AND pair = $2 
+        ORDER BY ${sortBy} ${sortOrder.toUpperCase()} 
+        LIMIT $3 OFFSET $4
+      `;
+      const result = await pool.query(dataQuery, [userAddress, pair, limit, offset]);
+
+      const responseData = {
+        userHistory: result.rows,
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasNext: offset + limit < totalCount
+        },
+        filters: {
+          userAddress,
+          pair,
+          sortBy,
+          sortOrder: sortOrder.toLowerCase()
+        }
+      };
+
+      const response: ApiResponse = {
+        success: true,
+        data: responseData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching user history:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch user history data'
       };
       res.status(500).json(response);
     }

@@ -26,6 +26,7 @@ router.get('/', (req, res) => {
       'swap-apr': '/api/swap-apr/:pairAddress',
       'pool-info': '/api/pool-info/:pairAddress',
       'pools': '/api/pools',
+      'user-history': '/api/user-history/:userAddress/:pair',
       user : {
         'user-swaps': '/user/:address/swap-history'
       }
@@ -34,8 +35,12 @@ router.get('/', (req, res) => {
       pairAddress: 'Required - The address of the trading pair to query data for',
       hours: 'Optional - Number of hours to look back (defaults to 24)',
       address: 'Required for user endpoints - The user address to query swaps for',
-      limit: 'Optional - Number of pools to return (defaults to 100, max 1000)',
-      offset: 'Optional - Number of pools to skip for pagination (defaults to 0)'
+      userAddress: 'Required for user-history endpoint - The user address to query liquidity history for',
+      pair: 'Required for user-history endpoint - The pair address to query liquidity history for',
+      limit: 'Optional - Number of results to return (defaults to 100, max 1000)',
+      offset: 'Optional - Number of results to skip for pagination (defaults to 0)',
+      sortBy: 'Optional - Field to sort by (id, timestamp, amount0, amount1, liquidity)',
+      sortOrder: 'Optional - Sort order (asc, desc)'
     },
     examples: {
       'Get swaps for pair': '/api/swaps/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
@@ -46,14 +51,17 @@ router.get('/', (req, res) => {
       'Get APR for pair': '/api/swap-apr/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get pool info for pair': '/api/pool-info/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get all pools with APR and fees': '/api/pools?limit=10&offset=0',
-      'Get swaps for user': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history'
+      'Get swaps for user': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history',
+      'Get user liquidity history': '/api/user-history/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get user liquidity history with pagination': '/api/user-history/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P?limit=50&sortBy=timestamp&sortOrder=desc'
     },
     notes: {
       'required-parameter': 'API endpoints require a pairAddress parameter, user endpoints require an address parameter',
       'data-filtering': 'API data is filtered by pair address, user endpoints filter by user address',
       'chart-intervals': 'Chart automatically selects intervals: ≤24hrs=1min, ≤168hrs=1hr, >168hrs=1day',
       'caching': 'Responses are cached per pair to improve performance',
-      'user-endpoints': 'User endpoints provide access to all swaps performed by a specific user address'
+      'user-endpoints': 'User endpoints provide access to all swaps performed by a specific user address',
+      'user-history': 'User history endpoint provides liquidity adjustment data for a specific user and pair combination'
     }
   });
 });

@@ -211,6 +211,13 @@ impl OmnipairInstructionProcessor {
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        // Save to adjust_liquidity table with event_type = "remove"
+        if let Err(e) = database::upsert_burn_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to save burn event to database: {}", e);
+            return Err(e);
+        }
         
         log::info!(
             "Successfully processed BurnEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 
@@ -236,6 +243,13 @@ impl OmnipairInstructionProcessor {
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        // Save to adjust_liquidity table with event_type = "add"
+        if let Err(e) = database::upsert_mint_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to save mint event to database: {}", e);
+            return Err(e);
+        }
         
         log::info!(
             "Successfully processed MintEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 

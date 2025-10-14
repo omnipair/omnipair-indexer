@@ -3,6 +3,8 @@ use carbon_omnipair_decoder::instructions::{
     swap_event::SwapEvent,
     leverage_position_created_event::LeveragePositionCreatedEvent,
     leverage_position_updated_event::LeveragePositionUpdatedEvent,
+    mint_event::MintEvent,
+    burn_event::BurnEvent,
 };
 use sqlx::PgPool;
 use tokio::sync::OnceCell;
@@ -66,7 +68,7 @@ pub async fn upsert_swap_event(
             pair, user_address, is_token0_in, amount_in, amount_out, 
             reserve0, reserve1, timestamp, tx_sig, slot, fee_paid0, fee_paid1
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        ON CONFLICT (tx_sig) DO UPDATE SET
+        ON CONFLICT (tx_sig, timestamp) DO UPDATE SET
             pair = EXCLUDED.pair,
             user_address = EXCLUDED.user_address,
             is_token0_in = EXCLUDED.is_token0_in,
@@ -200,6 +202,92 @@ pub async fn upsert_leverage_position_updated_event(
     if let Err(e) = upsert_result {
         log::error!("Failed to upsert into leverage_position_updated_events table: {}", e);
         return Err(carbon_core::error::Error::Custom(format!("Failed to upsert leverage position updated event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert a mint event into the adjust_liquidity table
+pub async fn upsert_mint_event(
+    event: &MintEvent,
+    tx_signature: &str,
+    _slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO adjust_liquidity (
+            pair, user_address, amount0, amount1, liquidity, tx_sig, timestamp, event_type
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::liquidity_event_type)
+        ON CONFLICT (tx_sig, timestamp) DO UPDATE SET
+            pair = EXCLUDED.pair,
+            user_address = EXCLUDED.user_address,
+            amount0 = EXCLUDED.amount0,
+            amount1 = EXCLUDED.amount1,
+            liquidity = EXCLUDED.liquidity,
+            timestamp = EXCLUDED.timestamp,
+            event_type = EXCLUDED.event_type
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.amount0))
+    .bind(bigdecimal::BigDecimal::from(event.amount1))
+    .bind(bigdecimal::BigDecimal::from(event.liquidity))
+    .bind(tx_signature)
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind("add") // MintEvent = "add" liquidity
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into adjust_liquidity table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert mint event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert a burn event into the adjust_liquidity table
+pub async fn upsert_burn_event(
+    event: &BurnEvent,
+    tx_signature: &str,
+    _slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO adjust_liquidity (
+            pair, user_address, amount0, amount1, liquidity, tx_sig, timestamp, event_type
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::liquidity_event_type)
+        ON CONFLICT (tx_sig, timestamp) DO UPDATE SET
+            pair = EXCLUDED.pair,
+            user_address = EXCLUDED.user_address,
+            amount0 = EXCLUDED.amount0,
+            amount1 = EXCLUDED.amount1,
+            liquidity = EXCLUDED.liquidity,
+            timestamp = EXCLUDED.timestamp,
+            event_type = EXCLUDED.event_type
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.amount0))
+    .bind(bigdecimal::BigDecimal::from(event.amount1))
+    .bind(bigdecimal::BigDecimal::from(event.liquidity))
+    .bind(tx_signature)
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind("remove") // BurnEvent = "remove" liquidity
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into adjust_liquidity table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert burn event: {}", e)));
     }
     
     Ok(())

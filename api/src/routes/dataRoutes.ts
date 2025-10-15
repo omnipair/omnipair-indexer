@@ -32,4 +32,7 @@ router.get('/user-history/:userAddress/:pair', DataController.getUserHistory);
 // User positions endpoint
 router.get('/user-positions/:userAddress', DataController.getUserPositions);
 
+// All positions endpoint - returns all positions
+router.get('/positions', DataController.getAllPositions);
+
 export default router;

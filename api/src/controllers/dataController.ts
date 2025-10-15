@@ -856,4 +856,93 @@ export class DataController {
       res.status(500).json(response);
     }
   }
+
+  static async getAllPositions(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const cacheKey = `all_positions_${limit}_${offset}`;
+      const cachedData = cache.get(cacheKey);
+      
+      if (cachedData) {
+        const response: ApiResponse = {
+          success: true,
+          data: cachedData
+        };
+        res.json(response);
+        return;
+      }
+
+      // Get total count of unique positions
+      const countResult = await pool.query(`
+        SELECT COUNT(DISTINCT position) as total_count
+        FROM user_position_updated_events
+      `);
+      const totalCount = parseInt(countResult.rows[0].total_count);
+
+      // Query to get all unique positions with latest data
+      const result = await pool.query(`
+        SELECT 
+          signer,
+          pair,
+          position,
+          collateral0,
+          collateral1,
+          debt0_shares,
+          debt1_shares,
+          collateral0_applied_min_cf_bps,
+          collateral1_applied_min_cf_bps,
+          event_timestamp
+        FROM user_position_updated_events upu1
+        WHERE event_timestamp = (
+          SELECT MAX(event_timestamp)
+          FROM user_position_updated_events upu2
+          WHERE upu2.position = upu1.position
+        )
+        ORDER BY event_timestamp DESC
+        LIMIT $1 OFFSET $2
+      `, [limit, offset]);
+
+      const positions = result.rows.map(row => ({
+        signer: row.signer,
+        pair: row.pair,
+        position: row.position,
+        collateral0: row.collateral0,
+        collateral1: row.collateral1,
+        debt0_shares: row.debt0_shares,
+        debt1_shares: row.debt1_shares,
+        collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
+        collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
+        event_timestamp: row.event_timestamp
+      }));
+
+      const responseData = {
+        positions,
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasNext: offset + limit < totalCount
+        }
+      };
+
+      // Cache for 15 seconds
+      cache.set(cacheKey, responseData, 15 * 1000);
+
+      const response: ApiResponse = {
+        success: true,
+        data: responseData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching all positions:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch all positions'
+      };
+      res.status(500).json(response);
+    }
+  }
 }

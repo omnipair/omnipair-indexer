@@ -27,6 +27,8 @@ router.get('/', (req, res) => {
       'pool-info': '/api/pool-info/:pairAddress',
       'pools': '/api/pools',
       'user-history': '/api/user-history/:userAddress/:pair',
+      'user-positions': '/api/user-positions/:userAddress',
+      'positions': '/api/positions',
       user : {
         'user-swaps': '/user/:address/swap-history'
       }
@@ -35,7 +37,7 @@ router.get('/', (req, res) => {
       pairAddress: 'Required - The address of the trading pair to query data for',
       hours: 'Optional - Number of hours to look back (defaults to 24)',
       address: 'Required for user endpoints - The user address to query swaps for',
-      userAddress: 'Required for user-history endpoint - The user address to query liquidity history for',
+      userAddress: 'Required for user-history and user-positions endpoints - The user address to query data for',
       pair: 'Required for user-history endpoint - The pair address to query liquidity history for',
       limit: 'Optional - Number of results to return (defaults to 100, max 1000)',
       offset: 'Optional - Number of results to skip for pagination (defaults to 0)',
@@ -53,7 +55,9 @@ router.get('/', (req, res) => {
       'Get all pools with APR and fees': '/api/pools?limit=10&offset=0',
       'Get swaps for user': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history',
       'Get user liquidity history': '/api/user-history/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
-      'Get user liquidity history with pagination': '/api/user-history/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P?limit=50&sortBy=timestamp&sortOrder=desc'
+      'Get user liquidity history with pagination': '/api/user-history/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P?limit=50&sortBy=timestamp&sortOrder=desc',
+      'Get user positions': '/api/user-positions/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
+      'Get all positions': '/api/positions?limit=50&offset=0'
     },
     notes: {
       'required-parameter': 'API endpoints require a pairAddress parameter, user endpoints require an address parameter',

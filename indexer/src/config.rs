@@ -8,9 +8,9 @@ pub struct Args {
     #[arg(long)]
     pub http_rpc_url: Option<String>,
 
-    /// Start slot for historical crawling (falls back to START_SLOT env)
+    /// Start block for historical crawling (falls back to START_BLOCK env)
     #[arg(long)]
-    pub start_slot: Option<u64>,
+    pub start_block: Option<u64>,
 
     /// RPC WebSocket URL (falls back to RPC_WS_URL env) - used for account monitoring
     #[arg(long)]
@@ -36,7 +36,7 @@ pub struct Args {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub http_rpc_url: String,
-    pub start_slot: u64,
+    pub start_block: u64,
     pub helius_api_key: Option<String>,
     pub rpc_ws_url: Option<String>,
     pub health_port: u16,
@@ -48,8 +48,8 @@ impl Config {
         let helius_api_key = args.helius_api_key.or_else(|| env::var("HELIUS_API_KEY").ok());
         let http_rpc_url = args.http_rpc_url.or_else(|| env::var("HTTP_RPC_URL").ok())
             .unwrap_or_else(|| "https://api.mainnet-beta.solana.com/".to_string());
-        let start_slot = args.start_slot.or_else(|| {
-            env::var("START_SLOT").ok().and_then(|s| s.parse().ok())
+        let start_block = args.start_block.or_else(|| {
+            env::var("START_BLOCK").ok().and_then(|s| s.parse().ok())
         }).unwrap_or(0);
         
         let rpc_ws_url = if args.enable_account_monitoring {
@@ -62,7 +62,7 @@ impl Config {
 
         Self {
             http_rpc_url,
-            start_slot,
+            start_block,
             helius_api_key,
             rpc_ws_url,
             health_port: args.health_port,

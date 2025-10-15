@@ -100,6 +100,6 @@ async fn run_daemon_loop(config: &Config, websocket_state: Option<WebSocketServe
 }
 
 async fn run_indexer_instance(config: &Config, websocket_state: Option<WebSocketServerState>) -> CarbonResult<()> {
-    let pipeline = create_pipeline(config, websocket_state)?;
+    let pipeline = create_pipeline(config, websocket_state).await?;
     run_pipeline(pipeline).await
 }

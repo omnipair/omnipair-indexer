@@ -29,4 +29,7 @@ router.get('/pools', DataController.getPools);
 // User history endpoint - returns liquidity adjustment data for a specific user and pair
 router.get('/user-history/:userAddress/:pair', DataController.getUserHistory);
 
+// User positions endpoint
+router.get('/user-positions/:userAddress', DataController.getUserPositions);
+
 export default router;

@@ -11,7 +11,7 @@ use crate::{
 };
 
 /// Creates and configures the indexer pipeline based on the provided configuration
-pub fn create_pipeline(config: &Config, websocket_state: Option<WebSocketServerState>) -> CarbonResult<Pipeline> {
+pub async fn create_pipeline(config: &Config, websocket_state: Option<WebSocketServerState>) -> CarbonResult<Pipeline> {
     // Require Helius API key for transaction monitoring
     let api_key = config.helius_api_key.as_ref()
         .ok_or_else(|| carbon_core::error::Error::Custom(
@@ -24,7 +24,11 @@ pub fn create_pipeline(config: &Config, websocket_state: Option<WebSocketServerS
     let atlas_datasource = create_helius_datasource(api_key, *OMNIPAIR_PROGRAM_ID);
 
     // Create transaction crawler datasource (more efficient than block crawler)
-    let _transaction_crawler_datasource = create_transaction_crawler_datasource(config.http_rpc_url.clone(), *OMNIPAIR_PROGRAM_ID);
+    let _transaction_crawler_datasource = create_transaction_crawler_datasource(
+        config.http_rpc_url.clone(), 
+        *OMNIPAIR_PROGRAM_ID,
+        Some(config.start_block)
+    ).await?;
 
     // Create instruction processor with optional WebSocket state
     let instruction_processor = match websocket_state {

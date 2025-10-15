@@ -5,6 +5,10 @@ use carbon_omnipair_decoder::instructions::{
     leverage_position_updated_event::LeveragePositionUpdatedEvent,
     mint_event::MintEvent,
     burn_event::BurnEvent,
+    adjust_collateral_event::AdjustCollateralEvent,
+    adjust_debt_event::AdjustDebtEvent,
+    user_position_updated_event::UserPositionUpdatedEvent,
+    user_position_liquidated_event::UserPositionLiquidatedEvent,
 };
 use sqlx::PgPool;
 use tokio::sync::OnceCell;
@@ -288,6 +292,202 @@ pub async fn upsert_burn_event(
     if let Err(e) = upsert_result {
         log::error!("Failed to upsert into adjust_liquidity table: {}", e);
         return Err(carbon_core::error::Error::Custom(format!("Failed to upsert burn event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert an AdjustCollateralEvent into the database
+pub async fn upsert_adjust_collateral_event(
+    event: &AdjustCollateralEvent,
+    tx_signature: &str,
+    slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO adjust_collateral_events (
+            pair, signer, amount0, amount1, transaction_signature, slot, event_timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (transaction_signature) DO UPDATE SET
+            pair = EXCLUDED.pair,
+            signer = EXCLUDED.signer,
+            amount0 = EXCLUDED.amount0,
+            amount1 = EXCLUDED.amount1,
+            slot = EXCLUDED.slot,
+            event_timestamp = EXCLUDED.event_timestamp
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.amount0))
+    .bind(bigdecimal::BigDecimal::from(event.amount1))
+    .bind(tx_signature)
+    .bind(bigdecimal::BigDecimal::from(slot))
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into adjust_collateral_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert adjust collateral event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert an AdjustDebtEvent into the database
+pub async fn upsert_adjust_debt_event(
+    event: &AdjustDebtEvent,
+    tx_signature: &str,
+    slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO adjust_debt_events (
+            pair, signer, amount0, amount1, transaction_signature, slot, event_timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (transaction_signature) DO UPDATE SET
+            pair = EXCLUDED.pair,
+            signer = EXCLUDED.signer,
+            amount0 = EXCLUDED.amount0,
+            amount1 = EXCLUDED.amount1,
+            slot = EXCLUDED.slot,
+            event_timestamp = EXCLUDED.event_timestamp
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.amount0))
+    .bind(bigdecimal::BigDecimal::from(event.amount1))
+    .bind(tx_signature)
+    .bind(bigdecimal::BigDecimal::from(slot))
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into adjust_debt_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert adjust debt event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert a UserPositionUpdatedEvent into the database
+pub async fn upsert_user_position_updated_event(
+    event: &UserPositionUpdatedEvent,
+    tx_signature: &str,
+    slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO user_position_updated_events (
+            pair, signer, position, collateral0, collateral1, debt0_shares, debt1_shares,
+            collateral0_applied_min_cf_bps, collateral1_applied_min_cf_bps,
+            transaction_signature, slot, event_timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (transaction_signature) DO UPDATE SET
+            pair = EXCLUDED.pair,
+            signer = EXCLUDED.signer,
+            position = EXCLUDED.position,
+            collateral0 = EXCLUDED.collateral0,
+            collateral1 = EXCLUDED.collateral1,
+            debt0_shares = EXCLUDED.debt0_shares,
+            debt1_shares = EXCLUDED.debt1_shares,
+            collateral0_applied_min_cf_bps = EXCLUDED.collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps = EXCLUDED.collateral1_applied_min_cf_bps,
+            slot = EXCLUDED.slot,
+            event_timestamp = EXCLUDED.event_timestamp
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(event.position.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.collateral0))
+    .bind(bigdecimal::BigDecimal::from(event.collateral1))
+    .bind(bigdecimal::BigDecimal::from(event.debt0_shares))
+    .bind(bigdecimal::BigDecimal::from(event.debt1_shares))
+    .bind(event.collateral0_applied_min_cf_bps as i32)
+    .bind(event.collateral1_applied_min_cf_bps as i32)
+    .bind(tx_signature)
+    .bind(bigdecimal::BigDecimal::from(slot))
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into user_position_updated_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user position updated event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert a UserPositionLiquidatedEvent into the database
+pub async fn upsert_user_position_liquidated_event(
+    event: &UserPositionLiquidatedEvent,
+    tx_signature: &str,
+    slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO user_position_liquidated_events (
+            pair, signer, position, liquidator, collateral0_liquidated, collateral1_liquidated,
+            debt0_liquidated, debt1_liquidated, collateral_price, shortfall, liquidation_bonus_applied,
+            k0, k1, transaction_signature, slot, event_timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        ON CONFLICT (transaction_signature) DO UPDATE SET
+            pair = EXCLUDED.pair,
+            signer = EXCLUDED.signer,
+            position = EXCLUDED.position,
+            liquidator = EXCLUDED.liquidator,
+            collateral0_liquidated = EXCLUDED.collateral0_liquidated,
+            collateral1_liquidated = EXCLUDED.collateral1_liquidated,
+            debt0_liquidated = EXCLUDED.debt0_liquidated,
+            debt1_liquidated = EXCLUDED.debt1_liquidated,
+            collateral_price = EXCLUDED.collateral_price,
+            shortfall = EXCLUDED.shortfall,
+            liquidation_bonus_applied = EXCLUDED.liquidation_bonus_applied,
+            k0 = EXCLUDED.k0,
+            k1 = EXCLUDED.k1,
+            slot = EXCLUDED.slot,
+            event_timestamp = EXCLUDED.event_timestamp
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(event.position.to_string())
+    .bind(event.liquidator.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.collateral0_liquidated))
+    .bind(bigdecimal::BigDecimal::from(event.collateral1_liquidated))
+    .bind(bigdecimal::BigDecimal::from(event.debt0_liquidated))
+    .bind(bigdecimal::BigDecimal::from(event.debt1_liquidated))
+    .bind(bigdecimal::BigDecimal::from(event.collateral_price))
+    .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.shortfall)))
+    .bind(bigdecimal::BigDecimal::from(event.liquidation_bonus_applied))
+    .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.k0)))
+    .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.k1)))
+    .bind(tx_signature)
+    .bind(bigdecimal::BigDecimal::from(slot))
+    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into user_position_liquidated_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user position liquidated event: {}", e)));
     }
     
     Ok(())

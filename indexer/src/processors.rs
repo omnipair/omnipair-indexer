@@ -138,6 +138,12 @@ impl OmnipairInstructionProcessor {
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        if let Err(e) = database::upsert_adjust_collateral_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to insert adjust collateral event: {}", e);
+            return Err(e);
+        }
         
         log::info!(
             "Successfully processed AdjustCollateralEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}", 
@@ -162,6 +168,12 @@ impl OmnipairInstructionProcessor {
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        if let Err(e) = database::upsert_adjust_debt_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to insert adjust debt event: {}", e);
+            return Err(e);
+        }
         
         log::info!(
             "Successfully processed AdjustDebtEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}", 
@@ -348,6 +360,12 @@ impl OmnipairInstructionProcessor {
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        if let Err(e) = database::upsert_user_position_liquidated_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to insert user position liquidated event: {}", e);
+            return Err(e);
+        }
         
         log::info!(
             "Successfully processed UserPositionLiquidatedEvent - Position: {}, Liquidator: {}, Collateral0 Liquidated: {}, Collateral1 Liquidated: {}, Debt0 Liquidated: {}, Debt1 Liquidated: {}, Pair: {}, User: {}, TxSig: {}", 
@@ -376,6 +394,12 @@ impl OmnipairInstructionProcessor {
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        if let Err(e) = database::upsert_user_position_updated_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to insert user position updated event: {}", e);
+            return Err(e);
+        }
         
         log::info!(
             "Successfully processed UserPositionUpdatedEvent - Position: {}, Collateral0: {}, Collateral1: {}, Debt0 Shares: {}, Debt1 Shares: {}, Pair: {}, User: {}, TxSig: {}", 

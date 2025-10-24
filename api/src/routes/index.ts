@@ -6,11 +6,11 @@ import positionRoutes from './positionRoutes';
 
 const router = Router();
 
-// Category-based routing
-router.use('/pool', poolRoutes);
-router.use('/swap', swapRoutes);
-router.use('/user', userRoutes);
-router.use('/position', positionRoutes);
+// Category-based routing with API prefix
+router.use('/api/pools', poolRoutes);
+router.use('/api/swap', swapRoutes);
+router.use('/api/user', userRoutes);
+router.use('/api/position', positionRoutes);
 
 router.get('/', (req, res) => {
   res.json({
@@ -20,27 +20,27 @@ router.get('/', (req, res) => {
     description: 'All endpoints require a pair address parameter to filter data for a specific trading pair.',
     endpoints: {
       pools: {
-        'all-pools': '/pool/',
-        'pool-info': '/pool/info/:pairAddress',
-        'pool-apr': '/pool/apr/:pairAddress'
+        'all-pools': '/api/pools/',
+        'pool-info': '/api/pools/info/:pairAddress',
+        'pool-apr': '/api/pools/apr/:pairAddress'
       },
       swaps: {
-        'swaps': '/swap/:pairAddress',
-        'volume': '/swap/volume/:pairAddress (default: 24hrs)',
-        'volume-dynamic': '/swap/volume/:pairAddress/:hours',
-        'chart-prices': '/swap/chart-prices/:pairAddress (default: 24hrs)',
-        'chart-prices-dynamic': '/swap/chart-prices/:pairAddress/:hours',
-        'fee-paid': '/swap/fee-paid/:pairAddress (default: 24hrs)',
-        'fee-paid-dynamic': '/swap/fee-paid/:pairAddress/:hours'
+        'swaps': '/api/swap/:pairAddress',
+        'volume': '/api/swap/volume/:pairAddress (default: 24hrs)',
+        'volume-dynamic': '/api/swap/volume/:pairAddress/:hours',
+        'chart-prices': '/api/swap/chart-prices/:pairAddress (default: 24hrs)',
+        'chart-prices-dynamic': '/api/swap/chart-prices/:pairAddress/:hours',
+        'fee-paid': '/api/swap/fee-paid/:pairAddress (default: 24hrs)',
+        'fee-paid-dynamic': '/api/swap/fee-paid/:pairAddress/:hours'
       },
       users: {
-        'swap-history': '/user/:userAddress/swap-history',
-        'liquidity-history': '/user/:userAddress/history/:pair',
-        'positions': '/user/:userAddress/positions',
-        'lending-history': '/user/:userAddress/lending-history'
+        'swap-history': '/api/user/:userAddress/swap-history',
+        'liquidity-history': '/api/user/:userAddress/history/:pair',
+        'positions': '/api/user/:userAddress/positions',
+        'lending-history': '/api/user/:userAddress/lending-history'
       },
       positions: {
-        'all-positions': '/position/'
+        'all-positions': '/api/position/'
       }
     },
     parameters: {
@@ -54,24 +54,24 @@ router.get('/', (req, res) => {
       sortOrder: 'Optional - Sort order (asc, desc)'
     },
     examples: {
-      'Get all pools with APR and fees': '/pool/?limit=10&offset=0',
-      'Get pool info for pair': '/pool/info/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
-      'Get APR for pair': '/pool/apr/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
-      'Get swaps for pair': '/swap/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
-      'Get 24h volume for pair': '/swap/volume/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
-      'Get 48h volume for pair': '/swap/volume/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/48',
-      'Get 7 days chart prices': '/swap/chart-prices/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/168',
-      'Get 30 days fee data': '/swap/fee-paid/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/720',
-      'Get swaps for user': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history',
-      'Get user liquidity history': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/history/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
-      'Get user liquidity history with pagination': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/history/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P?limit=50&sortBy=timestamp&sortOrder=desc',
-      'Get user positions': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/positions',
-      'Get user lending history': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/lending-history',
-      'Get user lending history with pagination': '/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/lending-history?limit=50&offset=0',
-      'Get all positions': '/position/?limit=50&offset=0'
+      'Get all pools with APR and fees': '/api/pools/?limit=10&offset=0',
+      'Get pool info for pair': '/api/pools/info/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get APR for pair': '/api/pools/apr/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get swaps for pair': '/api/swap/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get 24h volume for pair': '/api/swap/volume/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get 48h volume for pair': '/api/swap/volume/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/48',
+      'Get 7 days chart prices': '/api/swap/chart-prices/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/168',
+      'Get 30 days fee data': '/api/swap/fee-paid/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/720',
+      'Get swaps for user': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history',
+      'Get user liquidity history': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/history/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
+      'Get user liquidity history with pagination': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/history/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P?limit=50&sortBy=timestamp&sortOrder=desc',
+      'Get user positions': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/positions',
+      'Get user lending history': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/lending-history',
+      'Get user lending history with pagination': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/lending-history?limit=50&offset=0',
+      'Get all positions': '/api/position/?limit=50&offset=0'
     },
     notes: {
-      'api-structure': 'API is organized by categories: /pool/ for pool data, /swap/ for swap data, /user/ for user data, /position/ for position data',
+      'api-structure': 'API is organized by categories: /api/pools/ for pool data, /api/swap/ for swap data, /api/user/ for user data, /api/position/ for position data',
       'required-parameters': 'Pool and swap endpoints require a pairAddress parameter, user endpoints require an address parameter',
       'data-filtering': 'Pool and swap data is filtered by pair address, user endpoints filter by user address',
       'chart-intervals': 'Chart automatically selects intervals: ≤24hrs=1min, ≤168hrs=1hr, >168hrs=1day',

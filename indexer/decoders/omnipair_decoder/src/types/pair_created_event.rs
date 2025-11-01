@@ -1,4 +1,5 @@
 
+use super::*;
 
 use carbon_core::{CarbonDeserialize, borsh};
 
@@ -7,6 +8,5 @@ use carbon_core::{CarbonDeserialize, borsh};
 pub struct PairCreatedEvent {
     pub token0: solana_pubkey::Pubkey,
     pub token1: solana_pubkey::Pubkey,
-    pub pair: solana_pubkey::Pubkey,
-    pub timestamp: i64,
+    pub metadata: EventMetadata,
 }

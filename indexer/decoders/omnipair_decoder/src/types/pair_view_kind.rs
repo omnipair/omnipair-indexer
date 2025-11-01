@@ -13,6 +13,8 @@ pub enum PairViewKind {
     GetRates,
     GetMinCollateralForDebt,
     GetBorrowLimitAndCfBpsForCollateral,
+    GetMaxLeverageForDeposit,
+    GetLeverageMultipliers,
 }
 
 

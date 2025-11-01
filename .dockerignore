@@ -1,15 +1,79 @@
-node_modules
-Dockerfile*
-docker-compose*
-.dockerignore
-.git
-.gitignore
-README.md
-LICENSE
-.vscode
-Makefile
-helm-charts
+# Dockerfile.indexer .dockerignore
+# Optimize build context for the indexer
+
+# Rust build artifacts
+target/
+# Note: Cargo.lock is needed for reproducible builds
+
+# Documentation and tests (not needed for production build)
+**/*.md
+**/tests/
+**/fixtures/
+
+# Development files
 .env
-.editorconfig
-.idea
-coverage*
+.env.local
+.env.development
+.env.test
+
+# Git and IDE files
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+
+# Node.js (not needed for Rust indexer)
+node_modules/
+package.json
+package-lock.json
+yarn.lock
+bun.lock
+
+# API and database components (separate services)
+api/
+database/
+
+# Other language artifacts
+*.pyc
+__pycache__/
+.python-version
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Logs
+*.log
+logs/
+
+# Editor backups
+*.bak
+*.backup
+
+# Railway and deployment files (copied separately if needed)
+railway.toml
+docker-compose.yml
+Dockerfile
+!Dockerfile.indexer
+
+# Test data and fixtures
+**/fixtures/
+test-data/
+
+# Documentation
+DEVELOPMENT.md
+QUICKSTART.md
+SETUP.md

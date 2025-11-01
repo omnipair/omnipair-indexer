@@ -87,7 +87,7 @@ impl Metrics for LogMetrics {
         let start = self.start.read().await;
         let mut last_flush = self.last_flush.write().await;
 
-        log::info!(
+        log::debug!(
             "{:02}:{:02}:{:02} (+{:?}) | {} processed ({}%), {} successful, {} failed ({}%), {} in queue, avg: {}ms, min: {}ms, max: {}ms",
             start.elapsed().as_secs() / 3600,
             (start.elapsed().as_secs() % 3600) / 60,
@@ -105,11 +105,11 @@ impl Metrics for LogMetrics {
         );
 
         for counter in self.counters.read().await.iter() {
-            log::info!("{}: {}", counter.0, counter.1);
+            log::debug!("{}: {}", counter.0, counter.1);
         }
 
         for gauge in self.gauges.read().await.iter() {
-            log::info!("{}: {}", gauge.0, gauge.1);
+            log::debug!("{}: {}", gauge.0, gauge.1);
         }
 
         for histogram in self.histograms.read().await.iter() {
@@ -131,7 +131,7 @@ impl Metrics for LogMetrics {
                 .copied()
                 .unwrap_or(0.0);
 
-            log::info!(
+            log::debug!(
                 "{} -> avg: {}, min: {}, max: {}",
                 histogram.0,
                 avg,

@@ -178,9 +178,6 @@ export class PairStateService {
       const [pairPda] = findPairPDA(this.program, token0Mint, token1Mint);
       const pairAccount = await (this.program.account as any).pair.fetch(pairPda);
 
-      // Debug: Log available fields to understand the account structure
-      console.log('Pair account fields:', Object.keys(pairAccount));
-
       const {
         token0Decimals,
         token1Decimals,

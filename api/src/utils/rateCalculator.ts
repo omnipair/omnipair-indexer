@@ -63,11 +63,11 @@ export async function fetchRatesFromRateModel(
     // Fetch the rate model account
     const rateModel = await (program.account as any).rateModel.fetch(rateModelPubkey);
     
-    console.log('Rate Model:', {
-      expRate: rateModel.expRate.toString(),
-      targetUtilStart: rateModel.targetUtilStart.toString(),
-      targetUtilEnd: rateModel.targetUtilEnd.toString(),
-    });
+    // console.log('Rate Model:', {
+    //   expRate: rateModel.expRate.toString(),
+    //   targetUtilStart: rateModel.targetUtilStart.toString(),
+    //   targetUtilEnd: rateModel.targetUtilEnd.toString(),
+    // });
     
     // Calculate rates for both tokens
     const rate0 = calculateInterestRate(utilization0, {

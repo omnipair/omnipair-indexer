@@ -3,8 +3,37 @@ import pool from '../config/database';
 import { ApiResponse, Swap, UserHistory } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
+import { PublicKey } from '@solana/web3.js';
+import { PairStateService } from '../services/PairStateService';
+import path from 'path';
 
 export class DataController {
+  // Singleton instance for PairStateService
+  private static pairStateService: PairStateService | null = null;
+
+  // Initialize PairStateService once
+  private static async initializePairStateService(): Promise<PairStateService> {
+    if (DataController.pairStateService) {
+      return DataController.pairStateService;
+    }
+
+    const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+    const service = new PairStateService(rpcUrl);
+    
+    try {
+      // Load IDL
+      const idlPath = path.join(__dirname, '../idl/omnipair.mainnet.json');
+      const idl = require(idlPath);
+      service.initializeProgram(idl);
+      
+      DataController.pairStateService = service;
+      return service;
+    } catch (error) {
+      console.error('Error initializing PairStateService:', error);
+      throw error;
+    }
+  }
+
   // Helper function to calculate APR for a given pair address
   private static async calculateAPR(pairAddress: string): Promise<{
     apr: number;
@@ -605,27 +634,133 @@ export class DataController {
         LIMIT $1 OFFSET $2
       `, [limit, offset]);
 
-      // Calculate APR and total fees paid for each pool
+      // Initialize PairStateService
+      const pairService = await DataController.initializePairStateService();
+
+      // Calculate APR, total fees paid, and fetch pair state for each pool
       const poolsWithData = await Promise.all(
         result.rows.map(async (poolData) => {
           const pairAddress = poolData.pair_address;
+          const token0Address = poolData.token0;
+          const token1Address = poolData.token1;
           
           try {
-            // Calculate APR and total fees paid (1 year = 8760 hours)
-            const [aprData, feesData] = await Promise.all([
+            // Fetch pair state, APR and total fees paid in parallel
+            const [pairState, aprData, feesData] = await Promise.all([
+              pairService.fetchPairState(
+                new PublicKey(token0Address),
+                new PublicKey(token1Address)
+              ),
               DataController.calculateAPR(pairAddress),
-              DataController.calculateTotalFeesPaid(pairAddress) // 1 year
+              DataController.calculateTotalFeesPaid(pairAddress)
             ]);
 
             return {
-              ...poolData,
+              id: poolData.id,
+              pair_address: pairAddress,
+              // Token 0 metadata
+              token0: {
+                symbol: pairState.token0.symbol,
+                name: pairState.token0.name,
+                decimals: pairState.token0.decimals,
+                address: pairState.token0.address,
+                icon: pairState.token0.iconUrl || null
+              },
+              // Token 1 metadata
+              token1: {
+                symbol: pairState.token1.symbol,
+                name: pairState.token1.name,
+                decimals: pairState.token1.decimals,
+                address: pairState.token1.address,
+                icon: pairState.token1.iconUrl || null
+              },
+              // Reserves
+              reserves: {
+                token0: pairState.reserves.token0,
+                token1: pairState.reserves.token1
+              },
+              // Oracle prices (EMA)
+              oracle_prices: {
+                token0: pairState.oraclePrices.token0,
+                token1: pairState.oraclePrices.token1
+              },
+              // Spot prices
+              spot_prices: {
+                token0: pairState.spotPrices.token0,
+                token1: pairState.spotPrices.token1
+              },
+              // Interest rates
+              interest_rates: {
+                token0: pairState.rates.token0,
+                token1: pairState.rates.token1
+              },
+              // Total debts
+              total_debts: {
+                token0: pairState.totalDebts.token0,
+                token1: pairState.totalDebts.token1
+              },
+              // Utilization
+              utilization: {
+                token0: pairState.utilization.token0,
+                token1: pairState.utilization.token1
+              },
+              // LP token info
+              lp_token: {
+                total_supply: pairState.totalSupply,
+                decimals: pairState.lpTokenDecimals
+              },
+              // APR and fees
               apr: aprData,
               total_fees_paid: feesData
             };
           } catch (error) {
-            console.error(`Error calculating data for pool ${pairAddress}:`, error);
+            console.error(`Error fetching data for pool ${pairAddress}:`, error);
+            // Return basic data with defaults if pair state fetch fails
             return {
-              ...poolData,
+              id: poolData.id,
+              pair_address: pairAddress,
+              token0: {
+                symbol: 'Unknown',
+                name: 'Unknown',
+                decimals: 0,
+                address: token0Address,
+                icon: null
+              },
+              token1: {
+                symbol: 'Unknown',
+                name: 'Unknown',
+                decimals: 0,
+                address: token1Address,
+                icon: null
+              },
+              reserves: {
+                token0: '0',
+                token1: '0'
+              },
+              oracle_prices: {
+                token0: '0',
+                token1: '0'
+              },
+              spot_prices: {
+                token0: '0',
+                token1: '0'
+              },
+              interest_rates: {
+                token0: 0,
+                token1: 0
+              },
+              total_debts: {
+                token0: '0',
+                token1: '0'
+              },
+              utilization: {
+                token0: 0,
+                token1: 0
+              },
+              lp_token: {
+                total_supply: '0',
+                decimals: 0
+              },
               apr: {
                 apr: 0,
                 apr_breakdown: {
@@ -636,7 +771,7 @@ export class DataController {
               total_fees_paid: {
                 total_fee_paid_in_token0: '0',
                 total_fee_paid_in_token1: '0',
-                period: '8760hrs'
+                period: 'all'
               }
             };
           }

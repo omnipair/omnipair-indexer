@@ -287,6 +287,12 @@ impl OmnipairInstructionProcessor {
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        if let Err(e) = database::upsert_pair_created_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to insert pair created event: {}", e);
+            return Err(e);
+        }
         
         log::info!(
             "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, TxSig: {}", 

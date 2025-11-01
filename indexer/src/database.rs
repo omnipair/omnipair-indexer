@@ -9,6 +9,7 @@ use carbon_omnipair_decoder::instructions::{
     adjust_debt_event::AdjustDebtEvent,
     user_position_updated_event::UserPositionUpdatedEvent,
     user_position_liquidated_event::UserPositionLiquidatedEvent,
+    pair_created_event::PairCreatedEvent,
 };
 use sqlx::PgPool;
 use tokio::sync::OnceCell;
@@ -488,6 +489,38 @@ pub async fn upsert_user_position_liquidated_event(
     if let Err(e) = upsert_result {
         log::error!("Failed to upsert into user_position_liquidated_events table: {}", e);
         return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user position liquidated event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert a PairCreatedEvent into the pools table
+pub async fn upsert_pair_created_event(
+    event: &PairCreatedEvent,
+    _tx_signature: &str,
+    _slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    let upsert_result = sqlx::query(
+        r#"
+        INSERT INTO pools (
+            pair_address, token0, token1
+        ) VALUES ($1, $2, $3)
+        ON CONFLICT (pair_address) DO UPDATE SET
+            token0 = EXCLUDED.token0,
+            token1 = EXCLUDED.token1
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.token0.to_string())
+    .bind(event.token1.to_string())
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into pools table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert pair created event: {}", e)));
     }
     
     Ok(())

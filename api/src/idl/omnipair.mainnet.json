@@ -1,0 +1,4222 @@
+{
+    "address": "3tJrAXnjofAw8oskbMaSo9oMAYuzdBgVbW3TvQLdMEBd",
+    "metadata": {
+      "name": "omnipair",
+      "version": "0.1.0",
+      "spec": "0.1.0",
+      "description": "Created with Anchor"
+    },
+    "instructions": [
+      {
+        "name": "add_collateral",
+        "discriminator": [
+          127,
+          82,
+          121,
+          42,
+          161,
+          176,
+          249,
+          206
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "user_position",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    111,
+                    115,
+                    105,
+                    116,
+                    105,
+                    111,
+                    110
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "collateral_vault",
+            "writable": true
+          },
+          {
+            "name": "user_collateral_token_account",
+            "writable": true
+          },
+          {
+            "name": "collateral_token_mint"
+          },
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "AdjustPositionArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "add_collateral_and_borrow",
+        "discriminator": [
+          30,
+          155,
+          62,
+          4,
+          88,
+          62,
+          42,
+          223
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "user_position",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    111,
+                    115,
+                    105,
+                    116,
+                    105,
+                    111,
+                    110
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "collateral_vault",
+            "writable": true
+          },
+          {
+            "name": "user_collateral_token_account",
+            "writable": true
+          },
+          {
+            "name": "collateral_token_mint"
+          },
+          {
+            "name": "borrow_vault",
+            "writable": true
+          },
+          {
+            "name": "user_borrow_token_account",
+            "writable": true
+          },
+          {
+            "name": "borrow_token_mint"
+          },
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "AddCollateralAndBorrowArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "add_liquidity",
+        "discriminator": [
+          181,
+          157,
+          89,
+          67,
+          143,
+          182,
+          52,
+          72
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "token0_vault",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "token1_vault",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "user_token0_account",
+            "writable": true
+          },
+          {
+            "name": "user_token1_account",
+            "writable": true
+          },
+          {
+            "name": "token0_vault_mint"
+          },
+          {
+            "name": "token1_vault_mint"
+          },
+          {
+            "name": "lp_mint",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    108,
+                    112,
+                    95,
+                    109,
+                    105,
+                    110,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user_lp_token_account",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "user"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "lp_mint"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "associated_token_program",
+            "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "AddLiquidityArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "bootstrap_pair",
+        "discriminator": [
+          184,
+          102,
+          21,
+          45,
+          110,
+          92,
+          134,
+          140
+        ],
+        "accounts": [
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "token0_vault",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "token0_vault_mint"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "token1_vault",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "token1_vault_mint"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "user_token0_account",
+            "writable": true
+          },
+          {
+            "name": "user_token1_account",
+            "writable": true
+          },
+          {
+            "name": "token0_vault_mint"
+          },
+          {
+            "name": "token1_vault_mint"
+          },
+          {
+            "name": "lp_mint",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    108,
+                    112,
+                    95,
+                    109,
+                    105,
+                    110,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user_lp_token_account",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "user"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "lp_mint"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "associated_token_program",
+            "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "AddLiquidityArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "borrow",
+        "discriminator": [
+          228,
+          253,
+          131,
+          202,
+          207,
+          116,
+          89,
+          18
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user_position",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    111,
+                    115,
+                    105,
+                    116,
+                    105,
+                    111,
+                    110
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "token_vault",
+            "writable": true
+          },
+          {
+            "name": "user_token_account",
+            "writable": true
+          },
+          {
+            "name": "vault_token_mint"
+          },
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "AdjustPositionArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "init_futarchy_authority",
+        "discriminator": [
+          133,
+          110,
+          154,
+          29,
+          240,
+          206,
+          71,
+          100
+        ],
+        "accounts": [
+          {
+            "name": "deployer",
+            "writable": true,
+            "signer": true,
+            "address": "8tF4uYMBXqGhCUGRZL3AmPqRzbX8JJ1TpYnY3uJKN4kt"
+          },
+          {
+            "name": "futarchy_authority",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    102,
+                    117,
+                    116,
+                    97,
+                    114,
+                    99,
+                    104,
+                    121,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "InitFutarchyAuthorityArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "init_pair_config",
+        "discriminator": [
+          205,
+          58,
+          197,
+          248,
+          181,
+          39,
+          56,
+          152
+        ],
+        "accounts": [
+          {
+            "name": "authority_signer",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "futarchy_authority",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    102,
+                    117,
+                    116,
+                    97,
+                    114,
+                    99,
+                    104,
+                    121,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "pair_config",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114,
+                    95,
+                    99,
+                    111,
+                    110,
+                    102,
+                    105,
+                    103
+                  ]
+                },
+                {
+                  "kind": "arg",
+                  "path": "args.nonce"
+                }
+              ]
+            }
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "InitPairConfigArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "initialize_pair",
+        "discriminator": [
+          177,
+          114,
+          226,
+          34,
+          186,
+          150,
+          5,
+          245
+        ],
+        "accounts": [
+          {
+            "name": "deployer",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token0_mint"
+          },
+          {
+            "name": "token1_mint"
+          },
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "token0_mint"
+                },
+                {
+                  "kind": "account",
+                  "path": "token1_mint"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pair_config",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114,
+                    95,
+                    99,
+                    111,
+                    110,
+                    102,
+                    105,
+                    103
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair_config.nonce",
+                  "account": "PairConfig"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "lp_mint",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    108,
+                    112,
+                    95,
+                    109,
+                    105,
+                    110,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "deployer_lp_token_account",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "deployer"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "lp_mint"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "associated_token_program",
+            "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          },
+          {
+            "name": "rent",
+            "address": "SysvarRent111111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "InitializePairArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "liquidate",
+        "discriminator": [
+          223,
+          179,
+          226,
+          125,
+          48,
+          46,
+          39,
+          74
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user_position",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    111,
+                    115,
+                    105,
+                    116,
+                    105,
+                    111,
+                    110
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "position_owner"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "collateral_vault",
+            "writable": true
+          },
+          {
+            "name": "position_owner",
+            "writable": true
+          },
+          {
+            "name": "payer",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": []
+      },
+      {
+        "name": "remove_collateral",
+        "discriminator": [
+          86,
+          222,
+          130,
+          86,
+          92,
+          20,
+          72,
+          65
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user_position",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    111,
+                    115,
+                    105,
+                    116,
+                    105,
+                    111,
+                    110
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "token_vault",
+            "writable": true
+          },
+          {
+            "name": "user_token_account",
+            "writable": true
+          },
+          {
+            "name": "vault_token_mint"
+          },
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "AdjustPositionArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "remove_liquidity",
+        "discriminator": [
+          80,
+          85,
+          209,
+          72,
+          24,
+          206,
+          177,
+          108
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "token0_vault",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "token1_vault",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "user_token0_account",
+            "writable": true
+          },
+          {
+            "name": "user_token1_account",
+            "writable": true
+          },
+          {
+            "name": "token0_vault_mint"
+          },
+          {
+            "name": "token1_vault_mint"
+          },
+          {
+            "name": "lp_mint",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    108,
+                    112,
+                    95,
+                    109,
+                    105,
+                    110,
+                    116
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user_lp_token_account",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "user"
+                },
+                {
+                  "kind": "const",
+                  "value": [
+                    6,
+                    221,
+                    246,
+                    225,
+                    215,
+                    101,
+                    161,
+                    147,
+                    217,
+                    203,
+                    225,
+                    70,
+                    206,
+                    235,
+                    121,
+                    172,
+                    28,
+                    180,
+                    133,
+                    237,
+                    95,
+                    91,
+                    55,
+                    145,
+                    58,
+                    140,
+                    245,
+                    133,
+                    126,
+                    255,
+                    0,
+                    169
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "lp_mint"
+                }
+              ],
+              "program": {
+                "kind": "const",
+                "value": [
+                  140,
+                  151,
+                  37,
+                  143,
+                  78,
+                  36,
+                  137,
+                  241,
+                  187,
+                  61,
+                  16,
+                  41,
+                  20,
+                  142,
+                  13,
+                  131,
+                  11,
+                  90,
+                  19,
+                  153,
+                  218,
+                  255,
+                  16,
+                  132,
+                  4,
+                  142,
+                  123,
+                  216,
+                  219,
+                  233,
+                  248,
+                  89
+                ]
+              }
+            }
+          },
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "associated_token_program",
+            "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "RemoveLiquidityArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "repay",
+        "discriminator": [
+          234,
+          103,
+          67,
+          82,
+          208,
+          234,
+          219,
+          166
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "user_position",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    111,
+                    115,
+                    105,
+                    116,
+                    105,
+                    111,
+                    110
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "user"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "token_vault",
+            "writable": true
+          },
+          {
+            "name": "user_token_account",
+            "writable": true
+          },
+          {
+            "name": "vault_token_mint"
+          },
+          {
+            "name": "user",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "AdjustPositionArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "swap",
+        "discriminator": [
+          248,
+          198,
+          158,
+          145,
+          225,
+          117,
+          135,
+          200
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    103,
+                    97,
+                    109,
+                    109,
+                    95,
+                    112,
+                    97,
+                    105,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token0",
+                  "account": "Pair"
+                },
+                {
+                  "kind": "account",
+                  "path": "pair.token1",
+                  "account": "Pair"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rate_model",
+            "writable": true
+          },
+          {
+            "name": "token_in_vault",
+            "writable": true
+          },
+          {
+            "name": "token_out_vault",
+            "writable": true
+          },
+          {
+            "name": "user_token_in_account",
+            "writable": true
+          },
+          {
+            "name": "user_token_out_account",
+            "writable": true
+          },
+          {
+            "name": "token_in_mint"
+          },
+          {
+            "name": "token_out_mint"
+          },
+          {
+            "name": "user",
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "token_2022_program",
+            "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+          },
+          {
+            "name": "event_authority",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    95,
+                    95,
+                    101,
+                    118,
+                    101,
+                    110,
+                    116,
+                    95,
+                    97,
+                    117,
+                    116,
+                    104,
+                    111,
+                    114,
+                    105,
+                    116,
+                    121
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "program"
+          }
+        ],
+        "args": [
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "SwapArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "view_pair_data",
+        "docs": [
+          "View instructions for client data access (Logs + RPC simulation to parse returned logs for values)",
+          "This approach allows for \"view\" functionality of on-chain calculations (similar to Solidity view functions)",
+          "i.e. time-dependent calculations"
+        ],
+        "discriminator": [
+          30,
+          231,
+          169,
+          73,
+          19,
+          161,
+          44,
+          252
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true
+          },
+          {
+            "name": "rate_model"
+          }
+        ],
+        "args": [
+          {
+            "name": "getter",
+            "type": {
+              "defined": {
+                "name": "PairViewKind"
+              }
+            }
+          },
+          {
+            "name": "args",
+            "type": {
+              "defined": {
+                "name": "EmitValueArgs"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "view_user_position_data",
+        "discriminator": [
+          203,
+          218,
+          173,
+          213,
+          43,
+          31,
+          211,
+          152
+        ],
+        "accounts": [
+          {
+            "name": "pair",
+            "writable": true
+          },
+          {
+            "name": "user_position",
+            "writable": true
+          },
+          {
+            "name": "rate_model"
+          }
+        ],
+        "args": [
+          {
+            "name": "getter",
+            "type": {
+              "defined": {
+                "name": "UserPositionViewKind"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "accounts": [
+      {
+        "name": "FutarchyAuthority",
+        "discriminator": [
+          175,
+          247,
+          160,
+          182,
+          140,
+          128,
+          211,
+          226
+        ]
+      },
+      {
+        "name": "Pair",
+        "discriminator": [
+          85,
+          72,
+          49,
+          176,
+          182,
+          228,
+          141,
+          82
+        ]
+      },
+      {
+        "name": "PairConfig",
+        "discriminator": [
+          119,
+          167,
+          13,
+          129,
+          136,
+          228,
+          151,
+          77
+        ]
+      },
+      {
+        "name": "RateModel",
+        "discriminator": [
+          94,
+          3,
+          203,
+          219,
+          107,
+          137,
+          4,
+          162
+        ]
+      },
+      {
+        "name": "UserPosition",
+        "discriminator": [
+          251,
+          248,
+          209,
+          245,
+          83,
+          234,
+          17,
+          27
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "AdjustCollateralEvent",
+        "discriminator": [
+          99,
+          246,
+          67,
+          126,
+          44,
+          252,
+          193,
+          33
+        ]
+      },
+      {
+        "name": "AdjustDebtEvent",
+        "discriminator": [
+          153,
+          8,
+          169,
+          116,
+          207,
+          116,
+          155,
+          128
+        ]
+      },
+      {
+        "name": "AdjustLiquidityEvent",
+        "discriminator": [
+          229,
+          162,
+          211,
+          39,
+          159,
+          251,
+          24,
+          78
+        ]
+      },
+      {
+        "name": "BurnEvent",
+        "discriminator": [
+          33,
+          89,
+          47,
+          117,
+          82,
+          124,
+          238,
+          250
+        ]
+      },
+      {
+        "name": "MintEvent",
+        "discriminator": [
+          197,
+          144,
+          146,
+          149,
+          66,
+          164,
+          95,
+          16
+        ]
+      },
+      {
+        "name": "PairCreatedEvent",
+        "discriminator": [
+          118,
+          0,
+          50,
+          196,
+          55,
+          255,
+          121,
+          43
+        ]
+      },
+      {
+        "name": "SwapEvent",
+        "discriminator": [
+          64,
+          198,
+          205,
+          232,
+          38,
+          8,
+          113,
+          226
+        ]
+      },
+      {
+        "name": "UpdatePairEvent",
+        "discriminator": [
+          44,
+          6,
+          60,
+          245,
+          142,
+          38,
+          166,
+          247
+        ]
+      },
+      {
+        "name": "UserPositionCreatedEvent",
+        "discriminator": [
+          240,
+          132,
+          92,
+          227,
+          209,
+          72,
+          178,
+          169
+        ]
+      },
+      {
+        "name": "UserPositionLiquidatedEvent",
+        "discriminator": [
+          220,
+          137,
+          217,
+          3,
+          242,
+          190,
+          238,
+          216
+        ]
+      },
+      {
+        "name": "UserPositionUpdatedEvent",
+        "discriminator": [
+          83,
+          168,
+          197,
+          88,
+          89,
+          42,
+          58,
+          102
+        ]
+      }
+    ],
+    "errors": [
+      {
+        "code": 6000,
+        "name": "InvalidDeployer",
+        "msg": "Invalid deployer"
+      },
+      {
+        "code": 6001,
+        "name": "InvalidNonce",
+        "msg": "Invalid nonce"
+      },
+      {
+        "code": 6002,
+        "name": "InvalidFutarchyFeeBps",
+        "msg": "Invalid futarchy fee bps"
+      },
+      {
+        "code": 6003,
+        "name": "InvalidFounderFeeBps",
+        "msg": "Invalid founder fee bps"
+      },
+      {
+        "code": 6004,
+        "name": "ArgumentMissing",
+        "msg": "Argument missing"
+      },
+      {
+        "code": 6005,
+        "name": "InvalidSwapFeeBps",
+        "msg": "Invalid swap fee bps"
+      },
+      {
+        "code": 6006,
+        "name": "InvalidPoolDeployerFeeBps",
+        "msg": "Invalid pool deployer fee bps"
+      },
+      {
+        "code": 6007,
+        "name": "InvalidHalfLife",
+        "msg": "Invalid half life"
+      },
+      {
+        "code": 6008,
+        "name": "InvalidFutarchyAuthority",
+        "msg": "Invalid futarchy authority"
+      },
+      {
+        "code": 6009,
+        "name": "InvalidArgument",
+        "msg": "Invalid argument"
+      },
+      {
+        "code": 6010,
+        "name": "PairAlreadyInitialized",
+        "msg": "Pair already initialized"
+      },
+      {
+        "code": 6011,
+        "name": "InvalidK",
+        "msg": "Invalid K value"
+      },
+      {
+        "code": 6012,
+        "name": "InsufficientCollateral",
+        "msg": "Insufficient collateral"
+      },
+      {
+        "code": 6013,
+        "name": "UserAlreadyAddedCollateral",
+        "msg": "User already added collateral"
+      },
+      {
+        "code": 6014,
+        "name": "ZeroCollateralAmount",
+        "msg": "Zero collateral amount"
+      },
+      {
+        "code": 6015,
+        "name": "AmountZero",
+        "msg": "Amount cannot be zero"
+      },
+      {
+        "code": 6016,
+        "name": "InsufficientAmount0In",
+        "msg": "Insufficient amount0 in"
+      },
+      {
+        "code": 6017,
+        "name": "InsufficientAmount1In",
+        "msg": "Insufficient amount1 in"
+      },
+      {
+        "code": 6018,
+        "name": "BorrowingPowerExceeded",
+        "msg": "Borrowing power exceeded"
+      },
+      {
+        "code": 6019,
+        "name": "InvalidAmount",
+        "msg": "Invalid amount"
+      },
+      {
+        "code": 6020,
+        "name": "InvalidRateModel",
+        "msg": "Invalid rate model"
+      },
+      {
+        "code": 6021,
+        "name": "InvalidTokenAccount",
+        "msg": "Invalid token account"
+      },
+      {
+        "code": 6022,
+        "name": "InvalidTokenProgram",
+        "msg": "Invalid token program"
+      },
+      {
+        "code": 6023,
+        "name": "InvalidSystemProgram",
+        "msg": "Invalid system program"
+      },
+      {
+        "code": 6024,
+        "name": "InvalidSigner",
+        "msg": "Invalid signer"
+      },
+      {
+        "code": 6025,
+        "name": "InvalidAccount",
+        "msg": "Invalid account"
+      },
+      {
+        "code": 6026,
+        "name": "InvalidProgram",
+        "msg": "Invalid program"
+      },
+      {
+        "code": 6027,
+        "name": "InvalidInstruction",
+        "msg": "Invalid instruction"
+      },
+      {
+        "code": 6028,
+        "name": "InvalidState",
+        "msg": "Invalid state"
+      },
+      {
+        "code": 6029,
+        "name": "InvalidCalculation",
+        "msg": "Invalid calculation"
+      },
+      {
+        "code": 6030,
+        "name": "InvalidTime",
+        "msg": "Invalid time"
+      },
+      {
+        "code": 6031,
+        "name": "InvalidPrice",
+        "msg": "Invalid price"
+      },
+      {
+        "code": 6032,
+        "name": "InvalidRate",
+        "msg": "Invalid rate"
+      },
+      {
+        "code": 6033,
+        "name": "InvalidUtilization",
+        "msg": "Invalid utilization"
+      },
+      {
+        "code": 6034,
+        "name": "BorrowExceedsReserve",
+        "msg": "Borrow exceeds reserve"
+      },
+      {
+        "code": 6035,
+        "name": "InvalidTokenOrder",
+        "msg": "Invalid token order"
+      },
+      {
+        "code": 6036,
+        "name": "DebtNotZero",
+        "msg": "Debt not zero"
+      },
+      {
+        "code": 6037,
+        "name": "InsufficientAmount0",
+        "msg": "Insufficient amount0"
+      },
+      {
+        "code": 6038,
+        "name": "InsufficientAmount1",
+        "msg": "Insufficient amount1"
+      },
+      {
+        "code": 6039,
+        "name": "InsufficientOutputAmount",
+        "msg": "Insufficient output amount"
+      },
+      {
+        "code": 6040,
+        "name": "InsufficientLiquidity",
+        "msg": "Insufficient liquidity"
+      },
+      {
+        "code": 6041,
+        "name": "Overflow",
+        "msg": "Arithmetic overflow"
+      },
+      {
+        "code": 6042,
+        "name": "Undercollateralized",
+        "msg": "Undercollateralized"
+      },
+      {
+        "code": 6043,
+        "name": "InsufficientCollateral0",
+        "msg": "Insufficient collateral for token0"
+      },
+      {
+        "code": 6044,
+        "name": "InsufficientCollateral1",
+        "msg": "Insufficient collateral for token1"
+      },
+      {
+        "code": 6045,
+        "name": "InsufficientBalanceForCollateral",
+        "msg": "Insufficient balance for collateral"
+      },
+      {
+        "code": 6046,
+        "name": "InsufficientAmount",
+        "msg": "Insufficient amount"
+      },
+      {
+        "code": 6047,
+        "name": "InsufficientDebt",
+        "msg": "Insufficient debt"
+      },
+      {
+        "code": 6048,
+        "name": "UserPositionNotInitialized",
+        "msg": "User position not initialized"
+      },
+      {
+        "code": 6049,
+        "name": "ZeroDebtAmount",
+        "msg": "Zero debt amount"
+      },
+      {
+        "code": 6050,
+        "name": "NotUndercollateralized",
+        "msg": "Not undercollateralized"
+      },
+      {
+        "code": 6051,
+        "name": "BrokenInvariant",
+        "msg": "Broken invariant"
+      },
+      {
+        "code": 6052,
+        "name": "InvariantOverflow",
+        "msg": "Math overflow during invariant calculation"
+      },
+      {
+        "code": 6053,
+        "name": "FeeMathOverflow",
+        "msg": "Math overflow during fee calculation."
+      },
+      {
+        "code": 6054,
+        "name": "OutputAmountOverflow",
+        "msg": "Math overflow during output amount calculation."
+      },
+      {
+        "code": 6055,
+        "name": "ReserveOverflow",
+        "msg": "Math overflow during reserve calculation."
+      },
+      {
+        "code": 6056,
+        "name": "DenominatorOverflow",
+        "msg": "Math overflow during denominator calculation."
+      },
+      {
+        "code": 6057,
+        "name": "LiquidityMathOverflow",
+        "msg": "Math overflow during liquidity calculation"
+      },
+      {
+        "code": 6058,
+        "name": "LiquiditySqrtOverflow",
+        "msg": "Math overflow during liquidity square root calculation"
+      },
+      {
+        "code": 6059,
+        "name": "LiquidityUnderflow",
+        "msg": "Math underflow during liquidity calculation"
+      },
+      {
+        "code": 6060,
+        "name": "LiquidityConversionOverflow",
+        "msg": "Math overflow during liquidity conversion"
+      },
+      {
+        "code": 6061,
+        "name": "LiquidityDivisionOverflow",
+        "msg": "Math overflow during liquidity division"
+      },
+      {
+        "code": 6062,
+        "name": "SupplyOverflow",
+        "msg": "Math overflow during supply calculation"
+      },
+      {
+        "code": 6063,
+        "name": "DebtMathOverflow",
+        "msg": "Math overflow during debt calculation"
+      },
+      {
+        "code": 6064,
+        "name": "DebtShareMathOverflow",
+        "msg": "Math overflow during debt share calculation"
+      },
+      {
+        "code": 6065,
+        "name": "DebtShareDivisionOverflow",
+        "msg": "Math overflow during debt share division"
+      },
+      {
+        "code": 6066,
+        "name": "DebtUtilizationOverflow",
+        "msg": "Math overflow during debt utilization calculation"
+      }
+    ],
+    "types": [
+      {
+        "name": "AddCollateralAndBorrowArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "collateral_amount",
+              "type": "u64"
+            },
+            {
+              "name": "borrow_amount",
+              "type": "u64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "AddLiquidityArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "amount0_in",
+              "type": "u64"
+            },
+            {
+              "name": "amount1_in",
+              "type": "u64"
+            },
+            {
+              "name": "min_liquidity_out",
+              "type": "u64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "AdjustCollateralEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "amount0",
+              "type": "i64"
+            },
+            {
+              "name": "amount1",
+              "type": "i64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "AdjustDebtEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "amount0",
+              "type": "i64"
+            },
+            {
+              "name": "amount1",
+              "type": "i64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "AdjustLiquidityEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "amount0",
+              "type": "u64"
+            },
+            {
+              "name": "amount1",
+              "type": "u64"
+            },
+            {
+              "name": "liquidity",
+              "type": "u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "AdjustPositionArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "amount",
+              "type": "u64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "BurnEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "amount0",
+              "type": "u64"
+            },
+            {
+              "name": "amount1",
+              "type": "u64"
+            },
+            {
+              "name": "liquidity",
+              "type": "u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "EmitValueArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "debt_amount",
+              "type": {
+                "option": "u64"
+              }
+            },
+            {
+              "name": "collateral_amount",
+              "type": {
+                "option": "u64"
+              }
+            },
+            {
+              "name": "collateral_token",
+              "type": {
+                "option": "pubkey"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "FutarchyAuthority",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "authority",
+              "type": "pubkey"
+            },
+            {
+              "name": "last_config_nonce",
+              "type": "u64"
+            },
+            {
+              "name": "bump",
+              "type": "u8"
+            }
+          ]
+        }
+      },
+      {
+        "name": "InitFutarchyAuthorityArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "authority",
+              "type": "pubkey"
+            }
+          ]
+        }
+      },
+      {
+        "name": "InitPairConfigArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "futarchy_fee_bps",
+              "type": "u16"
+            },
+            {
+              "name": "founder_fee_bps",
+              "type": "u16"
+            },
+            {
+              "name": "nonce",
+              "type": "u64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "InitializePairArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "swap_fee_bps",
+              "type": "u16"
+            },
+            {
+              "name": "half_life",
+              "type": "u64"
+            },
+            {
+              "name": "pool_deployer_fee_bps",
+              "type": "u16"
+            }
+          ]
+        }
+      },
+      {
+        "name": "MintEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "amount0",
+              "type": "u64"
+            },
+            {
+              "name": "amount1",
+              "type": "u64"
+            },
+            {
+              "name": "liquidity",
+              "type": "u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "Pair",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "token0",
+              "type": "pubkey"
+            },
+            {
+              "name": "token1",
+              "type": "pubkey"
+            },
+            {
+              "name": "token0_decimals",
+              "type": "u8"
+            },
+            {
+              "name": "token1_decimals",
+              "type": "u8"
+            },
+            {
+              "name": "config",
+              "type": "pubkey"
+            },
+            {
+              "name": "rate_model",
+              "type": "pubkey"
+            },
+            {
+              "name": "swap_fee_bps",
+              "type": "u16"
+            },
+            {
+              "name": "half_life",
+              "type": "u64"
+            },
+            {
+              "name": "pool_deployer_fee_bps",
+              "type": "u16"
+            },
+            {
+              "name": "reserve0",
+              "type": "u64"
+            },
+            {
+              "name": "reserve1",
+              "type": "u64"
+            },
+            {
+              "name": "last_price0_ema",
+              "type": "u64"
+            },
+            {
+              "name": "last_price1_ema",
+              "type": "u64"
+            },
+            {
+              "name": "last_update",
+              "type": "i64"
+            },
+            {
+              "name": "last_rate0",
+              "type": "u64"
+            },
+            {
+              "name": "last_rate1",
+              "type": "u64"
+            },
+            {
+              "name": "total_debt0",
+              "type": "u64"
+            },
+            {
+              "name": "total_debt1",
+              "type": "u64"
+            },
+            {
+              "name": "total_debt0_shares",
+              "type": "u64"
+            },
+            {
+              "name": "total_debt1_shares",
+              "type": "u64"
+            },
+            {
+              "name": "total_supply",
+              "type": "u64"
+            },
+            {
+              "name": "total_collateral0",
+              "type": "u64"
+            },
+            {
+              "name": "total_collateral1",
+              "type": "u64"
+            },
+            {
+              "name": "bump",
+              "type": "u8"
+            }
+          ]
+        }
+      },
+      {
+        "name": "PairConfig",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "futarchy_fee_bps",
+              "type": "u16"
+            },
+            {
+              "name": "founder_fee_bps",
+              "type": "u16"
+            },
+            {
+              "name": "nonce",
+              "type": "u64"
+            },
+            {
+              "name": "bump",
+              "type": "u8"
+            }
+          ]
+        }
+      },
+      {
+        "name": "PairCreatedEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "token0",
+              "type": "pubkey"
+            },
+            {
+              "name": "token1",
+              "type": "pubkey"
+            },
+            {
+              "name": "pair",
+              "type": "pubkey"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "PairViewKind",
+        "docs": [
+          "Enum for the different getters that can be emitted",
+          "This is used to eliminate off-chain calculations / simulation"
+        ],
+        "type": {
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "EmaPrice0Nad"
+            },
+            {
+              "name": "EmaPrice1Nad"
+            },
+            {
+              "name": "SpotPrice0Nad"
+            },
+            {
+              "name": "SpotPrice1Nad"
+            },
+            {
+              "name": "K"
+            },
+            {
+              "name": "GetRates"
+            },
+            {
+              "name": "GetMinCollateralForDebt"
+            },
+            {
+              "name": "GetBorrowLimitAndCfBpsForCollateral"
+            }
+          ]
+        }
+      },
+      {
+        "name": "RateModel",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "exp_rate",
+              "docs": [
+                "exp_rate: NAD/second (k_real = exp_rate / NAD)"
+              ],
+              "type": "u64"
+            },
+            {
+              "name": "target_util_start",
+              "docs": [
+                "utilization band edges (NAD-scaled: 0..NAD)"
+              ],
+              "type": "u64"
+            },
+            {
+              "name": "target_util_end",
+              "type": "u64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "RemoveLiquidityArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "liquidity_in",
+              "type": "u64"
+            },
+            {
+              "name": "min_amount0_out",
+              "type": "u64"
+            },
+            {
+              "name": "min_amount1_out",
+              "type": "u64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "SwapArgs",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "amount_in",
+              "type": "u64"
+            },
+            {
+              "name": "min_amount_out",
+              "type": "u64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "SwapEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "amount0_in",
+              "type": "u64"
+            },
+            {
+              "name": "amount1_in",
+              "type": "u64"
+            },
+            {
+              "name": "amount0_out",
+              "type": "u64"
+            },
+            {
+              "name": "amount1_out",
+              "type": "u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "UpdatePairEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "price0_ema",
+              "type": "u64"
+            },
+            {
+              "name": "price1_ema",
+              "type": "u64"
+            },
+            {
+              "name": "rate0",
+              "type": "u64"
+            },
+            {
+              "name": "rate1",
+              "type": "u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "UserPosition",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "owner",
+              "type": "pubkey"
+            },
+            {
+              "name": "pair",
+              "type": "pubkey"
+            },
+            {
+              "name": "collateral0_applied_min_cf_bps",
+              "type": "u16"
+            },
+            {
+              "name": "collateral1_applied_min_cf_bps",
+              "type": "u16"
+            },
+            {
+              "name": "collateral0",
+              "type": "u64"
+            },
+            {
+              "name": "collateral1",
+              "type": "u64"
+            },
+            {
+              "name": "debt0_shares",
+              "type": "u64"
+            },
+            {
+              "name": "debt1_shares",
+              "type": "u64"
+            },
+            {
+              "name": "bump",
+              "type": "u8"
+            }
+          ]
+        }
+      },
+      {
+        "name": "UserPositionCreatedEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "pair",
+              "type": "pubkey"
+            },
+            {
+              "name": "position",
+              "type": "pubkey"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "UserPositionLiquidatedEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "pair",
+              "type": "pubkey"
+            },
+            {
+              "name": "position",
+              "type": "pubkey"
+            },
+            {
+              "name": "liquidator",
+              "type": "pubkey"
+            },
+            {
+              "name": "collateral0_liquidated",
+              "type": "u64"
+            },
+            {
+              "name": "collateral1_liquidated",
+              "type": "u64"
+            },
+            {
+              "name": "debt0_liquidated",
+              "type": "u64"
+            },
+            {
+              "name": "debt1_liquidated",
+              "type": "u64"
+            },
+            {
+              "name": "collateral_price",
+              "type": "u64"
+            },
+            {
+              "name": "liquidation_bonus_applied",
+              "type": "u64"
+            },
+            {
+              "name": "k0",
+              "type": "u128"
+            },
+            {
+              "name": "k1",
+              "type": "u128"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "UserPositionUpdatedEvent",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "user",
+              "type": "pubkey"
+            },
+            {
+              "name": "pair",
+              "type": "pubkey"
+            },
+            {
+              "name": "position",
+              "type": "pubkey"
+            },
+            {
+              "name": "collateral0",
+              "type": "u64"
+            },
+            {
+              "name": "collateral1",
+              "type": "u64"
+            },
+            {
+              "name": "debt0_shares",
+              "type": "u64"
+            },
+            {
+              "name": "debt1_shares",
+              "type": "u64"
+            },
+            {
+              "name": "timestamp",
+              "type": "i64"
+            }
+          ]
+        }
+      },
+      {
+        "name": "UserPositionViewKind",
+        "type": {
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UserBorrowingPower"
+            },
+            {
+              "name": "UserAppliedCollateralFactorBps"
+            },
+            {
+              "name": "UserLiquidationCollateralFactorBps"
+            },
+            {
+              "name": "UserDebtUtilizationBps"
+            },
+            {
+              "name": "UserLiquidationPrice"
+            },
+            {
+              "name": "UserDebtWithInterest"
+            }
+          ]
+        }
+      }
+    ],
+    "constants": [
+      {
+        "name": "BPS_DENOMINATOR",
+        "type": "u16",
+        "value": "10000"
+      },
+      {
+        "name": "CLOSE_FACTOR_BPS",
+        "type": "u16",
+        "value": "5000"
+      },
+      {
+        "name": "DEFAULT_HALF_LIFE",
+        "type": "u64",
+        "value": "420"
+      },
+      {
+        "name": "FACTORY_SEED_PREFIX",
+        "type": "bytes",
+        "value": "[103, 97, 109, 109, 95, 102, 97, 99, 116, 111, 114, 121]"
+      },
+      {
+        "name": "FUTARCHY_AUTHORITY_SEED_PREFIX",
+        "type": "bytes",
+        "value": "[102, 117, 116, 97, 114, 99, 104, 121, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121]"
+      },
+      {
+        "name": "LP_MINT_SEED_PREFIX",
+        "type": "bytes",
+        "value": "[103, 97, 109, 109, 95, 108, 112, 95, 109, 105, 110, 116]"
+      },
+      {
+        "name": "NAD",
+        "docs": [
+          "NAD: Nine-decimal fixed point unit (1e9 scaling), similar to WAD (1e18) by Maker."
+        ],
+        "type": "u64",
+        "value": "1000000000"
+      },
+      {
+        "name": "NAD_DECIMALS",
+        "type": "u8",
+        "value": "9"
+      },
+      {
+        "name": "PAIR_CONFIG_SEED_PREFIX",
+        "type": "bytes",
+        "value": "[103, 97, 109, 109, 95, 112, 97, 105, 114, 95, 99, 111, 110, 102, 105, 103]"
+      },
+      {
+        "name": "PAIR_SEED_PREFIX",
+        "type": "bytes",
+        "value": "[103, 97, 109, 109, 95, 112, 97, 105, 114]"
+      },
+      {
+        "name": "POSITION_SEED_PREFIX",
+        "type": "bytes",
+        "value": "[103, 97, 109, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]"
+      }
+    ]
+  }

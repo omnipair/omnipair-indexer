@@ -77,12 +77,6 @@ impl Processor for OmnipairInstructionProcessor {
             OmnipairInstruction::UserPositionUpdatedEvent(event) => {
                 self.process_user_position_updated_event(event, &metadata).await?;
             }
-            OmnipairInstruction::LeveragePositionCreatedEvent(event) => {
-                self.process_leverage_position_created_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::LeveragePositionUpdatedEvent(event) => {
-                self.process_leverage_position_updated_event(event, &metadata).await?;
-            }
             _ => {
                 log::debug!("Unhandled instruction type: {:?}", instruction.data);
             }
@@ -422,69 +416,4 @@ impl OmnipairInstructionProcessor {
         Ok(())
     }
 
-    async fn process_leverage_position_created_event(
-        &self,
-        event: carbon_omnipair_decoder::instructions::leverage_position_created_event::LeveragePositionCreatedEvent,
-        metadata: &InstructionMetadata,
-    ) -> CarbonResult<()> {
-        log::info!(
-            "LeveragePositionCreatedEvent processed - Details: {:#?}",
-            event,
-        );
-        
-        let tx_signature = metadata.transaction_metadata.signature.to_string();
-        let slot = metadata.transaction_metadata.slot as i64;
-        
-        if let Err(e) = database::upsert_leverage_position_created_event(&event, &tx_signature, slot).await {
-            log::error!("Failed to insert leverage position created event: {}", e);
-            return Err(e);
-        }
-        
-        log::info!(
-            "Successfully processed LeveragePositionCreatedEvent - Position: {}, Pair: {}, User: {}, TxSig: {}", 
-            event.position,
-            event.metadata.pair, 
-            event.metadata.signer, 
-            tx_signature
-        );
-        
-        Ok(())
-    }
-
-    async fn process_leverage_position_updated_event(
-        &self,
-        event: carbon_omnipair_decoder::instructions::leverage_position_updated_event::LeveragePositionUpdatedEvent,
-        metadata: &InstructionMetadata,
-    ) -> CarbonResult<()> {
-        log::info!(
-            "LeveragePositionUpdatedEvent processed - Details: {:#?}",
-            event,
-        );
-        
-        let tx_signature = metadata.transaction_metadata.signature.to_string();
-        let slot = metadata.transaction_metadata.slot as i64;
-        
-        if let Err(e) = database::upsert_leverage_position_updated_event(&event, &tx_signature, slot).await {
-            log::error!("Failed to insert leverage position updated event: {}", e);
-            return Err(e);
-        }
-        
-        log::info!(
-            "Successfully processed LeveragePositionUpdatedEvent - Position: {}, Long Token0: {}, Target Leverage: {}bps, Debt Amount: {}, Collateral Position Size: {}, Liquidation Price: {}, Entry Price: {}, Pair: {}, User: {}, TxSig: {}", 
-            event.position,
-            event.long_token0,
-            event.target_leverage_bps,
-            event.debt_amount,
-            event.collateral_position_size,
-            event.liquidation_price_nad,
-            event.entry_price_nad,
-            event.metadata.pair, 
-            event.metadata.signer, 
-            tx_signature
-        );
-        
-        Ok(())
-    }
-
-    
 }

@@ -4,16 +4,13 @@
 
 use super::OmnipairDecoder;
 pub mod add_collateral;
-pub mod add_collateral_and_borrow;
 pub mod add_liquidity;
-pub mod bootstrap_pair;
 pub mod borrow;
-pub mod deleverage;
-pub mod faucet_mint;
+pub mod claim_protocol_fees;
+pub mod distribute_tokens;
+pub mod flashloan;
 pub mod init_futarchy_authority;
-pub mod init_pair_config;
-pub mod initialize_pair;
-pub mod leverage;
+pub mod initialize;
 pub mod liquidate;
 pub mod remove_collateral;
 pub mod remove_liquidity;
@@ -25,8 +22,7 @@ pub mod adjust_collateral_event;
 pub mod adjust_debt_event;
 pub mod adjust_liquidity_event;
 pub mod burn_event;
-pub mod leverage_position_created_event;
-pub mod leverage_position_updated_event;
+pub mod flashloan_event;
 pub mod mint_event;
 pub mod pair_created_event;
 pub mod swap_event;
@@ -38,16 +34,13 @@ pub mod user_position_updated_event;
 #[derive(carbon_core::InstructionType, serde::Serialize, serde::Deserialize, PartialEq, Eq, Debug, Clone, Hash)]
 pub enum OmnipairInstruction {
     AddCollateral(add_collateral::AddCollateral),
-    AddCollateralAndBorrow(add_collateral_and_borrow::AddCollateralAndBorrow),
     AddLiquidity(add_liquidity::AddLiquidity),
-    BootstrapPair(bootstrap_pair::BootstrapPair),
     Borrow(borrow::Borrow),
-    Deleverage(deleverage::Deleverage),
-    FaucetMint(faucet_mint::FaucetMint),
+    ClaimProtocolFees(claim_protocol_fees::ClaimProtocolFees),
+    DistributeTokens(distribute_tokens::DistributeTokens),
+    Flashloan(flashloan::Flashloan),
     InitFutarchyAuthority(init_futarchy_authority::InitFutarchyAuthority),
-    InitPairConfig(init_pair_config::InitPairConfig),
-    InitializePair(initialize_pair::InitializePair),
-    Leverage(leverage::Leverage),
+    Initialize(initialize::Initialize),
     Liquidate(liquidate::Liquidate),
     RemoveCollateral(remove_collateral::RemoveCollateral),
     RemoveLiquidity(remove_liquidity::RemoveLiquidity),
@@ -59,8 +52,7 @@ pub enum OmnipairInstruction {
     AdjustDebtEvent(adjust_debt_event::AdjustDebtEvent),
     AdjustLiquidityEvent(adjust_liquidity_event::AdjustLiquidityEvent),
     BurnEvent(burn_event::BurnEvent),
-    LeveragePositionCreatedEvent(leverage_position_created_event::LeveragePositionCreatedEvent),
-    LeveragePositionUpdatedEvent(leverage_position_updated_event::LeveragePositionUpdatedEvent),
+    FlashloanEvent(flashloan_event::FlashloanEvent),
     MintEvent(mint_event::MintEvent),
     PairCreatedEvent(pair_created_event::PairCreatedEvent),
     SwapEvent(swap_event::SwapEvent),
@@ -79,16 +71,13 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairDecoder {
     ) -> Option<carbon_core::instruction::DecodedInstruction<Self::InstructionType>> {
         carbon_core::try_decode_instructions!(instruction,
             OmnipairInstruction::AddCollateral => add_collateral::AddCollateral,
-            OmnipairInstruction::AddCollateralAndBorrow => add_collateral_and_borrow::AddCollateralAndBorrow,
             OmnipairInstruction::AddLiquidity => add_liquidity::AddLiquidity,
-            OmnipairInstruction::BootstrapPair => bootstrap_pair::BootstrapPair,
             OmnipairInstruction::Borrow => borrow::Borrow,
-            OmnipairInstruction::Deleverage => deleverage::Deleverage,
-            OmnipairInstruction::FaucetMint => faucet_mint::FaucetMint,
+            OmnipairInstruction::ClaimProtocolFees => claim_protocol_fees::ClaimProtocolFees,
+            OmnipairInstruction::DistributeTokens => distribute_tokens::DistributeTokens,
+            OmnipairInstruction::Flashloan => flashloan::Flashloan,
             OmnipairInstruction::InitFutarchyAuthority => init_futarchy_authority::InitFutarchyAuthority,
-            OmnipairInstruction::InitPairConfig => init_pair_config::InitPairConfig,
-            OmnipairInstruction::InitializePair => initialize_pair::InitializePair,
-            OmnipairInstruction::Leverage => leverage::Leverage,
+            OmnipairInstruction::Initialize => initialize::Initialize,
             OmnipairInstruction::Liquidate => liquidate::Liquidate,
             OmnipairInstruction::RemoveCollateral => remove_collateral::RemoveCollateral,
             OmnipairInstruction::RemoveLiquidity => remove_liquidity::RemoveLiquidity,
@@ -100,8 +89,7 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairDecoder {
             OmnipairInstruction::AdjustDebtEvent => adjust_debt_event::AdjustDebtEvent,
             OmnipairInstruction::AdjustLiquidityEvent => adjust_liquidity_event::AdjustLiquidityEvent,
             OmnipairInstruction::BurnEvent => burn_event::BurnEvent,
-            OmnipairInstruction::LeveragePositionCreatedEvent => leverage_position_created_event::LeveragePositionCreatedEvent,
-            OmnipairInstruction::LeveragePositionUpdatedEvent => leverage_position_updated_event::LeveragePositionUpdatedEvent,
+            OmnipairInstruction::FlashloanEvent => flashloan_event::FlashloanEvent,
             OmnipairInstruction::MintEvent => mint_event::MintEvent,
             OmnipairInstruction::PairCreatedEvent => pair_created_event::PairCreatedEvent,
             OmnipairInstruction::SwapEvent => swap_event::SwapEvent,

@@ -4,7 +4,7 @@ import { ApiResponse, Swap, UserHistory } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 import { PublicKey } from '@solana/web3.js';
-import { PairStateService } from '../services/PairStateService';
+import { PairStateService, PairState } from '../services/PairStateService';
 import path from 'path';
 
 export class DataController {
@@ -165,6 +165,29 @@ export class DataController {
     cache.set(cacheKey, feesData, 1 * 60 * 1000);
 
     return feesData;
+  }
+
+  private static async fetchCachedPairState(
+    pairService: PairStateService,
+    token0Address: string,
+    token1Address: string
+  ): Promise<PairState> {
+    const cacheKey = `pair_state_${token0Address}_${token1Address}`;
+    const cachedData = cache.get(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const pairState = await pairService.fetchPairState(
+      new PublicKey(token0Address),
+      new PublicKey(token1Address)
+    );
+
+    // Cache for 10 minutes
+    cache.set(cacheKey, pairState, 10 * 60 * 1000);
+
+    return pairState;
   }
 
   private static async calculateSwapVolume(pairAddress: string, hours: number = 24): Promise<{
@@ -682,9 +705,10 @@ export class DataController {
           try {
            // Fetch pair state, APR, total fees paid, and 24h swap volume in parallel
            const [pairState, aprData, feesData, volumeData] = await Promise.all([
-              pairService.fetchPairState(
-                new PublicKey(token0Address),
-                new PublicKey(token1Address)
+              DataController.fetchCachedPairState(
+                pairService,
+                token0Address,
+                token1Address
               ),
               DataController.calculateAPR(pairAddress),
               DataController.calculateTotalFeesPaid(pairAddress),

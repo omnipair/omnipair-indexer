@@ -167,6 +167,42 @@ export class DataController {
     return feesData;
   }
 
+  // Helper function to calculate swap volume for a given pair address and time period
+  private static async calculateSwapVolume(pairAddress: string, hours: number = 24): Promise<{
+    volume0: string;
+    volume1: string;
+    period: string;
+  }> {
+    const cacheKey = `swap_volume_calc_${pairAddress}_${hours}hrs`;
+    const cachedData = cache.get(cacheKey);
+    
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const timestamp = now - (hours * 60 * 60);
+    
+    const result = await pool.query(`
+      SELECT 
+        SUM(CASE WHEN is_token0_in = true THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume0,
+        SUM(CASE WHEN is_token0_in = false THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume1
+      FROM swaps 
+      WHERE timestamp > to_timestamp($1) AND pair = $2
+    `, [timestamp, pairAddress]);
+
+    const volumeData = {
+      volume0: result.rows[0].total_volume0 || '0',
+      volume1: result.rows[0].total_volume1 || '0',
+      period: `${hours}hrs`
+    };
+
+    // Cache for 1 minute
+    cache.set(cacheKey, volumeData, 1 * 60 * 1000);
+
+    return volumeData;
+  }
+
   static async getSwaps(req: Request, res: Response): Promise<void> {
     try {
       const pairAddress = req.params.pairAddress;
@@ -645,14 +681,15 @@ export class DataController {
           const token1Address = poolData.token1;
           
           try {
-            // Fetch pair state, APR and total fees paid in parallel
-            const [pairState, aprData, feesData] = await Promise.all([
+            // Fetch pair state, APR, total fees paid, and 24h swap volume in parallel
+            const [pairState, aprData, feesData, volumeData] = await Promise.all([
               pairService.fetchPairState(
                 new PublicKey(token0Address),
                 new PublicKey(token1Address)
               ),
               DataController.calculateAPR(pairAddress),
-              DataController.calculateTotalFeesPaid(pairAddress)
+              DataController.calculateTotalFeesPaid(pairAddress),
+              DataController.calculateSwapVolume(pairAddress, 24)
             ]);
 
             return {
@@ -711,7 +748,9 @@ export class DataController {
               },
               // APR and fees
               apr: aprData,
-              total_fees_paid: feesData
+              total_fees_paid: feesData,
+              // 24h swap volume
+              volume_24h: volumeData
             };
           } catch (error) {
             console.error(`Error fetching data for pool ${pairAddress}:`, error);
@@ -772,6 +811,11 @@ export class DataController {
                 total_fee_paid_in_token0: '0',
                 total_fee_paid_in_token1: '0',
                 period: 'all'
+              },
+              swap_volume_24h: {
+                volume0: '0',
+                volume1: '0',
+                period: '24hrs'
               }
             };
           }

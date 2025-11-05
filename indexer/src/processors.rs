@@ -289,11 +289,16 @@ impl OmnipairInstructionProcessor {
         }
         
         log::info!(
-            "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, Lp Mint: {}, Rate Model: {}, Swap Fee Bps: {}, Half Life: {}, Fixed Cf Bps: {:?}, TxSig: {}", 
             event.token0,
             event.token1,
             event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.signer,
+            event.lp_mint,
+            event.rate_model,
+            event.swap_fee_bps,
+            event.half_life,
+            event.fixed_cf_bps,
             tx_signature
         );
         

@@ -402,16 +402,26 @@ pub async fn upsert_pair_created_event(
     let upsert_result = sqlx::query(
         r#"
         INSERT INTO pools (
-            pair_address, token0, token1
-        ) VALUES ($1, $2, $3)
+            pair_address, token0, token1, lp_mint, rate_model, swap_fee_bps, half_life, fixed_cf_bps
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (pair_address) DO UPDATE SET
             token0 = EXCLUDED.token0,
-            token1 = EXCLUDED.token1
+            token1 = EXCLUDED.token1,
+            lp_mint = EXCLUDED.lp_mint,
+            rate_model = EXCLUDED.rate_model,
+            swap_fee_bps = EXCLUDED.swap_fee_bps,
+            half_life = EXCLUDED.half_life,
+            fixed_cf_bps = EXCLUDED.fixed_cf_bps
         "#
     )
     .bind(event.metadata.pair.to_string())
     .bind(event.token0.to_string())
     .bind(event.token1.to_string())
+    .bind(event.lp_mint.to_string())
+    .bind(event.rate_model.to_string())
+    .bind(event.swap_fee_bps as i32)
+    .bind(event.half_life as i64)
+    .bind(event.fixed_cf_bps.map(|bps| bps as i32))
     .execute(pool)
     .await;
     

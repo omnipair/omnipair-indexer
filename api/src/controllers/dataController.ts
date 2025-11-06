@@ -749,10 +749,10 @@ export class DataController {
                 token0: pairState.spotPrices.token0,
                 token1: pairState.spotPrices.token1
               },
-              // Interest rates
+              // Interest rates (minimum 1%)
               interest_rates: {
-                token0: pairState.rates.token0,
-                token1: pairState.rates.token1
+                token0: Math.max(pairState.rates.token0, 1),
+                token1: Math.max(pairState.rates.token1, 1)
               },
               // Total debts
               total_debts: {
@@ -808,8 +808,8 @@ export class DataController {
                 token1: '0'
               },
               interest_rates: {
-                token0: 0,
-                token1: 0
+                token0: 1,
+                token1: 1
               },
               total_debts: {
                 token0: '0',

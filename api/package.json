@@ -11,7 +11,7 @@
     "clean": "rm -rf dist",
     "fill-ema": "npm run build && node dist/scripts/fillEmaPrices.js",
     "verify-ema": "npm run build && node dist/scripts/fillEmaPrices.js verify",
-    "ema-both": "npm run build && node dist/scripts/fillEmaPrices.js both",
+    "ema-both": "npm run build && node dist/scripts/fillEmaPrices.js both"
   },
   "keywords": [
     "typescript",

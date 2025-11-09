@@ -5,8 +5,6 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplTokenMetadata, fetchDigitalAsset } from '@metaplex-foundation/mpl-token-metadata';
 import { fromWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { 
-  findPairPDA, 
-  GAMM_LP_MINT_SEED,
   createConnection,
   createProvider,
   loadProgram
@@ -141,27 +139,21 @@ export class PairStateService {
    * Fetch the complete pair state
    */
   public async fetchPairState(
-    token0Mint: PublicKey,
-    token1Mint: PublicKey,
-    lpTokenMint?: PublicKey
+    pairAddress: string
   ): Promise<PairState> {
     if (!this.program) {
       throw new Error('Program not initialized. Call initializeProgram() first.');
     }
 
     try {
-      // Derive LP token mint if not provided
-      let lpMint: PublicKey;
-      if (lpTokenMint) {
-        lpMint = lpTokenMint;
-      } else {
-        // Derive LP token mint from pair PDA
-        const [pairPda] = findPairPDA(this.program, token0Mint, token1Mint);
-        lpMint = PublicKey.findProgramAddressSync(
-          [Buffer.from(GAMM_LP_MINT_SEED), pairPda.toBuffer()],
-          this.program.programId
-        )[0];
-      }
+      // Convert pair address to PublicKey and fetch pair account directly
+      const pairPda = new PublicKey(pairAddress);
+      const pairAccount = await (this.program.account as any).pair.fetch(pairPda);
+
+      // Extract token addresses and LP mint from the pair account
+      const token0Mint = new PublicKey(pairAccount.token0);
+      const token1Mint = new PublicKey(pairAccount.token1);
+      const lpMint = new PublicKey(pairAccount.lpMint || pairAccount.lp_mint);
 
       // Fetch token metadata and LP token decimals in parallel
       const [token0Metadata, token1Metadata, lpTokenDecimals] = await Promise.all([
@@ -173,10 +165,6 @@ export class PairStateService {
       if (!token0Metadata || !token1Metadata) {
         throw new Error('Failed to fetch token metadata');
       }
-
-      // Fetch pair account data
-      const [pairPda] = findPairPDA(this.program, token0Mint, token1Mint);
-      const pairAccount = await (this.program.account as any).pair.fetch(pairPda);
 
       const {
         token0Decimals,
@@ -208,19 +196,27 @@ export class PairStateService {
       let rate1 = 0;
 
       // Check if EMA prices are stored in the pair account
-      if (pairAccount.price0EmaStored !== undefined) {
-        emaPrice0 = Number(pairAccount.price0EmaStored) / Math.pow(10, 9);
+      // Try both camelCase and snake_case field names
+      const lastPrice0Ema = pairAccount.lastPrice0Ema || pairAccount.last_price0_ema;
+      const lastPrice1Ema = pairAccount.lastPrice1Ema || pairAccount.last_price1_ema;
+      
+      if (lastPrice0Ema !== undefined) {
+        emaPrice0 = Number(lastPrice0Ema) / Math.pow(10, 9);
       }
-      if (pairAccount.price1EmaStored !== undefined) {
-        emaPrice1 = Number(pairAccount.price1EmaStored) / Math.pow(10, 9);
+      if (lastPrice1Ema !== undefined) {
+        emaPrice1 = Number(lastPrice1Ema) / Math.pow(10, 9);
       }
 
       // Try to get rates if stored in pair account
-      if (pairAccount.rate0 !== undefined) {
-        rate0 = Number(pairAccount.rate0);
+      // Try both camelCase and snake_case field names
+      const lastRate0 = pairAccount.lastRate0 || pairAccount.last_rate0;
+      const lastRate1 = pairAccount.lastRate1 || pairAccount.last_rate1;
+      
+      if (lastRate0 !== undefined) {
+        rate0 = Number(lastRate0);
       }
-      if (pairAccount.rate1 !== undefined) {
-        rate1 = Number(pairAccount.rate1);
+      if (lastRate1 !== undefined) {
+        rate1 = Number(lastRate1);
       }
 
       // If rates aren't stored, calculate from rate model

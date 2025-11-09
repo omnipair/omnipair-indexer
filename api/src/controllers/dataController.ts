@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import { ApiResponse, Swap, UserHistory } from '../types';
+import { ApiResponse, PoolRow } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
-import { PublicKey } from '@solana/web3.js';
 import { PairStateService, PairState } from '../services/PairStateService';
 import path from 'path';
 
@@ -170,20 +169,16 @@ export class DataController {
   // Helper function to calculate swap volume for a given pair address and time period
   private static async fetchCachedPairState(
     pairService: PairStateService,
-    token0Address: string,
-    token1Address: string
+    pairAddress: string
   ): Promise<PairState> {
-    const cacheKey = `pair_state_${token0Address}_${token1Address}`;
+    const cacheKey = `pair_state_${pairAddress}`;
     const cachedData = cache.get(cacheKey);
 
     if (cachedData) {
       return cachedData;
     }
 
-    const pairState = await pairService.fetchPairState(
-      new PublicKey(token0Address),
-      new PublicKey(token1Address)
-    );
+    const pairState = await pairService.fetchPairState(pairAddress);
 
     // Cache for 10 minutes
     cache.set(cacheKey, pairState, 10 * 60 * 1000);
@@ -700,7 +695,7 @@ export class DataController {
 
       // Calculate APR, total fees paid, and fetch pair state for each pool
       const poolsWithData = await Promise.all(
-        result.rows.map(async (poolData) => {
+        result.rows.map(async (poolData: PoolRow) => {
           const pairAddress = poolData.pair_address;
           const token0Address = poolData.token0;
           const token1Address = poolData.token1;
@@ -710,8 +705,7 @@ export class DataController {
            const [pairState, aprData, feesData, volumeData] = await Promise.all([
               DataController.fetchCachedPairState(
                 pairService,
-                token0Address,
-                token1Address
+                pairAddress
               ),
               DataController.calculateAPR(pairAddress),
               DataController.calculateTotalFeesPaid(pairAddress),

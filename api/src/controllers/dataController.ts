@@ -4,7 +4,7 @@ import { ApiResponse, Swap, UserHistory } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 import { PublicKey } from '@solana/web3.js';
-import { PairStateService } from '../services/PairStateService';
+import { PairStateService, PairState } from '../services/PairStateService';
 import path from 'path';
 
 export class DataController {
@@ -168,6 +168,29 @@ export class DataController {
   }
 
   // Helper function to calculate swap volume for a given pair address and time period
+  private static async fetchCachedPairState(
+    pairService: PairStateService,
+    token0Address: string,
+    token1Address: string
+  ): Promise<PairState> {
+    const cacheKey = `pair_state_${token0Address}_${token1Address}`;
+    const cachedData = cache.get(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    const pairState = await pairService.fetchPairState(
+      new PublicKey(token0Address),
+      new PublicKey(token1Address)
+    );
+
+    // Cache for 10 minutes
+    cache.set(cacheKey, pairState, 10 * 60 * 1000);
+
+    return pairState;
+  }
+
   private static async calculateSwapVolume(pairAddress: string, hours: number = 24): Promise<{
     volume0: string;
     volume1: string;
@@ -176,6 +199,7 @@ export class DataController {
     const cacheKey = `swap_volume_calc_${pairAddress}_${hours}hrs`;
     const cachedData = cache.get(cacheKey);
     
+
     if (cachedData) {
       return cachedData;
     }
@@ -183,6 +207,7 @@ export class DataController {
     const now = Math.floor(Date.now() / 1000);
     const timestamp = now - (hours * 60 * 60);
     
+
     const result = await pool.query(`
       SELECT 
         SUM(CASE WHEN is_token0_in = true THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume0,
@@ -681,15 +706,16 @@ export class DataController {
           const token1Address = poolData.token1;
           
           try {
-            // Fetch pair state, APR, total fees paid, and 24h swap volume in parallel
-            const [pairState, aprData, feesData, volumeData] = await Promise.all([
-              pairService.fetchPairState(
-                new PublicKey(token0Address),
-                new PublicKey(token1Address)
+           // Fetch pair state, APR, total fees paid, and 24h swap volume in parallel
+           const [pairState, aprData, feesData, volumeData] = await Promise.all([
+              DataController.fetchCachedPairState(
+                pairService,
+                token0Address,
+                token1Address
               ),
               DataController.calculateAPR(pairAddress),
               DataController.calculateTotalFeesPaid(pairAddress),
-              DataController.calculateSwapVolume(pairAddress, 24)
+              DataController.calculateSwapVolume(pairAddress)
             ]);
 
             return {
@@ -726,10 +752,10 @@ export class DataController {
                 token0: pairState.spotPrices.token0,
                 token1: pairState.spotPrices.token1
               },
-              // Interest rates
+              // Interest rates (minimum 1%)
               interest_rates: {
-                token0: pairState.rates.token0,
-                token1: pairState.rates.token1
+                token0: Math.max(pairState.rates.token0, 1),
+                token1: Math.max(pairState.rates.token1, 1)
               },
               // Total debts
               total_debts: {
@@ -785,8 +811,8 @@ export class DataController {
                 token1: '0'
               },
               interest_rates: {
-                token0: 0,
-                token1: 0
+                token0: 1,
+                token1: 1
               },
               total_debts: {
                 token0: '0',

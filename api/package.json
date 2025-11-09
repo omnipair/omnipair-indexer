@@ -12,7 +12,6 @@
     "fill-ema": "npm run build && node dist/scripts/fillEmaPrices.js",
     "verify-ema": "npm run build && node dist/scripts/fillEmaPrices.js verify",
     "ema-both": "npm run build && node dist/scripts/fillEmaPrices.js both",
-    "test-pair-state": "ts-node src/test-pair-state.ts"
   },
   "keywords": [
     "typescript",

@@ -411,7 +411,7 @@ pub async fn upsert_pair_created_event(
             rate_model = EXCLUDED.rate_model,
             swap_fee_bps = EXCLUDED.swap_fee_bps,
             half_life = EXCLUDED.half_life,
-            fixed_cf_bps = EXCLUDED.fixed_cf_bps
+            fixed_cf_bps = EXCLUDED.fixed_cf_bps,
             params_hash = EXCLUDED.params_hash,
             version = EXCLUDED.version
         "#

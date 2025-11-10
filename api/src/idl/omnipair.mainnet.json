@@ -48,6 +48,11 @@
                 "kind": "account",
                 "path": "pair.token1",
                 "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
+                "account": "Pair"
               }
             ]
           }
@@ -232,6 +237,11 @@
               {
                 "kind": "account",
                 "path": "pair.token1",
+                "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
                 "account": "Pair"
               }
             ]
@@ -469,32 +479,7 @@
         },
         {
           "name": "lp_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  103,
-                  97,
-                  109,
-                  109,
-                  95,
-                  108,
-                  112,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "pair"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "user_lp_token_account",
@@ -692,6 +677,11 @@
                 "kind": "account",
                 "path": "pair.token1",
                 "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
+                "account": "Pair"
               }
             ]
           }
@@ -885,6 +875,11 @@
                 "kind": "account",
                 "path": "pair.token1",
                 "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
+                "account": "Pair"
               }
             ]
           }
@@ -929,11 +924,183 @@
         },
         {
           "name": "authority_token0_account",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "futarchy_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token0_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "authority_token1_account",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "futarchy_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token1_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
         },
         {
           "name": "token0_mint"
@@ -948,6 +1115,14 @@
         {
           "name": "token_2022_program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1079,6 +1254,11 @@
               {
                 "kind": "account",
                 "path": "pair.token1",
+                "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
                 "account": "Pair"
               }
             ]
@@ -1223,7 +1403,7 @@
           "name": "deployer",
           "writable": true,
           "signer": true,
-          "address": "C7GKpfqQyBoFR6S13DECwBjdi7aCQKbbeKjXm4Jt5Hds"
+          "address": "8tF4uYMBXqGhCUGRZL3AmPqRzbX8JJ1TpYnY3uJKN4kt"
         },
         {
           "name": "futarchy_authority",
@@ -1322,6 +1502,10 @@
               {
                 "kind": "account",
                 "path": "token1_mint"
+              },
+              {
+                "kind": "arg",
+                "path": "args.params_hash"
               }
             ]
           }
@@ -1363,77 +1547,61 @@
         },
         {
           "name": "lp_mint",
+          "writable": true
+        },
+        {
+          "name": "lp_token_metadata",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  103,
+                  109,
+                  101,
+                  116,
                   97,
-                  109,
-                  109,
-                  95,
-                  108,
-                  112,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
+                  100,
+                  97,
+                  116,
+                  97
                 ]
               },
               {
-                "kind": "account",
-                "path": "pair"
-              }
-            ]
-          }
-        },
-        {
-          "name": "deployer_lp_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "deployer"
-              },
-              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
+                  11,
+                  112,
                   101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  177,
+                  227,
+                  209,
+                  124,
+                  69,
+                  56,
+                  157,
+                  82,
+                  127,
+                  107,
+                  4,
+                  195,
+                  205,
+                  88,
+                  184,
+                  108,
+                  115,
+                  26,
+                  160,
+                  253,
+                  181,
+                  73,
+                  182,
+                  209,
+                  188,
+                  3,
+                  248,
+                  41,
+                  70
                 ]
               },
               {
@@ -1444,41 +1612,45 @@
             "program": {
               "kind": "const",
               "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
                 11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
+                112,
+                101,
+                177,
+                227,
+                209,
+                124,
+                69,
+                56,
+                157,
+                82,
+                127,
+                107,
                 4,
-                142,
-                123,
-                216,
-                219,
-                233,
+                195,
+                205,
+                88,
+                184,
+                108,
+                115,
+                26,
+                160,
+                253,
+                181,
+                73,
+                182,
+                209,
+                188,
+                3,
                 248,
-                89
+                41,
+                70
               ]
             }
           }
+        },
+        {
+          "name": "deployer_lp_token_account",
+          "writable": true
         },
         {
           "name": "token0_vault",
@@ -1685,6 +1857,10 @@
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
+          "name": "token_metadata_program",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
           "name": "associated_token_program",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
@@ -1776,6 +1952,11 @@
               {
                 "kind": "account",
                 "path": "pair.token1",
+                "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
                 "account": "Pair"
               }
             ]
@@ -1955,6 +2136,11 @@
               {
                 "kind": "account",
                 "path": "pair.token1",
+                "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
                 "account": "Pair"
               }
             ]
@@ -2140,6 +2326,11 @@
               {
                 "kind": "account",
                 "path": "pair.token1",
+                "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
                 "account": "Pair"
               }
             ]
@@ -2377,32 +2568,7 @@
         },
         {
           "name": "lp_mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  103,
-                  97,
-                  109,
-                  109,
-                  95,
-                  108,
-                  112,
-                  95,
-                  109,
-                  105,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "pair"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "user_lp_token_account",
@@ -2600,6 +2766,11 @@
                 "kind": "account",
                 "path": "pair.token1",
                 "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
+                "account": "Pair"
               }
             ]
           }
@@ -2785,6 +2956,11 @@
                 "kind": "account",
                 "path": "pair.token1",
                 "account": "Pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.params_hash",
+                "account": "Pair"
               }
             ]
           }
@@ -2840,17 +3016,104 @@
           "writable": true
         },
         {
-          "name": "authority_token_in_account",
-          "writable": true
-        },
-        {
           "name": "token_in_mint"
         },
         {
           "name": "token_out_mint"
         },
         {
+          "name": "authority_token_in_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "futarchy_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_in_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
           "name": "user",
+          "writable": true,
           "signer": true
         },
         {
@@ -2860,6 +3123,14 @@
         {
           "name": "token_2022_program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         },
         {
           "name": "event_authority",
@@ -3267,343 +3538,298 @@
     },
     {
       "code": 6001,
-      "name": "InvalidNonce",
-      "msg": "Invalid nonce"
-    },
-    {
-      "code": 6002,
-      "name": "InvalidFutarchyFeeBps",
-      "msg": "Invalid futarchy fee bps"
-    },
-    {
-      "code": 6003,
       "name": "ArgumentMissing",
       "msg": "Argument missing"
     },
     {
-      "code": 6004,
+      "code": 6002,
       "name": "InvalidSwapFeeBps",
       "msg": "Invalid swap fee bps"
     },
     {
-      "code": 6005,
+      "code": 6003,
       "name": "InvalidHalfLife",
       "msg": "Invalid half life"
     },
     {
-      "code": 6006,
+      "code": 6004,
       "name": "InvalidFutarchyAuthority",
       "msg": "Invalid futarchy authority"
     },
     {
-      "code": 6007,
+      "code": 6005,
       "name": "InvalidArgument",
       "msg": "Invalid argument"
     },
     {
-      "code": 6008,
-      "name": "PairAlreadyInitialized",
-      "msg": "Pair already initialized"
-    },
-    {
-      "code": 6009,
-      "name": "InvalidK",
-      "msg": "Invalid K value"
-    },
-    {
-      "code": 6010,
+      "code": 6006,
       "name": "InsufficientCollateral",
       "msg": "Insufficient collateral"
     },
     {
-      "code": 6011,
-      "name": "UserAlreadyAddedCollateral",
-      "msg": "User already added collateral"
-    },
-    {
-      "code": 6012,
-      "name": "ZeroCollateralAmount",
-      "msg": "Zero collateral amount"
-    },
-    {
-      "code": 6013,
+      "code": 6007,
       "name": "AmountZero",
       "msg": "Amount cannot be zero"
     },
     {
-      "code": 6014,
+      "code": 6008,
       "name": "InsufficientAmount0In",
       "msg": "Insufficient amount0 in"
     },
     {
-      "code": 6015,
+      "code": 6009,
       "name": "InsufficientAmount1In",
       "msg": "Insufficient amount1 in"
     },
     {
-      "code": 6016,
+      "code": 6010,
       "name": "BorrowingPowerExceeded",
       "msg": "Borrowing power exceeded"
     },
     {
-      "code": 6017,
-      "name": "InvalidAmount",
-      "msg": "Invalid amount"
-    },
-    {
-      "code": 6018,
-      "name": "InvalidRateModel",
-      "msg": "Invalid rate model"
-    },
-    {
-      "code": 6019,
+      "code": 6011,
       "name": "InvalidTokenAccount",
       "msg": "Invalid token account"
     },
     {
-      "code": 6020,
+      "code": 6012,
       "name": "InvalidTokenProgram",
       "msg": "Invalid token program"
     },
     {
-      "code": 6021,
-      "name": "InvalidSystemProgram",
-      "msg": "Invalid system program"
-    },
-    {
-      "code": 6022,
-      "name": "InvalidSigner",
-      "msg": "Invalid signer"
-    },
-    {
-      "code": 6023,
-      "name": "InvalidAccount",
-      "msg": "Invalid account"
-    },
-    {
-      "code": 6024,
-      "name": "InvalidProgram",
-      "msg": "Invalid program"
-    },
-    {
-      "code": 6025,
-      "name": "InvalidInstruction",
-      "msg": "Invalid instruction"
-    },
-    {
-      "code": 6026,
-      "name": "InvalidState",
-      "msg": "Invalid state"
-    },
-    {
-      "code": 6027,
-      "name": "InvalidCalculation",
-      "msg": "Invalid calculation"
-    },
-    {
-      "code": 6028,
-      "name": "InvalidTime",
-      "msg": "Invalid time"
-    },
-    {
-      "code": 6029,
-      "name": "InvalidPrice",
-      "msg": "Invalid price"
-    },
-    {
-      "code": 6030,
-      "name": "InvalidRate",
-      "msg": "Invalid rate"
-    },
-    {
-      "code": 6031,
-      "name": "InvalidUtilization",
-      "msg": "Invalid utilization"
-    },
-    {
-      "code": 6032,
+      "code": 6013,
       "name": "BorrowExceedsReserve",
       "msg": "Borrow exceeds reserve"
     },
     {
-      "code": 6033,
-      "name": "InvalidTokenOrder",
-      "msg": "Invalid token order"
-    },
-    {
-      "code": 6034,
-      "name": "DebtNotZero",
-      "msg": "Debt not zero"
-    },
-    {
-      "code": 6035,
+      "code": 6014,
       "name": "InsufficientAmount0",
       "msg": "Insufficient amount0"
     },
     {
-      "code": 6036,
+      "code": 6015,
       "name": "InsufficientAmount1",
       "msg": "Insufficient amount1"
     },
     {
-      "code": 6037,
+      "code": 6016,
       "name": "InsufficientOutputAmount",
       "msg": "Insufficient output amount"
     },
     {
-      "code": 6038,
+      "code": 6017,
       "name": "InsufficientLiquidity",
       "msg": "Insufficient liquidity"
     },
     {
-      "code": 6039,
+      "code": 6018,
       "name": "Overflow",
       "msg": "Arithmetic overflow"
     },
     {
-      "code": 6040,
+      "code": 6019,
       "name": "Undercollateralized",
       "msg": "Undercollateralized"
     },
     {
-      "code": 6041,
-      "name": "InsufficientCollateral0",
-      "msg": "Insufficient collateral for token0"
-    },
-    {
-      "code": 6042,
-      "name": "InsufficientCollateral1",
-      "msg": "Insufficient collateral for token1"
-    },
-    {
-      "code": 6043,
+      "code": 6020,
       "name": "InsufficientBalanceForCollateral",
       "msg": "Insufficient balance for collateral"
     },
     {
-      "code": 6044,
+      "code": 6021,
       "name": "InsufficientAmount",
       "msg": "Insufficient amount"
     },
     {
-      "code": 6045,
+      "code": 6022,
       "name": "InsufficientDebt",
       "msg": "Insufficient debt"
     },
     {
-      "code": 6046,
+      "code": 6023,
       "name": "UserPositionNotInitialized",
       "msg": "User position not initialized"
     },
     {
-      "code": 6047,
+      "code": 6024,
       "name": "ZeroDebtAmount",
       "msg": "Zero debt amount"
     },
     {
-      "code": 6048,
+      "code": 6025,
       "name": "NotUndercollateralized",
       "msg": "Not undercollateralized"
     },
     {
-      "code": 6049,
+      "code": 6026,
       "name": "BrokenInvariant",
       "msg": "Broken invariant"
     },
     {
-      "code": 6050,
+      "code": 6027,
       "name": "InvariantOverflow",
       "msg": "Math overflow during invariant calculation"
     },
     {
-      "code": 6051,
+      "code": 6028,
       "name": "FeeMathOverflow",
       "msg": "Math overflow during fee calculation."
     },
     {
-      "code": 6052,
+      "code": 6029,
       "name": "OutputAmountOverflow",
       "msg": "Math overflow during output amount calculation."
     },
     {
-      "code": 6053,
+      "code": 6030,
       "name": "ReserveOverflow",
       "msg": "Math overflow during reserve calculation."
     },
     {
-      "code": 6054,
+      "code": 6031,
       "name": "DenominatorOverflow",
       "msg": "Math overflow during denominator calculation."
     },
     {
-      "code": 6055,
+      "code": 6032,
       "name": "LiquidityMathOverflow",
       "msg": "Math overflow during liquidity calculation"
     },
     {
-      "code": 6056,
+      "code": 6033,
       "name": "LiquiditySqrtOverflow",
       "msg": "Math overflow during liquidity square root calculation"
     },
     {
-      "code": 6057,
+      "code": 6034,
       "name": "LiquidityUnderflow",
       "msg": "Math underflow during liquidity calculation"
     },
     {
-      "code": 6058,
+      "code": 6035,
       "name": "LiquidityConversionOverflow",
       "msg": "Math overflow during liquidity conversion"
     },
     {
-      "code": 6059,
-      "name": "LiquidityDivisionOverflow",
-      "msg": "Math overflow during liquidity division"
-    },
-    {
-      "code": 6060,
+      "code": 6036,
       "name": "SupplyOverflow",
       "msg": "Math overflow during supply calculation"
     },
     {
-      "code": 6061,
+      "code": 6037,
       "name": "DebtMathOverflow",
       "msg": "Math overflow during debt calculation"
     },
     {
-      "code": 6062,
+      "code": 6038,
       "name": "DebtShareMathOverflow",
       "msg": "Math overflow during debt share calculation"
     },
     {
-      "code": 6063,
+      "code": 6039,
       "name": "DebtShareDivisionOverflow",
       "msg": "Math overflow during debt share division"
     },
     {
-      "code": 6064,
+      "code": 6040,
       "name": "DebtUtilizationOverflow",
       "msg": "Math overflow during debt utilization calculation"
     },
     {
-      "code": 6065,
+      "code": 6041,
       "name": "InvalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6066,
+      "code": 6042,
+      "name": "InvalidMintLen",
+      "msg": "Invalid mint length"
+    },
+    {
+      "code": 6043,
       "name": "InvalidDistribution",
       "msg": "Invalid distribution - percentages must sum to 100%"
     },
     {
-      "code": 6067,
+      "code": 6044,
       "name": "InvalidLpMintKey",
       "msg": "Invalid LP mint key"
     },
     {
-      "code": 6068,
-      "name": "InvalidPairKey",
-      "msg": "Invalid pair key"
+      "code": 6045,
+      "name": "InvalidLpName",
+      "msg": "Invalid LP name"
+    },
+    {
+      "code": 6046,
+      "name": "InvalidLpSymbol",
+      "msg": "Invalid LP symbol"
+    },
+    {
+      "code": 6047,
+      "name": "InvalidLpUri",
+      "msg": "Invalid LP URI"
+    },
+    {
+      "code": 6048,
+      "name": "AccountNotEmpty",
+      "msg": "Account not empty"
+    },
+    {
+      "code": 6049,
+      "name": "InvalidMintAuthority",
+      "msg": "Invalid mint authority"
+    },
+    {
+      "code": 6050,
+      "name": "FrozenLpMint",
+      "msg": "Frozen LP mint"
+    },
+    {
+      "code": 6051,
+      "name": "NonZeroSupply",
+      "msg": "Non-zero supply"
+    },
+    {
+      "code": 6052,
+      "name": "WrongLpDecimals",
+      "msg": "Wrong LP decimals"
+    },
+    {
+      "code": 6053,
+      "name": "InvalidVaultIn",
+      "msg": "Invalid vault - token_in_vault must be owned by the pair"
+    },
+    {
+      "code": 6054,
+      "name": "InvalidVaultOut",
+      "msg": "Invalid vault - token_out_vault must be owned by the pair"
+    },
+    {
+      "code": 6055,
+      "name": "InvalidVaultSameAccount",
+      "msg": "Invalid vault - token_in_vault and token_out_vault must be different"
+    },
+    {
+      "code": 6056,
+      "name": "InvalidVault",
+      "msg": "Invalid vault"
+    },
+    {
+      "code": 6057,
+      "name": "InvalidParamsHash",
+      "msg": "Invalid params hash - hash does not match computed parameters"
+    },
+    {
+      "code": 6058,
+      "name": "InvalidVersion",
+      "msg": "Invalid version"
+    },
+    {
+      "code": 6059,
+      "name": "InvalidTokenOrder",
+      "msg": "Invalid token order"
     }
   ],
   "types": [
@@ -3976,6 +4202,19 @@
             }
           },
           {
+            "name": "params_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
             "name": "amount0_in",
             "type": "u64"
           },
@@ -3986,6 +4225,18 @@
           {
             "name": "min_liquidity_out",
             "type": "u64"
+          },
+          {
+            "name": "lp_name",
+            "type": "string"
+          },
+          {
+            "name": "lp_symbol",
+            "type": "string"
+          },
+          {
+            "name": "lp_uri",
+            "type": "string"
           }
         ]
       }
@@ -4029,6 +4280,10 @@
           },
           {
             "name": "token1",
+            "type": "pubkey"
+          },
+          {
+            "name": "lp_mint",
             "type": "pubkey"
           },
           {
@@ -4122,6 +4377,19 @@
             "type": "u64"
           },
           {
+            "name": "params_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          },
+          {
             "name": "bump",
             "type": "u8"
           }
@@ -4140,6 +4408,49 @@
           {
             "name": "token1",
             "type": "pubkey"
+          },
+          {
+            "name": "lp_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token0_decimals",
+            "type": "u8"
+          },
+          {
+            "name": "token1_decimals",
+            "type": "u8"
+          },
+          {
+            "name": "rate_model",
+            "type": "pubkey"
+          },
+          {
+            "name": "swap_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "half_life",
+            "type": "u64"
+          },
+          {
+            "name": "fixed_cf_bps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "params_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "version",
+            "type": "u8"
           },
           {
             "name": "metadata",
@@ -4606,16 +4917,6 @@
       "value": "5000"
     },
     {
-      "name": "DEFAULT_HALF_LIFE",
-      "type": "u64",
-      "value": "420"
-    },
-    {
-      "name": "FACTORY_SEED_PREFIX",
-      "type": "bytes",
-      "value": "[103, 97, 109, 109, 95, 102, 97, 99, 116, 111, 114, 121]"
-    },
-    {
       "name": "FLASHLOAN_FEE_BPS",
       "type": "u16",
       "value": "5"
@@ -4626,19 +4927,9 @@
       "value": "[102, 117, 116, 97, 114, 99, 104, 121, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121]"
     },
     {
-      "name": "LEVERAGED_POSITION_SEED_PREFIX",
-      "type": "bytes",
-      "value": "[103, 97, 109, 109, 95, 108, 101, 118, 101, 114, 97, 103, 101, 100, 95, 112, 111, 115, 105, 116, 105, 111, 110]"
-    },
-    {
       "name": "LIQUIDATION_INCENTIVE_BPS",
       "type": "u16",
       "value": "300"
-    },
-    {
-      "name": "LP_MINT_SEED_PREFIX",
-      "type": "bytes",
-      "value": "[103, 97, 109, 109, 95, 108, 112, 95, 109, 105, 110, 116]"
     },
     {
       "name": "LTV_BUFFER_BPS",
@@ -4649,6 +4940,11 @@
       "name": "MAX_COLLATERAL_FACTOR_BPS",
       "type": "u16",
       "value": "8500"
+    },
+    {
+      "name": "METADATA_SEED_PREFIX",
+      "type": "bytes",
+      "value": "[109, 101, 116, 97, 100, 97, 116, 97]"
     },
     {
       "name": "NAD",
@@ -4677,6 +4973,11 @@
       "name": "POSITION_SEED_PREFIX",
       "type": "bytes",
       "value": "[103, 97, 109, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]"
+    },
+    {
+      "name": "VERSION",
+      "type": "u8",
+      "value": "1"
     }
   ]
 }

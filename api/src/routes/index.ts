@@ -36,7 +36,6 @@ router.get('/', (req, res) => {
       users: {
         'swap-history': '/api/user/:userAddress/swap-history',
         'liquidity-history': '/api/user/:userAddress/history/:pair',
-        'positions': '/api/user/:userAddress/positions',
         'lending-history': '/api/user/:userAddress/lending-history'
       },
       positions: {
@@ -65,7 +64,6 @@ router.get('/', (req, res) => {
       'Get swaps for user': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/swap-history',
       'Get user liquidity history': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/history/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get user liquidity history with pagination': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/history/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P?limit=50&sortBy=timestamp&sortOrder=desc',
-      'Get user positions': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/positions',
       'Get user lending history': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/lending-history',
       'Get user lending history with pagination': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/lending-history?limit=50&offset=0',
       'Get all positions': '/api/position/?limit=50&offset=0',
@@ -78,7 +76,7 @@ router.get('/', (req, res) => {
       'data-filtering': 'Pool and swap data is filtered by pair address, user endpoints filter by user address',
       'chart-intervals': 'Chart automatically selects intervals: ≤24hrs=1min, ≤168hrs=1hr, >168hrs=1day',
       'caching': 'Responses are cached per pair to improve performance',
-      'user-endpoints': 'User endpoints provide access to all swaps, liquidity history, positions, and lending/borrowing activities for a specific user address',
+      'user-endpoints': 'User endpoints provide access to all swaps, liquidity history, and lending/borrowing activities for a specific user address',
       'lending-history': 'Lending history endpoint combines collateral adjustments, debt adjustments, liquidations, and position updates for comprehensive lending activity tracking',
       'pagination': 'Most endpoints support pagination with limit and offset parameters'
     }

@@ -9,9 +9,6 @@ router.get('/:userAddress/swap-history', DataController.getSwaps);
 // User history endpoint - returns liquidity adjustment data for a specific user and pair
 router.get('/:userAddress/history/:pair', DataController.getUserHistory);
 
-// User positions endpoint - returns all positions for a specific user
-router.get('/:userAddress/positions', DataController.getUserPositions);
-
 // User lending history endpoint - returns all lending/borrowing activities for a specific user
 router.get('/:userAddress/lending-history', DataController.getUserLendingHistory);
 

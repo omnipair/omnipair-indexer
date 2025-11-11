@@ -1060,8 +1060,19 @@ export class DataController {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
       const offset = parseInt(req.query.offset as string) || 0;
+      const userAddress = req.query.userAddress as string | undefined;
 
-      const cacheKey = `all_positions_${limit}_${offset}`;
+      // Validate userAddress format if provided
+      if (userAddress && (userAddress.length < 32 || userAddress.length > 44 || !/^[A-Za-z0-9]+$/.test(userAddress))) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Invalid user address format'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const cacheKey = `all_positions_${userAddress || 'all'}_${limit}_${offset}`;
       const cachedData = cache.get(cacheKey);
       
       if (cachedData) {
@@ -1073,30 +1084,58 @@ export class DataController {
         return;
       }
 
-      // Get total count from the new user_borrow_positions table
-      const countResult = await pool.query(`
-        SELECT COUNT(*) as total_count
-        FROM user_borrow_positions
-      `);
+      let countQuery: string;
+      let dataQuery: string;
+      let countParams: any[];
+      let queryParams: any[];
+
+      if (userAddress) {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_borrow_positions WHERE signer = $1';
+        countParams = [userAddress];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            position,
+            collateral0,
+            collateral1,
+            debt0_shares,
+            debt1_shares,
+            collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps,
+            event_timestamp
+          FROM user_borrow_positions
+          WHERE signer = $1
+          ORDER BY event_timestamp DESC
+          LIMIT $2 OFFSET $3
+        `;
+        queryParams = [userAddress, limit, offset];
+      } else {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_borrow_positions';
+        countParams = [];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            position,
+            collateral0,
+            collateral1,
+            debt0_shares,
+            debt1_shares,
+            collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps,
+            event_timestamp
+          FROM user_borrow_positions
+          ORDER BY event_timestamp DESC
+          LIMIT $1 OFFSET $2
+        `;
+        queryParams = [limit, offset];
+      }
+
+      const countResult = await pool.query(countQuery, countParams);
       const totalCount = parseInt(countResult.rows[0].total_count);
 
-      // Query to get all positions from user_borrow_positions
-      const result = await pool.query(`
-        SELECT 
-          signer,
-          pair,
-          position,
-          collateral0,
-          collateral1,
-          debt0_shares,
-          debt1_shares,
-          collateral0_applied_min_cf_bps,
-          collateral1_applied_min_cf_bps,
-          event_timestamp
-        FROM user_borrow_positions
-        ORDER BY event_timestamp DESC
-        LIMIT $1 OFFSET $2
-      `, [limit, offset]);
+      const result = await pool.query(dataQuery, queryParams);
 
       const positions = result.rows.map(row => ({
         signer: row.signer,

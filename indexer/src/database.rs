@@ -285,6 +285,10 @@ pub async fn upsert_user_position_updated_event(
 ) -> CarbonResult<()> {
     let pool = get_db_pool()?;
     
+    // Compute event_timestamp once for reuse
+    let event_timestamp = DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?;
+    
     let upsert_result = sqlx::query(
         r#"
         INSERT INTO user_position_updated_events (
@@ -317,14 +321,55 @@ pub async fn upsert_user_position_updated_event(
     .bind(event.collateral1_applied_min_cf_bps as i32)
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
-    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(event_timestamp)
     .execute(pool)
     .await;
     
     if let Err(e) = upsert_result {
         log::error!("Failed to upsert into user_position_updated_events table: {}", e);
         return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user position updated event: {}", e)));
+    }
+    
+    // Also upsert into user_borrow_positions table (latest position per pair per signer)
+    
+    let upsert_latest_result = sqlx::query(
+        r#"
+        INSERT INTO user_borrow_positions (
+            pair, signer, position, collateral0, collateral1, debt0_shares, debt1_shares,
+            collateral0_applied_min_cf_bps, collateral1_applied_min_cf_bps,
+            slot, event_timestamp, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ON CONFLICT (pair, signer) DO UPDATE SET
+            position = EXCLUDED.position,
+            collateral0 = EXCLUDED.collateral0,
+            collateral1 = EXCLUDED.collateral1,
+            debt0_shares = EXCLUDED.debt0_shares,
+            debt1_shares = EXCLUDED.debt1_shares,
+            collateral0_applied_min_cf_bps = EXCLUDED.collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps = EXCLUDED.collateral1_applied_min_cf_bps,
+            slot = EXCLUDED.slot,
+            event_timestamp = EXCLUDED.event_timestamp,
+            updated_at = EXCLUDED.updated_at
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(event.position.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.collateral0))
+    .bind(bigdecimal::BigDecimal::from(event.collateral1))
+    .bind(bigdecimal::BigDecimal::from(event.debt0_shares))
+    .bind(bigdecimal::BigDecimal::from(event.debt1_shares))
+    .bind(event.collateral0_applied_min_cf_bps as i32)
+    .bind(event.collateral1_applied_min_cf_bps as i32)
+    .bind(bigdecimal::BigDecimal::from(slot))
+    .bind(event_timestamp)
+    .bind(chrono::Utc::now())
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_latest_result {
+        log::error!("Failed to upsert into user_borrow_positions table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user borrow position: {}", e)));
     }
     
     Ok(())

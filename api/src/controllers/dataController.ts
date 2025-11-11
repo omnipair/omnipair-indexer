@@ -1073,14 +1073,14 @@ export class DataController {
         return;
       }
 
-      // Get total count of unique positions
+      // Get total count from the new user_borrow_positions table
       const countResult = await pool.query(`
-        SELECT COUNT(DISTINCT position) as total_count
-        FROM user_position_updated_events
+        SELECT COUNT(*) as total_count
+        FROM user_borrow_positions
       `);
       const totalCount = parseInt(countResult.rows[0].total_count);
 
-      // Query to get all unique positions with latest data
+      // Query to get all positions from user_borrow_positions
       const result = await pool.query(`
         SELECT 
           signer,
@@ -1093,12 +1093,7 @@ export class DataController {
           collateral0_applied_min_cf_bps,
           collateral1_applied_min_cf_bps,
           event_timestamp
-        FROM user_position_updated_events upu1
-        WHERE event_timestamp = (
-          SELECT MAX(event_timestamp)
-          FROM user_position_updated_events upu2
-          WHERE upu2.position = upu1.position
-        )
+        FROM user_borrow_positions
         ORDER BY event_timestamp DESC
         LIMIT $1 OFFSET $2
       `, [limit, offset]);

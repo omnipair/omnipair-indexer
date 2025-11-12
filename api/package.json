@@ -4,7 +4,7 @@
   "description": "TypeScript Express API with PostgreSQL integration",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon src/index.ts",
+    "dev": "nodemon",
     "build": "tsc && npm run copy-idl",
     "copy-idl": "mkdir -p dist/idl && cp src/idl/*.json dist/idl/ 2>/dev/null || true",
     "start": "node dist/index.js",
@@ -24,6 +24,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/umi": "^1.4.1",
     "@metaplex-foundation/umi-bundle-defaults": "^1.4.1",
     "@metaplex-foundation/umi-web3js-adapters": "^1.4.1",
     "@solana/spl-token": "^0.4.14",

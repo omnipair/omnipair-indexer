@@ -1,4 +1,4 @@
-import { Connection, PublicKey, AccountInfo, Transaction, SimulatedTransactionResponse, RpcResponseAndContext } from '@solana/web3.js';
+import { Connection, PublicKey, AccountInfo, Transaction, SimulatedTransactionResponse, RpcResponseAndContext, VersionedTransaction } from '@solana/web3.js';
 
 /**
  * RPC Client wrapper for Solana connection
@@ -38,12 +38,19 @@ export class RpcClient {
 
   /**
    * Simulate transaction
+   * Uses the new API only supports VersionedTransaction
+   * @param transaction - The transaction to simulate
+   * @returns The simulated transaction response
    */
   async simulateTransaction(
     transaction: Transaction
   ): Promise<SimulatedTransactionResponse> {
+    // Convert legacy Transaction to VersionedTransaction for new API
+    const message = transaction.compileMessage();
+    const versionedTx = new VersionedTransaction(message);
+    
     const result: RpcResponseAndContext<SimulatedTransactionResponse> = 
-      await this.connection.simulateTransaction(transaction);
+      await this.connection.simulateTransaction(versionedTx);
     return result.value;
   }
 

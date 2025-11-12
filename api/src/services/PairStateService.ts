@@ -9,6 +9,7 @@ import {
   createProvider,
   loadProgram
 } from '../config/program';
+import { simulatePairGetter } from '../utils/pairSimulation';
 
 export interface TokenMetadata {
   symbol: string;
@@ -187,35 +188,39 @@ export class PairStateService {
       const spotPrice0 = Number(reserve1) / Number(reserve0);
       const spotPrice1 = Number(reserve0) / Number(reserve1);
 
-      // Try to get EMA prices and rates from the pair account if available
-      // Many AMMs store these directly in the account
+      // Get rate model PDA from pair account
+      const rateModelPda = new PublicKey(pairAccount.rateModel);
+
+      // Fetch EMA prices and rates using simulation (after pair update)
       let emaPrice0 = spotPrice0;
       let emaPrice1 = spotPrice1;
       let rate0 = 0;
       let rate1 = 0;
 
-      // Check if EMA prices are stored in the pair account
-      // Try both camelCase and snake_case field names
-      const lastPrice0Ema = pairAccount.lastPrice0Ema || pairAccount.last_price0_ema;
-      const lastPrice1Ema = pairAccount.lastPrice1Ema || pairAccount.last_price1_ema;
-      
-      if (lastPrice0Ema !== undefined) {
-        emaPrice0 = Number(lastPrice0Ema) / Math.pow(10, 9);
-      }
-      if (lastPrice1Ema !== undefined) {
-        emaPrice1 = Number(lastPrice1Ema) / Math.pow(10, 9);
-      }
+      try {
+        if (!this.program) {
+          throw new Error('Program not initialized');
+        }
 
-      // Try to get rates if stored in pair account
-      // Try both camelCase and snake_case field names
-      const lastRate0 = pairAccount.lastRate0 || pairAccount.last_rate0;
-      const lastRate1 = pairAccount.lastRate1 || pairAccount.last_rate1;
-      
-      if (lastRate0 !== undefined) {
-        rate0 = Number(lastRate0);
-      }
-      if (lastRate1 !== undefined) {
-        rate1 = Number(lastRate1);
+        // Fetch EMA prices using simulation
+        const [emaPrice0Result, emaPrice1Result, ratesResult] = await Promise.all([
+          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice0Nad: {} }),
+          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice1Nad: {} }),
+          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { getRates: {} }),
+        ]);
+
+        // Parse EMA prices (stored as NAD - 9 decimals)
+        emaPrice0 = Number(emaPrice0Result.value0) / Math.pow(10, 9);
+        emaPrice1 = Number(emaPrice1Result.value0) / Math.pow(10, 9);
+
+        // Parse rates (stored as raw values, need to convert to percentage)
+        rate0 = Number(ratesResult.value0);
+        rate1 = Number(ratesResult.value1);
+      } catch (error) {
+        console.warn('Error fetching EMA prices or rates via simulation, falling back to spot prices:', error);
+        // Fallback to spot prices if simulation fails
+        emaPrice0 = spotPrice0;
+        emaPrice1 = spotPrice1;
       }
       
 
@@ -247,8 +252,8 @@ export class PairStateService {
           token1: spotPrice1.toString(),
         },
         rates: {
-          token0: Math.floor((Number(rate0) / 1e5) * 100) / 100,
-          token1: Math.floor((Number(rate1) / 1e5) * 100) / 100,
+          token0: Math.floor((Number(rate0) / 1e7) * 100) / 100,
+          token1: Math.floor((Number(rate1) / 1e7) * 100) / 100,
         },
         totalDebts: {
           token0: totalDebt0.toString(),

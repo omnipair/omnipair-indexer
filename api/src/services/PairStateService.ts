@@ -9,7 +9,6 @@ import {
   createProvider,
   loadProgram
 } from '../config/program';
-import { fetchRatesFromRateModel, estimateRateFromUtilization } from '../utils/rateCalculator';
 
 export interface TokenMetadata {
   symbol: string;
@@ -218,26 +217,6 @@ export class PairStateService {
       if (lastRate1 !== undefined) {
         rate1 = Number(lastRate1);
       }
-
-      // If rates aren't stored, calculate from rate model
-      // This avoids the "Transaction too large" error from simulation
-      if (rate0 === 0 && rate1 === 0 && pairAccount.rateModel) {
-        try {
-          const rates = await fetchRatesFromRateModel(
-            this.program,
-            pairAccount.rateModel,
-            utilization0,
-            utilization1
-          );
-          rate0 = rates.rate0;
-          rate1 = rates.rate1;
-        } catch (rateError) {
-          console.warn('Could not fetch rates from rate model, using estimation:', rateError);
-          // Fallback to simple estimation
-          rate0 = estimateRateFromUtilization(utilization0);
-          rate1 = estimateRateFromUtilization(utilization1);
-        }
-      }
       
 
       return {
@@ -268,8 +247,8 @@ export class PairStateService {
           token1: spotPrice1.toString(),
         },
         rates: {
-          token0: rate0, // 1e5 = bps, 1e6 = permille, 1e7 = percent
-          token1: rate1, // 1e5 = bps, 1e6 = permille, 1e7 = percent
+          token0: Math.floor((Number(rate0) / 1e5) * 100) / 100,
+          token1: Math.floor((Number(rate1) / 1e5) * 100) / 100,
         },
         totalDebts: {
           token0: totalDebt0.toString(),

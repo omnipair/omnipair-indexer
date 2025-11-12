@@ -1,6 +1,8 @@
 import { PublicKey, Connection, Transaction } from '@solana/web3.js';
 import { Program } from '@coral-xyz/anchor';
 import { GetterType, SimulationResult, EmitValueArgs } from '../types/pairTypes';
+import type { Omnipair } from '../types/omnipair.mainnet';
+import { GENERIC_READONLY_PUBKEY } from '../config/program';
 
 /**
  * Cache for simulation results
@@ -13,9 +15,6 @@ interface CacheEntry {
 const SIMULATE_CACHE_DURATION = 5000; // 5 seconds cache
 const simulateCache = new Map<string, CacheEntry>();
 const inFlightRequests = new Map<string, Promise<SimulationResult>>();
-
-// Generic readonly pubkey for fee payer
-const GENERIC_READONLY_PUBKEY = PublicKey.default;
 
 /**
  * Extract numeric value from OptionalUint format (U64(123), U16(456), OptionalU64(Some(123)), etc.)
@@ -88,7 +87,7 @@ function parseSimulationLogs(
  * This calls the view_pair_data instruction which returns data through logs after updating the pair
  */
 export async function simulatePairGetter(
-  program: Program,
+  program: Program<Omnipair>,
   connection: Connection,
   pairPda: PublicKey,
   rateModelPda: PublicKey,
@@ -116,7 +115,7 @@ export async function simulatePairGetter(
   const requestPromise = (async () => {
     try {
       // Create the instruction
-      const ix = await (program.methods as any)
+      const ix = await program.methods
         .viewPairData(
           getter,
           args || { debtAmount: null, collateralAmount: null, collateralToken: null }

@@ -1,6 +1,8 @@
 import { PublicKey, Connection } from '@solana/web3.js';
 import { AnchorProvider, Program, Idl } from '@coral-xyz/anchor';
 import dotenv from 'dotenv';
+import type { Omnipair } from '../types/omnipair.mainnet';
+import mainnetIdl from '../idl/omnipair.mainnet.json';
 
 dotenv.config();
 
@@ -15,6 +17,8 @@ export function getOmnipairProgramId(): PublicKey {
   }
   return _programId;
 }
+
+export const GENERIC_READONLY_PUBKEY = new PublicKey(process.env.GENERIC_READONLY_PUBKEY || '8tF4uYMBXqGhCUGRZL3AmPqRzbX8JJ1TpYnY3uJKN4kt');  
 
 // Legacy export for backwards compatibility
 export const OMNIPAIR_PROGRAM_ID = process.env.OMNIPAIR_PROGRAM_ID 
@@ -61,100 +65,6 @@ export function findPairPDA(
 }
 
 /**
- * Enum mapping for PairViewKind getters
- */
-export enum PairViewKind {
-  EmaPrice0Nad = 'emaPrice0Nad',
-  EmaPrice1Nad = 'emaPrice1Nad',
-  SpotPrice0Nad = 'spotPrice0Nad',
-  SpotPrice1Nad = 'spotPrice1Nad',
-  K = 'k',
-  GetRates = 'getRates',
-  GetMinCollateralForDebt = 'getMinCollateralForDebt',
-  GetBorrowLimitAndCfBpsForCollateral = 'getBorrowLimitAndCfBpsForCollateral',
-}
-
-/**
- * Simulate a getter function on the pair using view_pair_data instruction
- * This calls the view_pair_data instruction which returns data through logs
- */
-export async function simulatePairGetter(
-  program: Program,
-  pairPda: PublicKey,
-  rateModel: PublicKey,
-  getter: { [key: string]: any }
-): Promise<any> {
-  try {
-    // Extract the getter type from the input object
-    const getterKey = Object.keys(getter)[0];
-    
-    // Map the getter key to the proper enum variant
-    const getterVariant = { [getterKey]: {} };
-    
-    // Call view_pair_data instruction with simulation
-    const result = await program.methods
-      .viewPairData(
-        getterVariant,  // getter: PairViewKind enum variant
-        {}              // args: EmitValueArgs (empty for these getters)
-      )
-      .accounts({
-        pair: pairPda,
-        rateModel: rateModel,
-      })
-      .simulate();
-    
-    // Parse the emitted logs to extract the returned value
-    // The program emits the value in a log that we need to parse
-    if (result.events && result.events.length > 0) {
-      const event = result.events[0];
-      return event.data;
-    }
-    
-    // Fallback: if events aren't available, try to parse from logs
-    // This is a simplified parser - adjust based on your actual log format
-    if (result.raw) {
-      return parseViewDataFromLogs([...result.raw], getterKey);
-    }
-    
-    throw new Error('No data returned from view instruction');
-  } catch (error) {
-    console.error('Error simulating pair getter:', error);
-    throw error;
-  }
-}
-
-/**
- * TODO: This is a simplified version of the log parsing logic.
- * TODO: Need to implement the actual log parsing logic.
- * Helper function to parse view data from transaction logs
- */
-function parseViewDataFromLogs(logs: string[], getterType: string): any {
-  // Your program likely emits logs in a specific format
-  // For example: "Program log: EmaPrice0Nad: 1234567890"
-  // Or it might use Anchor events which are automatically parsed
-  
-  for (const log of logs) {
-    if (log.includes('EmitValue')) {
-      // Parse the emitted value from the log
-      // This will depend on your program's log format
-      try {
-        const match = log.match(/value0:\s*(\d+)/);
-        if (match) {
-          return {
-            value0: match[1],
-            value1: '0', // Adjust based on your needs
-          };
-        }
-      } catch (err) {
-        console.warn('Failed to parse log:', log, err);
-      }
-    }
-  }
-  
-  throw new Error(`Could not parse ${getterType} from logs`);
-}
-
-/**
  * Create a connection to the Solana cluster
  */
 export function createConnection(rpcUrl?: string): Connection {
@@ -171,7 +81,7 @@ export function createConnection(rpcUrl?: string): Connection {
 export function createProvider(connection: Connection): AnchorProvider {
   // For read-only operations, we create a minimal wallet
   const wallet = {
-    publicKey: PublicKey.default,
+    publicKey: GENERIC_READONLY_PUBKEY,
     signTransaction: async () => { throw new Error('Read-only wallet'); },
     signAllTransactions: async () => { throw new Error('Read-only wallet'); },
   };
@@ -187,5 +97,12 @@ export function createProvider(connection: Connection): AnchorProvider {
  */
 export function loadProgram(provider: AnchorProvider, idl: Idl): Program<Idl> {
   return new Program(idl, provider);
+}
+
+/**
+ * Get typed Omnipair program instance
+ */
+export function getOmnipairProgram(provider: AnchorProvider): Program<Omnipair> {
+  return new Program(mainnetIdl as Omnipair, provider) as Program<Omnipair>;
 }
 

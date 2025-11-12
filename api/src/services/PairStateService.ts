@@ -7,9 +7,11 @@ import { fromWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { 
   createConnection,
   createProvider,
-  loadProgram
+  loadProgram,
+  getOmnipairProgram
 } from '../config/program';
 import { simulatePairGetter } from '../utils/pairSimulation';
+import type { Omnipair } from '../types/omnipair.mainnet';
 
 export interface TokenMetadata {
   symbol: string;
@@ -52,7 +54,7 @@ export interface PairState {
 
 export class PairStateService {
   private connection: Connection;
-  private program: Program | null = null;
+  private program: Program<Omnipair> | null = null;
 
   constructor(rpcUrl?: string) {
     this.connection = createConnection(rpcUrl);
@@ -60,10 +62,19 @@ export class PairStateService {
 
   /**
    * Initialize the program with an IDL
+   * @deprecated Use initializeTypedProgram() instead for better type safety
    */
   public initializeProgram(idl: Idl): void {
     const provider = createProvider(this.connection);
-    this.program = loadProgram(provider, idl);
+    this.program = loadProgram(provider, idl) as unknown as Program<Omnipair>;
+  }
+
+  /**
+   * Initialize the typed Omnipair program
+   */
+  public initializeTypedProgram(): void {
+    const provider = createProvider(this.connection);
+    this.program = getOmnipairProgram(provider);
   }
 
   /**
@@ -135,6 +146,7 @@ export class PairStateService {
     }
   }
 
+
   /**
    * Fetch the complete pair state
    */
@@ -148,12 +160,12 @@ export class PairStateService {
     try {
       // Convert pair address to PublicKey and fetch pair account directly
       const pairPda = new PublicKey(pairAddress);
-      const pairAccount = await (this.program.account as any).pair.fetch(pairPda);
+      const pairAccount = await this.program.account.pair.fetch(pairPda);
 
       // Extract token addresses and LP mint from the pair account
       const token0Mint = new PublicKey(pairAccount.token0);
       const token1Mint = new PublicKey(pairAccount.token1);
-      const lpMint = new PublicKey(pairAccount.lpMint || pairAccount.lp_mint);
+      const lpMint = new PublicKey(pairAccount.lpMint);
 
       // Fetch token metadata and LP token decimals in parallel
       const [token0Metadata, token1Metadata, lpTokenDecimals] = await Promise.all([
@@ -201,8 +213,7 @@ export class PairStateService {
         if (!this.program) {
           throw new Error('Program not initialized');
         }
-
-        // Fetch EMA prices using simulation
+        
         const [emaPrice0Result, emaPrice1Result, ratesResult] = await Promise.all([
           simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice0Nad: {} }),
           simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice1Nad: {} }),
@@ -282,7 +293,7 @@ export class PairStateService {
   /**
    * Get the program instance
    */
-  public getProgram(): Program | null {
+  public getProgram(): Program<Omnipair> | null {
     return this.program;
   }
 }

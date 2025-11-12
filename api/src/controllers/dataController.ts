@@ -1,10 +1,73 @@
 import { Request, Response } from 'express';
+import { PublicKey } from '@solana/web3.js';
 import pool from '../config/database';
 import { ApiResponse, PoolRow } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 import { PairStateService, PairState } from '../services/PairStateService';
+import { simulateUserPositionGetter } from '../utils/pairSimulation';
 import path from 'path';
+
+/**
+ * Split a position into two separate token positions:
+ * 1. Position with collateral0 and debt1 (token0 collateral, token1 debt)
+ * 2. Position with collateral1 and debt0 (token1 collateral, token0 debt)
+ */
+function splitPosition(position: any): Array<any> {
+  const positions: any[] = [];
+
+  // Position 1: collateral0 + debt1 (token0 collateral, token1 debt)
+  if (position.collateral0 && position.collateral0 !== '0' && position.debt1_shares && position.debt1_shares !== '0') {
+    positions.push({
+      signer: position.signer,
+      pair: position.pair,
+      position: position.position,
+      collateralToken: 'token0',
+      debtToken: 'token1',
+      collateral: position.collateral0,
+      debtShares: position.debt1_shares,
+      token0Address: position.token0Address || null,
+      token1Address: position.token1Address || null,
+      // Use enriched value if available, otherwise fall back to DB value
+      appliedCollateralFactorBps: position.appliedCollateralFactorBps?.token1 // in debt token (token1)
+        ? parseInt(position.appliedCollateralFactorBps.token1) 
+        : position.collateral0_applied_min_cf_bps, // in collateral token (token0)
+      event_timestamp: position.event_timestamp,
+      // Enriched data from simulation (in debt token)
+      borrowingPower: position.borrowingPower?.token1 || null,
+      liquidationCollateralFactorBps: position.liquidationCollateralFactorBps?.token1 || null,
+      liquidationPrice: position.liquidationPrice?.token1 || null,
+      debtWithInterest: position.debtWithInterest?.token1 || null,
+    });
+  }
+
+  // Position 2: collateral1 + debt0 (token1 collateral, token0 debt)
+  if (position.collateral1 && position.collateral1 !== '0' && position.debt0_shares && position.debt0_shares !== '0') {
+    positions.push({
+      signer: position.signer,
+      pair: position.pair,
+      position: position.position,
+      collateralToken: 'token1',
+      debtToken: 'token0',
+      collateral: position.collateral1,
+      debtShares: position.debt0_shares,
+      token0Address: position.token0Address || null,
+      token1Address: position.token1Address || null,
+      // Use enriched value if available, otherwise fall back to DB value
+      appliedCollateralFactorBps: position.appliedCollateralFactorBps?.token0 // in debt token (token0)
+        ? parseInt(position.appliedCollateralFactorBps.token0) 
+        : position.collateral1_applied_min_cf_bps, // in collateral token (token1)
+      event_timestamp: position.event_timestamp,
+      // Enriched data from simulation (in debt token)
+      borrowingPower: position.borrowingPower?.token0 || null,
+      liquidationCollateralFactorBps: position.liquidationCollateralFactorBps?.token0 || null,
+      liquidationPrice: position.liquidationPrice?.token0 || null,
+      debtWithInterest: position.debtWithInterest?.token0 || null,
+    });
+  }
+
+  return positions;
+}
 
 export class DataController {
   // Singleton instance for PairStateService
@@ -1051,18 +1114,133 @@ export class DataController {
 
       const result = await pool.query(dataQuery, queryParams);
 
-      const positions = result.rows.map(row => ({
-        signer: row.signer,
-        pair: row.pair,
-        position: row.position,
-        collateral0: row.collateral0,
-        collateral1: row.collateral1,
-        debt0_shares: row.debt0_shares,
-        debt1_shares: row.debt1_shares,
-        collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
-        collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
-        event_timestamp: row.event_timestamp
-      }));
+      // Initialize PairStateService if needed
+      const pairStateService = await DataController.initializePairStateService();
+      const program = pairStateService.getProgram();
+      const connection = pairStateService.getConnection();
+
+      // Enrich positions with simulation data and split into separate token positions
+      const enrichedPositions = await Promise.all(
+        result.rows.map(async (row) => {
+          const basePosition = {
+            signer: row.signer,
+            pair: row.pair,
+            position: row.position,
+            collateral0: row.collateral0,
+            collateral1: row.collateral1,
+            debt0_shares: row.debt0_shares,
+            debt1_shares: row.debt1_shares,
+            collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
+            event_timestamp: row.event_timestamp,
+          };
+
+          // If program is not initialized, split base position
+          if (!program) {
+            return splitPosition(basePosition);
+          }
+
+          try {
+            const pairPda = new PublicKey(row.pair);
+            const userPositionPda = new PublicKey(row.position);
+
+            // Fetch pair account to get token addresses
+            const pairAccount = await program.account.pair.fetch(pairPda);
+            const token0Address = pairAccount.token0.toString();
+            const token1Address = pairAccount.token1.toString();
+
+            // Fetch all position metrics in parallel
+            const [
+              borrowingPowerResult,
+              appliedCfBpsResult,
+              liquidationCfBpsResult,
+              liquidationPriceResult,
+              debtWithInterestResult,
+            ] = await Promise.allSettled([
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userBorrowingPower: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userAppliedCollateralFactorBps: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userLiquidationCollateralFactorBps: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userLiquidationPrice: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userDebtWithInterest: {},
+              }),
+            ]);
+
+            // Extract values from results
+            const borrowingPower =
+              borrowingPowerResult.status === 'fulfilled'
+                ? {
+                    token0: borrowingPowerResult.value.value0,
+                    token1: borrowingPowerResult.value.value1,
+                  }
+                : null;
+
+            const appliedCollateralFactorBps =
+              appliedCfBpsResult.status === 'fulfilled'
+                ? {
+                    token0: appliedCfBpsResult.value.value0,
+                    token1: appliedCfBpsResult.value.value1,
+                  }
+                : null;
+
+            const liquidationCollateralFactorBps =
+              liquidationCfBpsResult.status === 'fulfilled'
+                ? {
+                    token0: liquidationCfBpsResult.value.value0,
+                    token1: liquidationCfBpsResult.value.value1,
+                  }
+                : null;
+
+            const liquidationPrice =
+              liquidationPriceResult.status === 'fulfilled'
+                ? {
+                    token0: liquidationPriceResult.value.value0,
+                    token1: liquidationPriceResult.value.value1,
+                  }
+                : null;
+
+            const debtWithInterest =
+              debtWithInterestResult.status === 'fulfilled'
+                ? {
+                    token0: debtWithInterestResult.value.value0,
+                    token1: debtWithInterestResult.value.value1,
+                  }
+                : null;
+
+            const enrichedPosition = {
+              ...basePosition,
+              token0Address,
+              token1Address,
+              borrowingPower,
+              appliedCollateralFactorBps,
+              liquidationCollateralFactorBps,
+              liquidationPrice,
+              debtWithInterest,
+            };
+
+            // Split position into two separate token positions
+            return splitPosition(enrichedPosition);
+          } catch (error) {
+            console.error(
+              `Error fetching position data for ${row.position}:`,
+              error
+            );
+            // Return split base position if simulation fails
+            return splitPosition(basePosition);
+          }
+        })
+      );
+
+      // Flatten the array of arrays into a single array
+      const positions = enrichedPositions.flat().filter(pos => pos !== null);
 
       const responseData = {
         positions,

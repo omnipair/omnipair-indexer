@@ -1,6 +1,6 @@
 import { PublicKey, Connection, Transaction } from '@solana/web3.js';
 import { Program } from '@coral-xyz/anchor';
-import { GetterType, SimulationResult, EmitValueArgs } from '../types/pairTypes';
+import { GetterType, UserPositionGetterType, SimulationResult, EmitValueArgs } from '../types/pairTypes';
 import type { Omnipair } from '../types/omnipair.mainnet';
 import { GENERIC_READONLY_PUBKEY } from '../config/program';
 
@@ -15,6 +15,10 @@ interface CacheEntry {
 const SIMULATE_CACHE_DURATION = 5000; // 5 seconds cache
 const simulateCache = new Map<string, CacheEntry>();
 const inFlightRequests = new Map<string, Promise<SimulationResult>>();
+
+// Separate cache and in-flight requests for user position getters
+const userPositionCache = new Map<string, CacheEntry>();
+const userPositionInFlightRequests = new Map<string, Promise<SimulationResult>>();
 
 /**
  * Extract numeric value from OptionalUint format (U64(123), U16(456), OptionalU64(Some(123)), etc.)
@@ -155,11 +159,88 @@ export async function simulatePairGetter(
 }
 
 /**
+ * Simulate a user position getter function using view_user_position_data instruction
+ * This calls the view_user_position_data instruction which returns data through logs after updating the pair
+ */
+export async function simulateUserPositionGetter(
+  program: Program<Omnipair>,
+  connection: Connection,
+  pairPda: PublicKey,
+  userPositionPda: PublicKey,
+  getter: UserPositionGetterType
+): Promise<SimulationResult> {
+  // Create cache key based on parameters
+  const getterKey = Object.keys(getter)[0];
+  const cacheKey = `userPosition:${pairPda.toString()}:${userPositionPda.toString()}:${getterKey}`;
+
+  // Check cache first
+  const cached = userPositionCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < SIMULATE_CACHE_DURATION) {
+    return cached.result;
+  }
+
+  // Check if there's already an in-flight request for this key
+  const inFlight = userPositionInFlightRequests.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  // Create new request promise
+  const requestPromise = (async () => {
+    try {
+      // Get the pair account to access the rate model
+      const pairAccount = await program.account.pair.fetch(pairPda);
+      const rateModelPda = pairAccount.rateModel;
+
+      // Create the instruction
+      const ix = await program.methods
+        .viewUserPositionData(getter)
+        .accounts({
+          userPosition: userPositionPda,
+          pair: pairPda,
+          rateModel: rateModelPda
+        })
+        .instruction();
+
+      // Create transaction with fee payer
+      const tx = new Transaction().add(ix);
+      tx.feePayer = program.provider.publicKey ?? GENERIC_READONLY_PUBKEY;
+
+      // Simulate transaction using connection directly
+      const simResult = await connection.simulateTransaction(tx);
+
+      const logs = simResult.value.logs ?? [];
+      const label = Object.keys(getter)[0]; // e.g. "userBorrowingPower"
+
+      // Parse logs to extract values
+      const { value0, value1 } = parseSimulationLogs(logs, label);
+
+      const result: SimulationResult = { label, value0, value1 };
+
+      // Cache the result
+      userPositionCache.set(cacheKey, { result, timestamp: Date.now() });
+
+      return result;
+    } finally {
+      // Remove from in-flight requests
+      userPositionInFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  // Store in-flight request
+  userPositionInFlightRequests.set(cacheKey, requestPromise);
+
+  return requestPromise;
+}
+
+/**
  * Clear the simulation cache (useful for testing or manual cache invalidation)
  */
 export function clearSimulationCache(): void {
   simulateCache.clear();
   inFlightRequests.clear();
+  userPositionCache.clear();
+  userPositionInFlightRequests.clear();
 }
 
 /**

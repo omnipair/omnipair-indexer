@@ -1,4 +1,4 @@
-import { Connection, PublicKey, AccountInfo, Transaction, SimulatedTransactionResponse } from '@solana/web3.js';
+import { Connection, PublicKey, AccountInfo, Transaction, SimulatedTransactionResponse, RpcResponseAndContext } from '@solana/web3.js';
 
 /**
  * RPC Client wrapper for Solana connection
@@ -42,7 +42,9 @@ export class RpcClient {
   async simulateTransaction(
     transaction: Transaction
   ): Promise<SimulatedTransactionResponse> {
-    return this.connection.simulateTransaction(transaction);
+    const result: RpcResponseAndContext<SimulatedTransactionResponse> = 
+      await this.connection.simulateTransaction(transaction);
+    return result.value;
   }
 
   /**

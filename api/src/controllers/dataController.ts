@@ -931,6 +931,52 @@ export class DataController {
     }
   }
 
+  static async getPoolsByTokens(req: Request, res: Response): Promise<void> {
+    try {
+      const token0 = req.params.token0 as string;
+      const token1 = req.params.token1 as string;
+
+      // Validate required parameters
+      if (!token0 || !token1 || token0 === token1) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Both token0 and token1 path parameters are required and must be different'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const result = await pool.query(`
+        SELECT id, pair_address, token0, token1 
+        FROM pools 
+        WHERE (token0 = $1 AND token1 = $2) OR (token0 = $2 AND token1 = $1)
+        ORDER BY id ASC
+        LIMIT 1
+      `, [token0, token1]);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          pools: result.rows,
+          filters: {
+            token0,
+            token1
+          },
+          count: result.rows.length
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching pools by tokens:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch pools by tokens'
+      };
+      res.status(500).json(response);
+    }
+  }
+
   static async getUserHistory(req: Request, res: Response): Promise<void> {
     try {
       const userAddress = req.params.userAddress;

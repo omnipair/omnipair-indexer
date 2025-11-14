@@ -23,7 +23,8 @@ router.get('/', (req, res) => {
         'all-pools': '/api/pools/',
         'pool-info': '/api/pools/info/:pairAddress',
         'pool-apr': '/api/pools/apr/:pairAddress',
-        'pools-by-tokens': '/api/pools/:token0/:token1'
+        'pools-by-tokens': '/api/pools/:token0/:token1',
+        'paired-tokens': '/api/pools/paired-tokens/:token'
       },
       swaps: {
         'swaps': '/api/swap/:pairAddress',
@@ -45,6 +46,7 @@ router.get('/', (req, res) => {
     },
     parameters: {
       pairAddress: 'Required - The address of the trading pair to query data for',
+      token: 'Required for paired-tokens endpoint - The address of the token to find paired tokens for',
       token0: 'Required for pools-by-tokens endpoint - The address of the first token',
       token1: 'Required for pools-by-tokens endpoint - The address of the second token (must be different from token0)',
       hours: 'Optional - Number of hours to look back (defaults to 24)',
@@ -60,6 +62,7 @@ router.get('/', (req, res) => {
       'Get pool info for pair': '/api/pools/info/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get APR for pair': '/api/pools/apr/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get pools by tokens': '/api/pools/TOKEN_ADDRESS_1/TOKEN_ADDRESS_2',
+      'Get tokens paired with a token': '/api/pools/paired-tokens/TOKEN_ADDRESS',
       'Get swaps for pair': '/api/swap/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get 24h volume for pair': '/api/swap/volume/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P',
       'Get 48h volume for pair': '/api/swap/volume/HNCdPJgiJaffW2UsEhWFTW1Uty4HgsYLAhhvz58VDe7P/48',

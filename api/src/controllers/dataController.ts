@@ -977,6 +977,51 @@ export class DataController {
     }
   }
 
+  static async getTokensByToken(req: Request, res: Response): Promise<void> {
+    try {
+      const token = req.params.token as string;
+
+      // Validate required parameter
+      if (!token) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Token path parameter is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Query pools to find all tokens paired with the input token
+      // Get token1 where token0 matches, and token0 where token1 matches
+      const result = await pool.query(`
+        SELECT DISTINCT token1 as token FROM pools WHERE token0 = $1
+        UNION
+        SELECT DISTINCT token0 as token FROM pools WHERE token1 = $1
+        ORDER BY token ASC
+      `, [token]);
+
+      const tokens = result.rows.map(row => row.token);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          tokens,
+          inputToken: token,
+          count: tokens.length
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching tokens by token:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch tokens by token'
+      };
+      res.status(500).json(response);
+    }
+  }
+
   static async getUserHistory(req: Request, res: Response): Promise<void> {
     try {
       const userAddress = req.params.userAddress;

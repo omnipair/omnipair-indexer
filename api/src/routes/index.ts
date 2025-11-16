@@ -41,7 +41,8 @@ router.get('/', (req, res) => {
         'lending-history': '/api/user/:userAddress/lending-history'
       },
       positions: {
-        'all-positions': '/api/position/ (optional: ?userAddress=ADDRESS&limit=50&offset=0)'
+        'all-positions': '/api/position/ (optional: ?userAddress=ADDRESS&limit=50&offset=0)',
+        'all-liquidity-positions': '/api/position/liquidity (optional: ?userAddress=ADDRESS&limit=50&offset=0)'
       }
     },
     parameters: {
@@ -75,7 +76,9 @@ router.get('/', (req, res) => {
       'Get user lending history with pagination': '/api/user/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/lending-history?limit=50&offset=0',
       'Get all positions': '/api/position/?limit=50&offset=0',
       'Get all positions filtered by userAddress': '/api/position/?userAddress=9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM&limit=50&offset=0',
-      'Get positions for specific userAddress': '/api/position/?userAddress=9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM'
+      'Get positions for specific userAddress': '/api/position/?userAddress=9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
+      'Get all liquidity positions': '/api/position/liquidity?limit=50&offset=0',
+      'Get all liquidity positions filtered by userAddress': '/api/position/liquidity?userAddress=9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM&limit=50&offset=0'
     },
     notes: {
       'api-structure': 'API is organized by categories: /api/pools/ for pool data, /api/swap/ for swap data, /api/user/ for user data, /api/position/ for position data',

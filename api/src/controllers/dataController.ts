@@ -1362,6 +1362,151 @@ export class DataController {
     }
   }
 
+  static async getAllLiquidityPositions(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const userAddress = req.query.userAddress as string | undefined;
+
+      // Validate userAddress format if provided
+      if (userAddress && (userAddress.length < 32 || userAddress.length > 44 || !/^[A-Za-z0-9]+$/.test(userAddress))) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Invalid user address format'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const cacheKey = `all_liquidity_positions_${userAddress || 'all'}_${limit}_${offset}`;
+      const cachedData = cache.get(cacheKey);
+      
+      if (cachedData) {
+        const response: ApiResponse = {
+          success: true,
+          data: cachedData
+        };
+        res.json(response);
+        return;
+      }
+
+      let countQuery: string;
+      let dataQuery: string;
+      let countParams: any[];
+      let queryParams: any[];
+
+      if (userAddress) {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions WHERE signer = $1';
+        countParams = [userAddress];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            token0_mint,
+            token1_mint,
+            amount0,
+            amount1,
+            lp_mint,
+            lp_amount,
+            timestamp
+          FROM user_liquidity_positions
+          WHERE signer = $1
+          ORDER BY timestamp DESC
+          LIMIT $2 OFFSET $3
+        `;
+        queryParams = [userAddress, limit, offset];
+      } else {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions';
+        countParams = [];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            token0_mint,
+            token1_mint,
+            amount0,
+            amount1,
+            lp_mint,
+            lp_amount,
+            timestamp
+          FROM user_liquidity_positions
+          ORDER BY timestamp DESC
+          LIMIT $1 OFFSET $2
+        `;
+        queryParams = [limit, offset];
+      }
+
+      const countResult = await pool.query(countQuery, countParams);
+      const totalCount = parseInt(countResult.rows[0].total_count);
+      const result = await pool.query(dataQuery, queryParams);
+
+      // Initialize PairStateService if needed to get token addresses
+      const pairStateService = await DataController.initializePairStateService();
+      const program = pairStateService.getProgram();
+
+      // Enrich positions with token addresses from pair account
+      const enrichedPositions = await Promise.all(
+        result.rows.map(async (row) => {
+          const basePosition = {
+            signer: row.signer,
+            pair: row.pair,
+            token0Mint: row.token0_mint,
+            token1Mint: row.token1_mint,
+            amount0: row.amount0,
+            amount1: row.amount1,
+            lpMint: row.lp_mint,
+            lpAmount: row.lp_amount,
+            timestamp: row.timestamp,
+            token0Address: row.token0_mint, // Use token0_mint as token0Address
+            token1Address: row.token1_mint, // Use token1_mint as token1Address
+          };
+
+          // Try to fetch pair account to get token addresses if program is initialized
+          if (program) {
+            try {
+              const pairPda = new PublicKey(row.pair);
+              const pairAccount = await program.account.pair.fetch(pairPda);
+              basePosition.token0Address = pairAccount.token0.toString();
+              basePosition.token1Address = pairAccount.token1.toString();
+            } catch (error) {
+              console.error(`Error fetching pair account for ${row.pair}:`, error);
+              // Keep using token0_mint and token1_mint as fallback
+            }
+          }
+
+          return basePosition;
+        })
+      );
+
+      const responseData = {
+        positions: enrichedPositions,
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasNext: offset + limit < totalCount
+        }
+      };
+
+      // Cache for 15 seconds
+      cache.set(cacheKey, responseData, 15 * 1000);
+
+      const response: ApiResponse = {
+        success: true,
+        data: responseData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching all liquidity positions:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch all liquidity positions'
+      };
+      res.status(500).json(response);
+    }
+  }
+
   static async getUserLendingHistory(req: Request, res: Response): Promise<void> {
     try {
       const userAddress = req.params.userAddress;

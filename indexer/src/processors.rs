@@ -77,6 +77,9 @@ impl Processor for OmnipairInstructionProcessor {
             OmnipairInstruction::UserPositionUpdatedEvent(event) => {
                 self.process_user_position_updated_event(event, &metadata).await?;
             }
+            OmnipairInstruction::UserLiquidityPositionUpdatedEvent(event) => {
+                self.process_user_liquidity_position_updated_event(event, &metadata).await?;
+            }
             _ => {
                 log::debug!("Unhandled instruction type: {:?}", instruction.data);
             }
@@ -415,6 +418,40 @@ impl OmnipairInstructionProcessor {
             event.collateral1,
             event.debt0_shares,
             event.debt1_shares,
+            event.metadata.pair, 
+            event.metadata.signer, 
+            tx_signature
+        );
+        
+        Ok(())
+    }
+
+    async fn process_user_liquidity_position_updated_event(
+        &self,
+        event: carbon_omnipair_decoder::instructions::user_liquidity_position_updated_event::UserLiquidityPositionUpdatedEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        log::info!(
+            "UserLiquidityPositionUpdatedEvent processed - Details: {:#?}",
+            event,
+        );
+        
+        let tx_signature = metadata.transaction_metadata.signature.to_string();
+        let slot = metadata.transaction_metadata.slot as i64;
+        
+        if let Err(e) = database::upsert_user_liquidity_position_updated_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to insert user liquidity position updated event: {}", e);
+            return Err(e);
+        }
+        
+        log::info!(
+            "Successfully processed UserLiquidityPositionUpdatedEvent - Token0 Amount: {}, Token1 Amount: {}, LP Amount: {}, Token0 Mint: {}, Token1 Mint: {}, LP Mint: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.token0_amount,
+            event.token1_amount,
+            event.lp_amount,
+            event.token0_mint,
+            event.token1_mint,
+            event.lp_mint,
             event.metadata.pair, 
             event.metadata.signer, 
             tx_signature

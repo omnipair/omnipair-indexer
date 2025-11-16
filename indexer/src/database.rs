@@ -7,6 +7,7 @@ use carbon_omnipair_decoder::instructions::{
     adjust_debt_event::AdjustDebtEvent,
     user_position_updated_event::UserPositionUpdatedEvent,
     user_position_liquidated_event::UserPositionLiquidatedEvent,
+    user_liquidity_position_updated_event::UserLiquidityPositionUpdatedEvent,
     pair_created_event::PairCreatedEvent,
 };
 use sqlx::PgPool;
@@ -477,6 +478,111 @@ pub async fn upsert_pair_created_event(
     if let Err(e) = upsert_result {
         log::error!("Failed to upsert into pools table: {}", e);
         return Err(carbon_core::error::Error::Custom(format!("Failed to upsert pair created event: {}", e)));
+    }
+    
+    Ok(())
+}
+
+/// Upsert a UserLiquidityPositionUpdatedEvent into the database
+pub async fn upsert_user_liquidity_position_updated_event(
+    event: &UserLiquidityPositionUpdatedEvent,
+    _tx_signature: &str,
+    _slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    
+    // Compute event_timestamp once for reuse
+    let event_timestamp = DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
+        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?;
+    
+    // First, upsert into user_lp_position_updated_events table
+    let upsert_event_result = sqlx::query(
+        r#"
+        INSERT INTO user_lp_position_updated_events (
+            pair_address, lp_amount, amount0, amount1, signer, timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (id, timestamp) DO UPDATE SET
+            pair_address = EXCLUDED.pair_address,
+            lp_amount = EXCLUDED.lp_amount,
+            amount0 = EXCLUDED.amount0,
+            amount1 = EXCLUDED.amount1,
+            signer = EXCLUDED.signer,
+            timestamp = EXCLUDED.timestamp
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.lp_amount))
+    .bind(bigdecimal::BigDecimal::from(event.token0_amount))
+    .bind(bigdecimal::BigDecimal::from(event.token1_amount))
+    .bind(event.metadata.signer.to_string())
+    .bind(event_timestamp)
+    .execute(pool)
+    .await;
+    
+    if let Err(e) = upsert_event_result {
+        log::error!("Failed to upsert into user_lp_position_updated_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user liquidity position updated event: {}", e)));
+    }
+    
+    // Also upsert into user_liquidity_positions table (latest position per pair per signer)
+    // Since there's no unique constraint on (pair, signer), we use UPDATE then INSERT pattern
+    let update_result = sqlx::query(
+        r#"
+        UPDATE user_liquidity_positions
+        SET token0_mint = $3,
+            token1_mint = $4,
+            amount0 = $5,
+            amount1 = $6,
+            lp_mint = $7,
+            lp_amount = $8,
+            timestamp = $9
+        WHERE pair = $1 AND signer = $2
+        "#
+    )
+    .bind(event.metadata.pair.to_string())
+    .bind(event.metadata.signer.to_string())
+    .bind(event.token0_mint.to_string())
+    .bind(event.token1_mint.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.token0_amount))
+    .bind(bigdecimal::BigDecimal::from(event.token1_amount))
+    .bind(event.lp_mint.to_string())
+    .bind(bigdecimal::BigDecimal::from(event.lp_amount))
+    .bind(event_timestamp)
+    .execute(pool)
+    .await;
+    
+    // If no rows were updated, insert a new record
+    if let Ok(update_result) = update_result {
+        if update_result.rows_affected() == 0 {
+            let insert_result = sqlx::query(
+                r#"
+                INSERT INTO user_liquidity_positions (
+                    signer, pair, token0_mint, token1_mint, amount0, amount1, lp_mint, lp_amount, timestamp
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                "#
+            )
+            .bind(event.metadata.signer.to_string())
+            .bind(event.metadata.pair.to_string())
+            .bind(event.token0_mint.to_string())
+            .bind(event.token1_mint.to_string())
+            .bind(bigdecimal::BigDecimal::from(event.token0_amount))
+            .bind(bigdecimal::BigDecimal::from(event.token1_amount))
+            .bind(event.lp_mint.to_string())
+            .bind(bigdecimal::BigDecimal::from(event.lp_amount))
+            .bind(event_timestamp)
+            .execute(pool)
+            .await;
+            
+            if let Err(e) = insert_result {
+                log::error!("Failed to insert into user_liquidity_positions table: {}", e);
+                return Err(carbon_core::error::Error::Custom(format!("Failed to insert user liquidity position: {}", e)));
+            }
+        }
+    } else {
+        // If update failed, return the error
+        let update_err = update_result.unwrap_err();
+        log::error!("Failed to update user_liquidity_positions table: {}", update_err);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to update user liquidity position: {}", update_err)));
     }
     
     Ok(())

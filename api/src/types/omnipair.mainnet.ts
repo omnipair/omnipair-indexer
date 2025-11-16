@@ -3497,6 +3497,19 @@ export type Omnipair = {
       ]
     },
     {
+      "name": "userLiquidityPositionUpdatedEvent",
+      "discriminator": [
+        255,
+        227,
+        32,
+        107,
+        211,
+        246,
+        39,
+        78
+      ]
+    },
+    {
       "name": "userPositionCreatedEvent",
       "discriminator": [
         240,
@@ -4704,6 +4717,46 @@ export type Omnipair = {
           {
             "name": "reserve1AfterInterest",
             "type": "u64"
+          },
+          {
+            "name": "metadata",
+            "type": {
+              "defined": {
+                "name": "eventMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "userLiquidityPositionUpdatedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token0Amount",
+            "type": "u64"
+          },
+          {
+            "name": "token1Amount",
+            "type": "u64"
+          },
+          {
+            "name": "lpAmount",
+            "type": "u64"
+          },
+          {
+            "name": "token0Mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token1Mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "lpMint",
+            "type": "pubkey"
           },
           {
             "name": "metadata",

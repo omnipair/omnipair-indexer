@@ -12,12 +12,15 @@ import path from 'path';
  * Split a position into two separate token positions:
  * 1. Position with collateral0 and debt1 (token0 collateral, token1 debt)
  * 2. Position with collateral1 and debt0 (token1 collateral, token0 debt)
+ * 
+ * Returns positions if collateral > 0, regardless of debt amount.
  */
 function splitPosition(position: any): Array<any> {
   const positions: any[] = [];
 
   // Position 1: collateral0 + debt1 (token0 collateral, token1 debt)
-  if (position.collateral0 && position.collateral0 !== '0' && position.debt1_shares && position.debt1_shares !== '0') {
+  // Return position if collateral > 0, regardless of debt
+  if (position.collateral0 && position.collateral0 !== '0') {
     positions.push({
       signer: position.signer,
       pair: position.pair,
@@ -25,7 +28,7 @@ function splitPosition(position: any): Array<any> {
       collateralToken: 'token0',
       debtToken: 'token1',
       collateral: position.collateral0,
-      debtShares: position.debt1_shares,
+      debtShares: position.debt1_shares || '0',
       token0Address: position.token0Address || null,
       token1Address: position.token1Address || null,
       // Use enriched value if available, otherwise fall back to DB value
@@ -42,7 +45,8 @@ function splitPosition(position: any): Array<any> {
   }
 
   // Position 2: collateral1 + debt0 (token1 collateral, token0 debt)
-  if (position.collateral1 && position.collateral1 !== '0' && position.debt0_shares && position.debt0_shares !== '0') {
+  // Return position if collateral > 0, regardless of debt
+  if (position.collateral1 && position.collateral1 !== '0') {
     positions.push({
       signer: position.signer,
       pair: position.pair,
@@ -50,7 +54,7 @@ function splitPosition(position: any): Array<any> {
       collateralToken: 'token1',
       debtToken: 'token0',
       collateral: position.collateral1,
-      debtShares: position.debt0_shares,
+      debtShares: position.debt0_shares || '0',
       token0Address: position.token0Address || null,
       token1Address: position.token1Address || null,
       // Use enriched value if available, otherwise fall back to DB value

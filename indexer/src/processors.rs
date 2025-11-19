@@ -290,6 +290,33 @@ impl OmnipairInstructionProcessor {
             log::error!("Failed to insert pair created event: {}", e);
             return Err(e);
         }
+
+        // Send callback
+        let webhook_url = "https://post-pools-bot-production.up.railway.app/webhook";
+        let webhook_payload = serde_json::json!({
+            "pair": event.metadata.pair.to_string(),
+            "token0": event.token0.to_string(),
+            "token1": event.token1.to_string()
+        });
+        
+        match reqwest::Client::new()
+            .post(webhook_url)
+            .header("Content-Type", "application/json")
+            .json(&webhook_payload)
+            .send()
+            .await
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    log::info!("Successfully sent webhook notification for pair: {}", event.metadata.pair);
+                } else {
+                    log::warn!("Webhook request failed with status: {} for pair: {}", response.status(), event.metadata.pair);
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to send webhook notification for pair {}: {}", event.metadata.pair, e);
+            }
+        }
         
         log::info!(
             "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, Lp Mint: {}, Rate Model: {}, Swap Fee Bps: {}, Half Life: {}, Fixed Cf Bps: {:?}, Params Hash: {:?}, Version: {}, TxSig: {}", 

@@ -11,6 +11,7 @@ import {
   getOmnipairProgram
 } from '../config/program';
 import { simulatePairGetter } from '../utils/pairSimulation';
+import { calculateInterestRate, RATE_PERCENT_SCALE } from '../utils/rateCalculator';
 import type { Omnipair } from '../types/omnipair.mainnet';
 
 export interface TokenMetadata {
@@ -203,35 +204,81 @@ export class PairStateService {
       // Get rate model PDA from pair account
       const rateModelPda = new PublicKey(pairAccount.rateModel);
 
-      // Fetch EMA prices and rates using simulation (after pair update)
+      // Fetch EMA prices using simulation (after pair update)
       let emaPrice0 = spotPrice0;
       let emaPrice1 = spotPrice1;
-      let rate0 = 0;
-      let rate1 = 0;
+      let rate0Raw = Number(pairAccount.lastRate0 ?? 0);
+      let rate1Raw = Number(pairAccount.lastRate1 ?? 0);
 
       try {
         if (!this.program) {
           throw new Error('Program not initialized');
         }
         
-        const [emaPrice0Result, emaPrice1Result, ratesResult] = await Promise.all([
+        const [emaPrice0Result, emaPrice1Result] = await Promise.all([
           simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice0Nad: {} }),
-          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice1Nad: {} }),
-          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { getRates: {} }),
+          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice1Nad: {} })
         ]);
 
         // Parse EMA prices (stored as NAD - 9 decimals)
         emaPrice0 = Number(emaPrice0Result.value0) / Math.pow(10, 9);
         emaPrice1 = Number(emaPrice1Result.value0) / Math.pow(10, 9);
-
-        // Parse rates (stored as raw values, need to convert to percentage)
-        rate0 = Number(ratesResult.value0);
-        rate1 = Number(ratesResult.value1);
       } catch (error) {
-        console.warn('Error fetching EMA prices or rates via simulation, falling back to spot prices:', error);
+        console.warn('Error fetching EMA prices via simulation, falling back to spot prices:', error);
         // Fallback to spot prices if simulation fails
         emaPrice0 = spotPrice0;
         emaPrice1 = spotPrice1;
+      }
+      
+      try {
+        if (!this.program) {
+          throw new Error('Program not initialized');
+        }
+        const rateModelAccount = await (this.program.account as any).rateModel.fetch(rateModelPda);
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+
+        const rate0Result = calculateInterestRate(
+          {
+            utilizationPercent: utilization0,
+            lastRate: pairAccount.lastRate0,
+            lastUpdateTimestamp: pairAccount.lastUpdate,
+            currentTimestamp,
+          },
+          {
+            expRate: rateModelAccount.expRate,
+            targetUtilStart: rateModelAccount.targetUtilStart,
+            targetUtilEnd: rateModelAccount.targetUtilEnd,
+          }
+        );
+
+        const rate1Result = calculateInterestRate(
+          {
+            utilizationPercent: utilization1,
+            lastRate: pairAccount.lastRate1,
+            lastUpdateTimestamp: pairAccount.lastUpdate,
+            currentTimestamp,
+          },
+          {
+            expRate: rateModelAccount.expRate,
+            targetUtilStart: rateModelAccount.targetUtilStart,
+            targetUtilEnd: rateModelAccount.targetUtilEnd,
+          }
+        );
+
+        rate0Raw = rate0Result.rawRate;
+        rate1Raw = rate1Result.rawRate;
+      } catch (error) {
+        console.warn('Error calculating rates locally, falling back to simulation:', error);
+        try {
+          if (!this.program) {
+            throw new Error('Program not initialized');
+          }
+          const ratesResult = await simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { getRates: {} });
+          rate0Raw = Number(ratesResult.value0);
+          rate1Raw = Number(ratesResult.value1);
+        } catch (simError) {
+          console.warn('Error fetching rates via simulation:', simError);
+        }
       }
       
 
@@ -263,8 +310,8 @@ export class PairStateService {
           token1: spotPrice1.toString(),
         },
         rates: {
-          token0: Math.floor((Number(rate0) / 1e7) * 100) / 100,
-          token1: Math.floor((Number(rate1) / 1e7) * 100) / 100,
+          token0: Math.floor((rate0Raw / RATE_PERCENT_SCALE) * 100) / 100,
+          token1: Math.floor((rate1Raw / RATE_PERCENT_SCALE) * 100) / 100,
         },
         totalDebts: {
           token0: totalDebt0.toString(),
@@ -297,4 +344,3 @@ export class PairStateService {
     return this.program;
   }
 }
-

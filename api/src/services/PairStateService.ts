@@ -5,13 +5,13 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplTokenMetadata, fetchDigitalAsset } from '@metaplex-foundation/mpl-token-metadata';
 import { fromWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { 
-  findPairPDA, 
-  GAMM_LP_MINT_SEED,
   createConnection,
   createProvider,
-  loadProgram
+  loadProgram,
+  getOmnipairProgram
 } from '../config/program';
-import { fetchRatesFromRateModel, estimateRateFromUtilization } from '../utils/rateCalculator';
+import { simulatePairGetter } from '../utils/pairSimulation';
+import type { Omnipair } from '../types/omnipair.mainnet';
 
 export interface TokenMetadata {
   symbol: string;
@@ -54,7 +54,7 @@ export interface PairState {
 
 export class PairStateService {
   private connection: Connection;
-  private program: Program | null = null;
+  private program: Program<Omnipair> | null = null;
 
   constructor(rpcUrl?: string) {
     this.connection = createConnection(rpcUrl);
@@ -62,10 +62,19 @@ export class PairStateService {
 
   /**
    * Initialize the program with an IDL
+   * @deprecated Use initializeTypedProgram() instead for better type safety
    */
   public initializeProgram(idl: Idl): void {
     const provider = createProvider(this.connection);
-    this.program = loadProgram(provider, idl);
+    this.program = loadProgram(provider, idl) as unknown as Program<Omnipair>;
+  }
+
+  /**
+   * Initialize the typed Omnipair program
+   */
+  public initializeTypedProgram(): void {
+    const provider = createProvider(this.connection);
+    this.program = getOmnipairProgram(provider);
   }
 
   /**
@@ -137,31 +146,26 @@ export class PairStateService {
     }
   }
 
+
   /**
    * Fetch the complete pair state
    */
   public async fetchPairState(
-    token0Mint: PublicKey,
-    token1Mint: PublicKey,
-    lpTokenMint?: PublicKey
+    pairAddress: string
   ): Promise<PairState> {
     if (!this.program) {
       throw new Error('Program not initialized. Call initializeProgram() first.');
     }
 
     try {
-      // Derive LP token mint if not provided
-      let lpMint: PublicKey;
-      if (lpTokenMint) {
-        lpMint = lpTokenMint;
-      } else {
-        // Derive LP token mint from pair PDA
-        const [pairPda] = findPairPDA(this.program, token0Mint, token1Mint);
-        lpMint = PublicKey.findProgramAddressSync(
-          [Buffer.from(GAMM_LP_MINT_SEED), pairPda.toBuffer()],
-          this.program.programId
-        )[0];
-      }
+      // Convert pair address to PublicKey and fetch pair account directly
+      const pairPda = new PublicKey(pairAddress);
+      const pairAccount = await this.program.account.pair.fetch(pairPda);
+
+      // Extract token addresses and LP mint from the pair account
+      const token0Mint = new PublicKey(pairAccount.token0);
+      const token1Mint = new PublicKey(pairAccount.token1);
+      const lpMint = new PublicKey(pairAccount.lpMint);
 
       // Fetch token metadata and LP token decimals in parallel
       const [token0Metadata, token1Metadata, lpTokenDecimals] = await Promise.all([
@@ -173,10 +177,6 @@ export class PairStateService {
       if (!token0Metadata || !token1Metadata) {
         throw new Error('Failed to fetch token metadata');
       }
-
-      // Fetch pair account data
-      const [pairPda] = findPairPDA(this.program, token0Mint, token1Mint);
-      const pairAccount = await (this.program.account as any).pair.fetch(pairPda);
 
       const {
         token0Decimals,
@@ -200,47 +200,38 @@ export class PairStateService {
       const spotPrice0 = Number(reserve1) / Number(reserve0);
       const spotPrice1 = Number(reserve0) / Number(reserve1);
 
-      // Try to get EMA prices and rates from the pair account if available
-      // Many AMMs store these directly in the account
+      // Get rate model PDA from pair account
+      const rateModelPda = new PublicKey(pairAccount.rateModel);
+
+      // Fetch EMA prices and rates using simulation (after pair update)
       let emaPrice0 = spotPrice0;
       let emaPrice1 = spotPrice1;
       let rate0 = 0;
       let rate1 = 0;
 
-      // Check if EMA prices are stored in the pair account
-      if (pairAccount.price0EmaStored !== undefined) {
-        emaPrice0 = Number(pairAccount.price0EmaStored) / Math.pow(10, 9);
-      }
-      if (pairAccount.price1EmaStored !== undefined) {
-        emaPrice1 = Number(pairAccount.price1EmaStored) / Math.pow(10, 9);
-      }
-
-      // Try to get rates if stored in pair account
-      if (pairAccount.rate0 !== undefined) {
-        rate0 = Number(pairAccount.rate0);
-      }
-      if (pairAccount.rate1 !== undefined) {
-        rate1 = Number(pairAccount.rate1);
-      }
-
-      // If rates aren't stored, calculate from rate model
-      // This avoids the "Transaction too large" error from simulation
-      if (rate0 === 0 && rate1 === 0 && pairAccount.rateModel) {
-        try {
-          const rates = await fetchRatesFromRateModel(
-            this.program,
-            pairAccount.rateModel,
-            utilization0,
-            utilization1
-          );
-          rate0 = rates.rate0;
-          rate1 = rates.rate1;
-        } catch (rateError) {
-          console.warn('Could not fetch rates from rate model, using estimation:', rateError);
-          // Fallback to simple estimation
-          rate0 = estimateRateFromUtilization(utilization0);
-          rate1 = estimateRateFromUtilization(utilization1);
+      try {
+        if (!this.program) {
+          throw new Error('Program not initialized');
         }
+        
+        const [emaPrice0Result, emaPrice1Result, ratesResult] = await Promise.all([
+          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice0Nad: {} }),
+          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice1Nad: {} }),
+          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { getRates: {} }),
+        ]);
+
+        // Parse EMA prices (stored as NAD - 9 decimals)
+        emaPrice0 = Number(emaPrice0Result.value0) / Math.pow(10, 9);
+        emaPrice1 = Number(emaPrice1Result.value0) / Math.pow(10, 9);
+
+        // Parse rates (stored as raw values, need to convert to percentage)
+        rate0 = Number(ratesResult.value0);
+        rate1 = Number(ratesResult.value1);
+      } catch (error) {
+        console.warn('Error fetching EMA prices or rates via simulation, falling back to spot prices:', error);
+        // Fallback to spot prices if simulation fails
+        emaPrice0 = spotPrice0;
+        emaPrice1 = spotPrice1;
       }
       
 
@@ -272,8 +263,8 @@ export class PairStateService {
           token1: spotPrice1.toString(),
         },
         rates: {
-          token0: rate0, // 1e5 = bps, 1e6 = permille, 1e7 = percent
-          token1: rate1, // 1e5 = bps, 1e6 = permille, 1e7 = percent
+          token0: Math.floor((Number(rate0) / 1e7) * 100) / 100,
+          token1: Math.floor((Number(rate1) / 1e7) * 100) / 100,
         },
         totalDebts: {
           token0: totalDebt0.toString(),
@@ -302,7 +293,7 @@ export class PairStateService {
   /**
    * Get the program instance
    */
-  public getProgram(): Program | null {
+  public getProgram(): Program<Omnipair> | null {
     return this.program;
   }
 }

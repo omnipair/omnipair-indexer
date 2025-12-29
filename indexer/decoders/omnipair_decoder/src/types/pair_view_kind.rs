@@ -11,10 +11,7 @@ pub enum PairViewKind {
     SpotPrice1Nad,
     K,
     GetRates,
-    GetMinCollateralForDebt,
     GetBorrowLimitAndCfBpsForCollateral,
-    GetMaxLeverageForDeposit,
-    GetLeverageMultipliers,
 }
 
 

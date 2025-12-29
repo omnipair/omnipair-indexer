@@ -36,3 +36,17 @@ export interface UserHistory {
   timestamp: string | null;
   event_type: string | null;
 }
+
+export interface PoolRow {
+  id: number;
+  pair_address: string;
+  token0: string;
+  token1: string;
+  lp_mint?: string;
+  rate_model?: string;
+  swap_fee_bps?: number;
+  half_life?: number;
+  fixed_cf_bps?: number;
+  params_hash?: Buffer;
+  version?: number;
+}

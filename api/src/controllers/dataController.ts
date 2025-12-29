@@ -1,11 +1,77 @@
 import { Request, Response } from 'express';
+import { PublicKey } from '@solana/web3.js';
 import pool from '../config/database';
-import { ApiResponse, Swap, UserHistory } from '../types';
+import { ApiResponse, PoolRow } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
-import { PublicKey } from '@solana/web3.js';
 import { PairStateService, PairState } from '../services/PairStateService';
+import { simulateUserPositionGetter } from '../utils/pairSimulation';
 import path from 'path';
+
+/**
+ * Split a position into two separate token positions:
+ * 1. Position with collateral0 and debt1 (token0 collateral, token1 debt)
+ * 2. Position with collateral1 and debt0 (token1 collateral, token0 debt)
+ * 
+ * Returns positions if collateral > 0, regardless of debt amount.
+ */
+function splitPosition(position: any): Array<any> {
+  const positions: any[] = [];
+
+  // Position 1: collateral0 + debt1 (token0 collateral, token1 debt)
+  // Return position if collateral > 0, regardless of debt
+  if (position.collateral0 && position.collateral0 !== '0') {
+    positions.push({
+      signer: position.signer,
+      pair: position.pair,
+      position: position.position,
+      collateralToken: 'token0',
+      debtToken: 'token1',
+      collateral: position.collateral0,
+      debtShares: position.debt1_shares || '0',
+      token0Address: position.token0Address || null,
+      token1Address: position.token1Address || null,
+      // Use enriched value if available, otherwise fall back to DB value
+      appliedCollateralFactorBps: position.appliedCollateralFactorBps?.token1 // in debt token (token1)
+        ? parseInt(position.appliedCollateralFactorBps.token1) 
+        : position.collateral0_applied_min_cf_bps, // in collateral token (token0)
+      event_timestamp: position.event_timestamp,
+      // Enriched data from simulation (in debt token)
+      borrowingPower: position.borrowingPower?.token1 || null,
+      liquidationCollateralFactorBps: position.liquidationCollateralFactorBps?.token1 || null,
+      liquidationPrice: position.liquidationPrice?.token1 || null,
+      debtWithInterest: position.debtWithInterest?.token1 || null,
+    });
+  }
+
+  // Position 2: collateral1 + debt0 (token1 collateral, token0 debt)
+  // Return position if collateral > 0, regardless of debt
+  if (position.collateral1 && position.collateral1 !== '0') {
+    positions.push({
+      signer: position.signer,
+      pair: position.pair,
+      position: position.position,
+      collateralToken: 'token1',
+      debtToken: 'token0',
+      collateral: position.collateral1,
+      debtShares: position.debt0_shares || '0',
+      token0Address: position.token0Address || null,
+      token1Address: position.token1Address || null,
+      // Use enriched value if available, otherwise fall back to DB value
+      appliedCollateralFactorBps: position.appliedCollateralFactorBps?.token0 // in debt token (token0)
+        ? parseInt(position.appliedCollateralFactorBps.token0) 
+        : position.collateral1_applied_min_cf_bps, // in collateral token (token1)
+      event_timestamp: position.event_timestamp,
+      // Enriched data from simulation (in debt token)
+      borrowingPower: position.borrowingPower?.token0 || null,
+      liquidationCollateralFactorBps: position.liquidationCollateralFactorBps?.token0 || null,
+      liquidationPrice: position.liquidationPrice?.token0 || null,
+      debtWithInterest: position.debtWithInterest?.token0 || null,
+    });
+  }
+
+  return positions;
+}
 
 export class DataController {
   // Singleton instance for PairStateService
@@ -167,22 +233,19 @@ export class DataController {
     return feesData;
   }
 
+  // Helper function to calculate swap volume for a given pair address and time period
   private static async fetchCachedPairState(
     pairService: PairStateService,
-    token0Address: string,
-    token1Address: string
+    pairAddress: string
   ): Promise<PairState> {
-    const cacheKey = `pair_state_${token0Address}_${token1Address}`;
+    const cacheKey = `pair_state_${pairAddress}`;
     const cachedData = cache.get(cacheKey);
 
     if (cachedData) {
       return cachedData;
     }
 
-    const pairState = await pairService.fetchPairState(
-      new PublicKey(token0Address),
-      new PublicKey(token1Address)
-    );
+    const pairState = await pairService.fetchPairState(pairAddress);
 
     // Cache for 10 minutes
     cache.set(cacheKey, pairState, 10 * 60 * 1000);
@@ -197,6 +260,7 @@ export class DataController {
   }> {
     const cacheKey = `swap_volume_calc_${pairAddress}_${hours}hrs`;
     const cachedData = cache.get(cacheKey);
+    
 
     if (cachedData) {
       return cachedData;
@@ -204,6 +268,7 @@ export class DataController {
 
     const now = Math.floor(Date.now() / 1000);
     const timestamp = now - (hours * 60 * 60);
+    
 
     const result = await pool.query(`
       SELECT 
@@ -697,7 +762,7 @@ export class DataController {
 
       // Calculate APR, total fees paid, and fetch pair state for each pool
       const poolsWithData = await Promise.all(
-        result.rows.map(async (poolData) => {
+        result.rows.map(async (poolData: PoolRow) => {
           const pairAddress = poolData.pair_address;
           const token0Address = poolData.token0;
           const token1Address = poolData.token1;
@@ -707,8 +772,7 @@ export class DataController {
            const [pairState, aprData, feesData, volumeData] = await Promise.all([
               DataController.fetchCachedPairState(
                 pairService,
-                token0Address,
-                token1Address
+                pairAddress
               ),
               DataController.calculateAPR(pairAddress),
               DataController.calculateTotalFeesPaid(pairAddress),
@@ -871,6 +935,97 @@ export class DataController {
     }
   }
 
+  static async getPoolsByTokens(req: Request, res: Response): Promise<void> {
+    try {
+      const token0 = req.params.token0 as string;
+      const token1 = req.params.token1 as string;
+
+      // Validate required parameters
+      if (!token0 || !token1 || token0 === token1) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Both token0 and token1 path parameters are required and must be different'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const result = await pool.query(`
+        SELECT id, pair_address, token0, token1 
+        FROM pools 
+        WHERE (token0 = $1 AND token1 = $2) OR (token0 = $2 AND token1 = $1)
+        ORDER BY id ASC
+        LIMIT 1
+      `, [token0, token1]);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          pools: result.rows,
+          filters: {
+            token0,
+            token1
+          },
+          count: result.rows.length
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching pools by tokens:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch pools by tokens'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  static async getTokensByToken(req: Request, res: Response): Promise<void> {
+    try {
+      const token = req.params.token as string;
+
+      // Validate required parameter
+      if (!token) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Token path parameter is required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      // Query pools to find all tokens paired with the input token
+      // Get token1 where token0 matches, and token0 where token1 matches
+      const result = await pool.query(`
+        SELECT DISTINCT token1 as token FROM pools WHERE token0 = $1
+        UNION
+        SELECT DISTINCT token0 as token FROM pools WHERE token1 = $1
+        ORDER BY token ASC
+      `, [token]);
+
+      const tokens = result.rows.map(row => row.token);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          tokens,
+          inputToken: token,
+          count: tokens.length
+        }
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching tokens by token:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch tokens by token'
+      };
+      res.status(500).json(response);
+    }
+  }
+
   static async getUserHistory(req: Request, res: Response): Promise<void> {
     try {
       const userAddress = req.params.userAddress;
@@ -973,21 +1128,23 @@ export class DataController {
     }
   }
 
-  static async getUserPositions(req: Request, res: Response): Promise<void> {
+  static async getAllPositions(req: Request, res: Response): Promise<void> {
     try {
-      const userAddress = req.params.userAddress;
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const userAddress = req.query.userAddress as string | undefined;
 
-      // Validate required parameters
-      if (!userAddress) {
+      // Validate userAddress format if provided
+      if (userAddress && (userAddress.length < 32 || userAddress.length > 44 || !/^[A-Za-z0-9]+$/.test(userAddress))) {
         const response: ApiResponse = {
           success: false,
-          error: 'User address is required'
+          error: 'Invalid user address format'
         };
         res.status(400).json(response);
         return;
       }
 
-      const cacheKey = `user_positions_${userAddress}`;
+      const cacheKey = `all_positions_${userAddress || 'all'}_${limit}_${offset}`;
       const cachedData = cache.get(cacheKey);
       
       if (cachedData) {
@@ -999,125 +1156,186 @@ export class DataController {
         return;
       }
 
-      // Query to get the latest unique position for each position address
-      const result = await pool.query(`
-        SELECT 
-          pair,
-          position,
-          collateral0,
-          collateral1,
-          debt0_shares,
-          debt1_shares,
-          collateral0_applied_min_cf_bps,
-          collateral1_applied_min_cf_bps,
-          event_timestamp
-        FROM user_position_updated_events upu1
-        WHERE signer = $1
-          AND event_timestamp = (
-            SELECT MAX(event_timestamp)
-            FROM user_position_updated_events upu2
-            WHERE upu2.position = upu1.position
-              AND upu2.signer = $1
-          )
-        ORDER BY event_timestamp DESC
-      `, [userAddress]);
+      let countQuery: string;
+      let dataQuery: string;
+      let countParams: any[];
+      let queryParams: any[];
 
-      const positions = result.rows.map(row => ({
-        pair: row.pair,
-        position: row.position,
-        collateral0: row.collateral0,
-        collateral1: row.collateral1,
-        debt0_shares: row.debt0_shares,
-        debt1_shares: row.debt1_shares,
-        collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
-        collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
-        event_timestamp: row.event_timestamp
-      }));
-
-      const responseData = {
-        positions,
-        userAddress,
-        totalPositions: positions.length
-      };
-
-      // Cache for 15 seconds
-      cache.set(cacheKey, responseData, 15 * 1000);
-
-      const response: ApiResponse = {
-        success: true,
-        data: responseData
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error('Error fetching user positions:', error);
-      const response: ApiResponse = {
-        success: false,
-        error: 'Failed to fetch user positions'
-      };
-      res.status(500).json(response);
-    }
-  }
-
-  static async getAllPositions(req: Request, res: Response): Promise<void> {
-    try {
-      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
-      const offset = parseInt(req.query.offset as string) || 0;
-
-      const cacheKey = `all_positions_${limit}_${offset}`;
-      const cachedData = cache.get(cacheKey);
-      
-      if (cachedData) {
-        const response: ApiResponse = {
-          success: true,
-          data: cachedData
-        };
-        res.json(response);
-        return;
+      if (userAddress) {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_borrow_positions WHERE signer = $1';
+        countParams = [userAddress];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            position,
+            collateral0,
+            collateral1,
+            debt0_shares,
+            debt1_shares,
+            collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps,
+            event_timestamp
+          FROM user_borrow_positions
+          WHERE signer = $1
+          ORDER BY event_timestamp DESC
+          LIMIT $2 OFFSET $3
+        `;
+        queryParams = [userAddress, limit, offset];
+      } else {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_borrow_positions';
+        countParams = [];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            position,
+            collateral0,
+            collateral1,
+            debt0_shares,
+            debt1_shares,
+            collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps,
+            event_timestamp
+          FROM user_borrow_positions
+          ORDER BY event_timestamp DESC
+          LIMIT $1 OFFSET $2
+        `;
+        queryParams = [limit, offset];
       }
 
-      // Get total count of unique positions
-      const countResult = await pool.query(`
-        SELECT COUNT(DISTINCT position) as total_count
-        FROM user_position_updated_events
-      `);
+      const countResult = await pool.query(countQuery, countParams);
       const totalCount = parseInt(countResult.rows[0].total_count);
 
-      // Query to get all unique positions with latest data
-      const result = await pool.query(`
-        SELECT 
-          signer,
-          pair,
-          position,
-          collateral0,
-          collateral1,
-          debt0_shares,
-          debt1_shares,
-          collateral0_applied_min_cf_bps,
-          collateral1_applied_min_cf_bps,
-          event_timestamp
-        FROM user_position_updated_events upu1
-        WHERE event_timestamp = (
-          SELECT MAX(event_timestamp)
-          FROM user_position_updated_events upu2
-          WHERE upu2.position = upu1.position
-        )
-        ORDER BY event_timestamp DESC
-        LIMIT $1 OFFSET $2
-      `, [limit, offset]);
+      const result = await pool.query(dataQuery, queryParams);
 
-      const positions = result.rows.map(row => ({
-        signer: row.signer,
-        pair: row.pair,
-        position: row.position,
-        collateral0: row.collateral0,
-        collateral1: row.collateral1,
-        debt0_shares: row.debt0_shares,
-        debt1_shares: row.debt1_shares,
-        collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
-        collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
-        event_timestamp: row.event_timestamp
-      }));
+      // Initialize PairStateService if needed
+      const pairStateService = await DataController.initializePairStateService();
+      const program = pairStateService.getProgram();
+      const connection = pairStateService.getConnection();
+
+      // Enrich positions with simulation data and split into separate token positions
+      const enrichedPositions = await Promise.all(
+        result.rows.map(async (row) => {
+          const basePosition = {
+            signer: row.signer,
+            pair: row.pair,
+            position: row.position,
+            collateral0: row.collateral0,
+            collateral1: row.collateral1,
+            debt0_shares: row.debt0_shares,
+            debt1_shares: row.debt1_shares,
+            collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
+            collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
+            event_timestamp: row.event_timestamp,
+          };
+
+          // If program is not initialized, split base position
+          if (!program) {
+            return splitPosition(basePosition);
+          }
+
+          try {
+            const pairPda = new PublicKey(row.pair);
+            const userPositionPda = new PublicKey(row.position);
+
+            // Fetch pair account to get token addresses
+            const pairAccount = await program.account.pair.fetch(pairPda);
+            const token0Address = pairAccount.token0.toString();
+            const token1Address = pairAccount.token1.toString();
+
+            // Fetch all position metrics in parallel
+            const [
+              borrowingPowerResult,
+              appliedCfBpsResult,
+              liquidationCfBpsResult,
+              liquidationPriceResult,
+              debtWithInterestResult,
+            ] = await Promise.allSettled([
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userBorrowingPower: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userAppliedCollateralFactorBps: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userLiquidationCollateralFactorBps: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userLiquidationPrice: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userDebtWithInterest: {},
+              }),
+            ]);
+
+            // Extract values from results
+            const borrowingPower =
+              borrowingPowerResult.status === 'fulfilled'
+                ? {
+                    token0: borrowingPowerResult.value.value0,
+                    token1: borrowingPowerResult.value.value1,
+                  }
+                : null;
+
+            const appliedCollateralFactorBps =
+              appliedCfBpsResult.status === 'fulfilled'
+                ? {
+                    token0: appliedCfBpsResult.value.value0,
+                    token1: appliedCfBpsResult.value.value1,
+                  }
+                : null;
+
+            const liquidationCollateralFactorBps =
+              liquidationCfBpsResult.status === 'fulfilled'
+                ? {
+                    token0: liquidationCfBpsResult.value.value0,
+                    token1: liquidationCfBpsResult.value.value1,
+                  }
+                : null;
+
+            const liquidationPrice =
+              liquidationPriceResult.status === 'fulfilled'
+                ? {
+                    token0: liquidationPriceResult.value.value0,
+                    token1: liquidationPriceResult.value.value1,
+                  }
+                : null;
+
+            const debtWithInterest =
+              debtWithInterestResult.status === 'fulfilled'
+                ? {
+                    token0: debtWithInterestResult.value.value0,
+                    token1: debtWithInterestResult.value.value1,
+                  }
+                : null;
+
+            const enrichedPosition = {
+              ...basePosition,
+              token0Address,
+              token1Address,
+              borrowingPower,
+              appliedCollateralFactorBps,
+              liquidationCollateralFactorBps,
+              liquidationPrice,
+              debtWithInterest,
+            };
+
+            // Split position into two separate token positions
+            return splitPosition(enrichedPosition);
+          } catch (error) {
+            console.error(
+              `Error fetching position data for ${row.position}:`,
+              error
+            );
+            // Return split base position if simulation fails
+            return splitPosition(basePosition);
+          }
+        })
+      );
+
+      // Flatten the array of arrays into a single array
+      const positions = enrichedPositions.flat().filter(pos => pos !== null);
 
       const responseData = {
         positions,
@@ -1143,6 +1361,151 @@ export class DataController {
       const response: ApiResponse = {
         success: false,
         error: 'Failed to fetch all positions'
+      };
+      res.status(500).json(response);
+    }
+  }
+
+  static async getAllLiquidityPositions(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const userAddress = req.query.userAddress as string | undefined;
+
+      // Validate userAddress format if provided
+      if (userAddress && (userAddress.length < 32 || userAddress.length > 44 || !/^[A-Za-z0-9]+$/.test(userAddress))) {
+        const response: ApiResponse = {
+          success: false,
+          error: 'Invalid user address format'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const cacheKey = `all_liquidity_positions_${userAddress || 'all'}_${limit}_${offset}`;
+      const cachedData = cache.get(cacheKey);
+      
+      if (cachedData) {
+        const response: ApiResponse = {
+          success: true,
+          data: cachedData
+        };
+        res.json(response);
+        return;
+      }
+
+      let countQuery: string;
+      let dataQuery: string;
+      let countParams: any[];
+      let queryParams: any[];
+
+      if (userAddress) {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions WHERE signer = $1';
+        countParams = [userAddress];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            token0_mint,
+            token1_mint,
+            amount0,
+            amount1,
+            lp_mint,
+            lp_amount,
+            timestamp
+          FROM user_liquidity_positions
+          WHERE signer = $1
+          ORDER BY timestamp DESC
+          LIMIT $2 OFFSET $3
+        `;
+        queryParams = [userAddress, limit, offset];
+      } else {
+        countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions';
+        countParams = [];
+        dataQuery = `
+          SELECT 
+            signer,
+            pair,
+            token0_mint,
+            token1_mint,
+            amount0,
+            amount1,
+            lp_mint,
+            lp_amount,
+            timestamp
+          FROM user_liquidity_positions
+          ORDER BY timestamp DESC
+          LIMIT $1 OFFSET $2
+        `;
+        queryParams = [limit, offset];
+      }
+
+      const countResult = await pool.query(countQuery, countParams);
+      const totalCount = parseInt(countResult.rows[0].total_count);
+      const result = await pool.query(dataQuery, queryParams);
+
+      // Initialize PairStateService if needed to get token addresses
+      const pairStateService = await DataController.initializePairStateService();
+      const program = pairStateService.getProgram();
+
+      // Enrich positions with token addresses from pair account
+      const enrichedPositions = await Promise.all(
+        result.rows.map(async (row) => {
+          const basePosition = {
+            signer: row.signer,
+            pair: row.pair,
+            token0Mint: row.token0_mint,
+            token1Mint: row.token1_mint,
+            amount0: row.amount0,
+            amount1: row.amount1,
+            lpMint: row.lp_mint,
+            lpAmount: row.lp_amount,
+            timestamp: row.timestamp,
+            token0Address: row.token0_mint, // Use token0_mint as token0Address
+            token1Address: row.token1_mint, // Use token1_mint as token1Address
+          };
+
+          // Try to fetch pair account to get token addresses if program is initialized
+          if (program) {
+            try {
+              const pairPda = new PublicKey(row.pair);
+              const pairAccount = await program.account.pair.fetch(pairPda);
+              basePosition.token0Address = pairAccount.token0.toString();
+              basePosition.token1Address = pairAccount.token1.toString();
+            } catch (error) {
+              console.error(`Error fetching pair account for ${row.pair}:`, error);
+              // Keep using token0_mint and token1_mint as fallback
+            }
+          }
+
+          return basePosition;
+        })
+      );
+
+      const responseData = {
+        positions: enrichedPositions,
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasNext: offset + limit < totalCount
+        }
+      };
+
+      // Cache for 15 seconds
+      cache.set(cacheKey, responseData, 15 * 1000);
+
+      const response: ApiResponse = {
+        success: true,
+        data: responseData
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error fetching all liquidity positions:', error);
+      const response: ApiResponse = {
+        success: false,
+        error: 'Failed to fetch all liquidity positions'
       };
       res.status(500).json(response);
     }

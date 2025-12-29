@@ -14,6 +14,7 @@ pub struct AddCollateral{
 pub struct AddCollateralInstructionAccounts {
     pub pair: solana_pubkey::Pubkey,
     pub rate_model: solana_pubkey::Pubkey,
+    pub futarchy_authority: solana_pubkey::Pubkey,
     pub user_position: solana_pubkey::Pubkey,
     pub collateral_vault: solana_pubkey::Pubkey,
     pub user_collateral_token_account: solana_pubkey::Pubkey,
@@ -33,6 +34,7 @@ impl carbon_core::deserialize::ArrangeAccounts for AddCollateral {
         let mut iter = accounts.iter();
         let pair = next_account(&mut iter)?;
         let rate_model = next_account(&mut iter)?;
+        let futarchy_authority = next_account(&mut iter)?;
         let user_position = next_account(&mut iter)?;
         let collateral_vault = next_account(&mut iter)?;
         let user_collateral_token_account = next_account(&mut iter)?;
@@ -47,6 +49,7 @@ impl carbon_core::deserialize::ArrangeAccounts for AddCollateral {
         Some(AddCollateralInstructionAccounts {
             pair,
             rate_model,
+            futarchy_authority,
             user_position,
             collateral_vault,
             user_collateral_token_account,

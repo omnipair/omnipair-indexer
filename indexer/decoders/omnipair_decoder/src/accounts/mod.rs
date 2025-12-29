@@ -5,17 +5,13 @@ use carbon_core::deserialize::CarbonDeserialize;
 
 use super::OmnipairDecoder; 
 pub mod futarchy_authority; 
-pub mod leveraged_position; 
 pub mod pair; 
-pub mod pair_config; 
 pub mod rate_model; 
 pub mod user_position; 
 
 pub enum OmnipairAccount { 
         FutarchyAuthority(futarchy_authority::FutarchyAuthority), 
-        LeveragedPosition(leveraged_position::LeveragedPosition), 
         Pair(pair::Pair), 
-        PairConfig(pair_config::PairConfig), 
         RateModel(rate_model::RateModel), 
         UserPosition(user_position::UserPosition), 
 }
@@ -35,30 +31,10 @@ impl<'a> AccountDecoder<'a> for OmnipairDecoder {
             }); 
         } 
          
-            if let Some(decoded_account) = leveraged_position::LeveragedPosition::deserialize(account.data.as_slice()) { 
-            return Some(carbon_core::account::DecodedAccount { 
-                lamports: account.lamports, 
-                data: OmnipairAccount::LeveragedPosition(decoded_account), 
-                owner: account.owner, 
-                executable: account.executable, 
-                rent_epoch: account.rent_epoch, 
-            }); 
-        } 
-         
             if let Some(decoded_account) = pair::Pair::deserialize(account.data.as_slice()) { 
             return Some(carbon_core::account::DecodedAccount { 
                 lamports: account.lamports, 
                 data: OmnipairAccount::Pair(decoded_account), 
-                owner: account.owner, 
-                executable: account.executable, 
-                rent_epoch: account.rent_epoch, 
-            }); 
-        } 
-         
-            if let Some(decoded_account) = pair_config::PairConfig::deserialize(account.data.as_slice()) { 
-            return Some(carbon_core::account::DecodedAccount { 
-                lamports: account.lamports, 
-                data: OmnipairAccount::PairConfig(decoded_account), 
                 owner: account.owner, 
                 executable: account.executable, 
                 rent_epoch: account.rent_epoch, 

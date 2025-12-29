@@ -90,26 +90,3 @@ export async function fetchRatesFromRateModel(
   }
 }
 
-/**
- * Simple calculation if rate model fetch fails
- * Uses a basic utilization-based formula
- */
-export function estimateRateFromUtilization(utilization: number): number {
-  // Simple linear model: 0% util = 0% APR, 100% util = 50% APR
-  // Adjust these parameters based on your protocol's rate curve
-  const baseRate = 1; // Base APR at 0% utilization
-  const optimalUtilization = 80; // Target utilization %
-  const optimalRate = 10; // APR at optimal utilization
-  const maxRate = 100; // Max APR at 100% utilization
-  
-  if (utilization <= optimalUtilization) {
-    // Linear increase from base to optimal
-    return baseRate + (optimalRate - baseRate) * (utilization / optimalUtilization);
-  } else {
-    // Steeper increase from optimal to max
-    const excessUtil = utilization - optimalUtilization;
-    const excessRange = 100 - optimalUtilization;
-    return optimalRate + (maxRate - optimalRate) * (excessUtil / excessRange);
-  }
-}
-

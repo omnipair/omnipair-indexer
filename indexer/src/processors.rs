@@ -77,11 +77,8 @@ impl Processor for OmnipairInstructionProcessor {
             OmnipairInstruction::UserPositionUpdatedEvent(event) => {
                 self.process_user_position_updated_event(event, &metadata).await?;
             }
-            OmnipairInstruction::LeveragePositionCreatedEvent(event) => {
-                self.process_leverage_position_created_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::LeveragePositionUpdatedEvent(event) => {
-                self.process_leverage_position_updated_event(event, &metadata).await?;
+            OmnipairInstruction::UserLiquidityPositionUpdatedEvent(event) => {
+                self.process_user_liquidity_position_updated_event(event, &metadata).await?;
             }
             _ => {
                 log::debug!("Unhandled instruction type: {:?}", instruction.data);
@@ -293,13 +290,47 @@ impl OmnipairInstructionProcessor {
             log::error!("Failed to insert pair created event: {}", e);
             return Err(e);
         }
+
+        // Send callback
+        let webhook_url = "https://post-pools-bot-production.up.railway.app/webhook";
+        let webhook_payload = serde_json::json!({
+            "pair": event.metadata.pair.to_string(),
+            "token0": event.token0.to_string(),
+            "token1": event.token1.to_string()
+        });
+        
+        match reqwest::Client::new()
+            .post(webhook_url)
+            .header("Content-Type", "application/json")
+            .json(&webhook_payload)
+            .send()
+            .await
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    log::info!("Successfully sent webhook notification for pair: {}", event.metadata.pair);
+                } else {
+                    log::warn!("Webhook request failed with status: {} for pair: {}", response.status(), event.metadata.pair);
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to send webhook notification for pair {}: {}", event.metadata.pair, e);
+            }
+        }
         
         log::info!(
-            "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, Lp Mint: {}, Rate Model: {}, Swap Fee Bps: {}, Half Life: {}, Fixed Cf Bps: {:?}, Params Hash: {:?}, Version: {}, TxSig: {}", 
             event.token0,
             event.token1,
             event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.signer,
+            event.lp_mint,
+            event.rate_model,
+            event.swap_fee_bps,
+            event.half_life,
+            event.fixed_cf_bps,
+            event.params_hash,
+            event.version,
             tx_signature
         );
         
@@ -422,27 +453,32 @@ impl OmnipairInstructionProcessor {
         Ok(())
     }
 
-    async fn process_leverage_position_created_event(
+    async fn process_user_liquidity_position_updated_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::leverage_position_created_event::LeveragePositionCreatedEvent,
+        event: carbon_omnipair_decoder::instructions::user_liquidity_position_updated_event::UserLiquidityPositionUpdatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
-            "LeveragePositionCreatedEvent processed - Details: {:#?}",
+            "UserLiquidityPositionUpdatedEvent processed - Details: {:#?}",
             event,
         );
         
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
         
-        if let Err(e) = database::upsert_leverage_position_created_event(&event, &tx_signature, slot).await {
-            log::error!("Failed to insert leverage position created event: {}", e);
+        if let Err(e) = database::upsert_user_liquidity_position_updated_event(&event, &tx_signature, slot).await {
+            log::error!("Failed to insert user liquidity position updated event: {}", e);
             return Err(e);
         }
         
         log::info!(
-            "Successfully processed LeveragePositionCreatedEvent - Position: {}, Pair: {}, User: {}, TxSig: {}", 
-            event.position,
+            "Successfully processed UserLiquidityPositionUpdatedEvent - Token0 Amount: {}, Token1 Amount: {}, LP Amount: {}, Token0 Mint: {}, Token1 Mint: {}, LP Mint: {}, Pair: {}, User: {}, TxSig: {}", 
+            event.token0_amount,
+            event.token1_amount,
+            event.lp_amount,
+            event.token0_mint,
+            event.token1_mint,
+            event.lp_mint,
             event.metadata.pair, 
             event.metadata.signer, 
             tx_signature
@@ -451,40 +487,4 @@ impl OmnipairInstructionProcessor {
         Ok(())
     }
 
-    async fn process_leverage_position_updated_event(
-        &self,
-        event: carbon_omnipair_decoder::instructions::leverage_position_updated_event::LeveragePositionUpdatedEvent,
-        metadata: &InstructionMetadata,
-    ) -> CarbonResult<()> {
-        log::info!(
-            "LeveragePositionUpdatedEvent processed - Details: {:#?}",
-            event,
-        );
-        
-        let tx_signature = metadata.transaction_metadata.signature.to_string();
-        let slot = metadata.transaction_metadata.slot as i64;
-        
-        if let Err(e) = database::upsert_leverage_position_updated_event(&event, &tx_signature, slot).await {
-            log::error!("Failed to insert leverage position updated event: {}", e);
-            return Err(e);
-        }
-        
-        log::info!(
-            "Successfully processed LeveragePositionUpdatedEvent - Position: {}, Long Token0: {}, Target Leverage: {}bps, Debt Amount: {}, Collateral Position Size: {}, Liquidation Price: {}, Entry Price: {}, Pair: {}, User: {}, TxSig: {}", 
-            event.position,
-            event.long_token0,
-            event.target_leverage_bps,
-            event.debt_amount,
-            event.collateral_position_size,
-            event.liquidation_price_nad,
-            event.entry_price_nad,
-            event.metadata.pair, 
-            event.metadata.signer, 
-            tx_signature
-        );
-        
-        Ok(())
-    }
-
-    
 }

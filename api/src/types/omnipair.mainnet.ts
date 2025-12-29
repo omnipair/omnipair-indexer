@@ -1,4 +1,10 @@
-{
+/**
+ * Program IDL in camelCase format in order to be used in JS/TS.
+ *
+ * Note that this is only a type helper and is not the actual IDL. The original
+ * IDL can be found at `target/idl/omnipair.json`.
+ */
+export type Omnipair = {
   "address": "A5EJxu1ipate2ur7GPgLuK86bv85pyG1G6fPrhP7xKC5",
   "metadata": {
     "name": "omnipair",
@@ -8,7 +14,7 @@
   },
   "instructions": [
     {
-      "name": "add_collateral",
+      "name": "addCollateral",
       "discriminator": [
         127,
         82,
@@ -42,27 +48,27 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -92,7 +98,7 @@
           }
         },
         {
-          "name": "user_position",
+          "name": "userPosition",
           "writable": true,
           "pda": {
             "seeds": [
@@ -126,15 +132,15 @@
           }
         },
         {
-          "name": "collateral_vault",
+          "name": "collateralVault",
           "writable": true
         },
         {
-          "name": "user_collateral_token_account",
+          "name": "userCollateralTokenAccount",
           "writable": true
         },
         {
-          "name": "collateral_token_mint"
+          "name": "collateralTokenMint"
         },
         {
           "name": "user",
@@ -142,19 +148,19 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -191,14 +197,14 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "AdjustPositionArgs"
+              "name": "adjustPositionArgs"
             }
           }
         }
       ]
     },
     {
-      "name": "add_liquidity",
+      "name": "addLiquidity",
       "discriminator": [
         181,
         157,
@@ -232,27 +238,27 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -282,7 +288,7 @@
           }
         },
         {
-          "name": "token0_vault",
+          "name": "token0Vault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -330,7 +336,7 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               }
             ],
             "program": {
@@ -373,7 +379,7 @@
           }
         },
         {
-          "name": "token1_vault",
+          "name": "token1Vault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -421,7 +427,7 @@
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               }
             ],
             "program": {
@@ -464,25 +470,25 @@
           }
         },
         {
-          "name": "user_token0_account",
+          "name": "userToken0Account",
           "writable": true
         },
         {
-          "name": "user_token1_account",
+          "name": "userToken1Account",
           "writable": true
         },
         {
-          "name": "token0_vault_mint"
+          "name": "token0VaultMint"
         },
         {
-          "name": "token1_vault_mint"
+          "name": "token1VaultMint"
         },
         {
-          "name": "lp_mint",
+          "name": "lpMint",
           "writable": true
         },
         {
-          "name": "user_lp_token_account",
+          "name": "userLpTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -529,7 +535,7 @@
               },
               {
                 "kind": "account",
-                "path": "lp_mint"
+                "path": "lpMint"
               }
             ],
             "program": {
@@ -577,23 +583,23 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -630,7 +636,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "AddLiquidityArgs"
+              "name": "addLiquidityArgs"
             }
           }
         }
@@ -671,23 +677,23 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "user_position",
+          "name": "userPosition",
           "writable": true,
           "pda": {
             "seeds": [
@@ -721,11 +727,11 @@
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -755,15 +761,15 @@
           }
         },
         {
-          "name": "token_vault",
+          "name": "tokenVault",
           "writable": true
         },
         {
-          "name": "user_token_account",
+          "name": "userTokenAccount",
           "writable": true
         },
         {
-          "name": "vault_token_mint"
+          "name": "vaultTokenMint"
         },
         {
           "name": "user",
@@ -771,19 +777,19 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -820,14 +826,14 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "AdjustPositionArgs"
+              "name": "adjustPositionArgs"
             }
           }
         }
       ]
     },
     {
-      "name": "claim_protocol_fees",
+      "name": "claimProtocolFees",
       "discriminator": [
         34,
         142,
@@ -869,23 +875,23 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -915,21 +921,21 @@
           }
         },
         {
-          "name": "token0_vault",
+          "name": "token0Vault",
           "writable": true
         },
         {
-          "name": "token1_vault",
+          "name": "token1Vault",
           "writable": true
         },
         {
-          "name": "authority_token0_account",
+          "name": "authorityToken0Account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "futarchy_authority"
+                "path": "futarchyAuthority"
               },
               {
                 "kind": "const",
@@ -970,7 +976,7 @@
               },
               {
                 "kind": "account",
-                "path": "token0_mint"
+                "path": "token0Mint"
               }
             ],
             "program": {
@@ -1013,13 +1019,13 @@
           }
         },
         {
-          "name": "authority_token1_account",
+          "name": "authorityToken1Account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "futarchy_authority"
+                "path": "futarchyAuthority"
               },
               {
                 "kind": "const",
@@ -1060,7 +1066,7 @@
               },
               {
                 "kind": "account",
-                "path": "token1_mint"
+                "path": "token1Mint"
               }
             ],
             "program": {
@@ -1103,25 +1109,25 @@
           }
         },
         {
-          "name": "token0_mint"
+          "name": "token0Mint"
         },
         {
-          "name": "token1_mint"
+          "name": "token1Mint"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -1130,14 +1136,14 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "ClaimProtocolFeesArgs"
+              "name": "claimProtocolFeesArgs"
             }
           }
         }
       ]
     },
     {
-      "name": "distribute_tokens",
+      "name": "distributeTokens",
       "discriminator": [
         105,
         69,
@@ -1150,7 +1156,7 @@
       ],
       "accounts": [
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -1180,26 +1186,26 @@
           }
         },
         {
-          "name": "source_mint"
+          "name": "sourceMint"
         },
         {
-          "name": "source_token_account",
+          "name": "sourceTokenAccount",
           "writable": true
         },
         {
-          "name": "futarchy_treasury_token_account",
+          "name": "futarchyTreasuryTokenAccount",
           "writable": true
         },
         {
-          "name": "buybacks_vault_token_account",
+          "name": "buybacksVaultTokenAccount",
           "writable": true
         },
         {
-          "name": "team_treasury_token_account",
+          "name": "teamTreasuryTokenAccount",
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
@@ -1208,7 +1214,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "DistributeTokensArgs"
+              "name": "distributeTokensArgs"
             }
           }
         }
@@ -1249,27 +1255,27 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -1299,29 +1305,29 @@
           }
         },
         {
-          "name": "token0_vault",
+          "name": "token0Vault",
           "writable": true
         },
         {
-          "name": "token1_vault",
+          "name": "token1Vault",
           "writable": true
         },
         {
-          "name": "token0_mint"
+          "name": "token0Mint"
         },
         {
-          "name": "token1_mint"
+          "name": "token1Mint"
         },
         {
-          "name": "receiver_token0_account",
+          "name": "receiverToken0Account",
           "writable": true
         },
         {
-          "name": "receiver_token1_account",
+          "name": "receiverToken1Account",
           "writable": true
         },
         {
-          "name": "receiver_program",
+          "name": "receiverProgram",
           "docs": [
             "This program will be invoked via CPI"
           ]
@@ -1331,19 +1337,19 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -1380,14 +1386,14 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "FlashloanArgs"
+              "name": "flashloanArgs"
             }
           }
         }
       ]
     },
     {
-      "name": "init_futarchy_authority",
+      "name": "initFutarchyAuthority",
       "discriminator": [
         133,
         110,
@@ -1406,7 +1412,7 @@
           "address": "8tF4uYMBXqGhCUGRZL3AmPqRzbX8JJ1TpYnY3uJKN4kt"
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1437,7 +1443,7 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -1446,7 +1452,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "InitFutarchyAuthorityArgs"
+              "name": "initFutarchyAuthorityArgs"
             }
           }
         }
@@ -1471,10 +1477,10 @@
           "signer": true
         },
         {
-          "name": "token0_mint"
+          "name": "token0Mint"
         },
         {
-          "name": "token1_mint"
+          "name": "token1Mint"
         },
         {
           "name": "pair",
@@ -1497,11 +1503,11 @@
               },
               {
                 "kind": "account",
-                "path": "token0_mint"
+                "path": "token0Mint"
               },
               {
                 "kind": "account",
-                "path": "token1_mint"
+                "path": "token1Mint"
               },
               {
                 "kind": "arg",
@@ -1511,7 +1517,7 @@
           }
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -1541,16 +1547,16 @@
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true,
           "signer": true
         },
         {
-          "name": "lp_mint",
+          "name": "lpMint",
           "writable": true
         },
         {
-          "name": "lp_token_metadata",
+          "name": "lpTokenMetadata",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1606,7 +1612,7 @@
               },
               {
                 "kind": "account",
-                "path": "lp_mint"
+                "path": "lpMint"
               }
             ],
             "program": {
@@ -1649,11 +1655,11 @@
           }
         },
         {
-          "name": "deployer_lp_token_account",
+          "name": "deployerLpTokenAccount",
           "writable": true
         },
         {
-          "name": "token0_vault",
+          "name": "token0Vault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1700,7 +1706,7 @@
               },
               {
                 "kind": "account",
-                "path": "token0_mint"
+                "path": "token0Mint"
               }
             ],
             "program": {
@@ -1743,7 +1749,7 @@
           }
         },
         {
-          "name": "token1_vault",
+          "name": "token1Vault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1790,7 +1796,7 @@
               },
               {
                 "kind": "account",
-                "path": "token1_mint"
+                "path": "token1Mint"
               }
             ],
             "program": {
@@ -1833,35 +1839,35 @@
           }
         },
         {
-          "name": "deployer_token0_account",
+          "name": "deployerToken0Account",
           "writable": true
         },
         {
-          "name": "deployer_token1_account",
+          "name": "deployerToken1Account",
           "writable": true
         },
         {
-          "name": "authority_wsol_account",
+          "name": "authorityWsolAccount",
           "writable": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "token_metadata_program",
+          "name": "tokenMetadataProgram",
           "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
@@ -1869,7 +1875,7 @@
           "address": "SysvarRent111111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -1906,7 +1912,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "InitializeAndBootstrapArgs"
+              "name": "initializeAndBootstrapArgs"
             }
           }
         }
@@ -1947,23 +1953,23 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "user_position",
+          "name": "userPosition",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1991,17 +1997,17 @@
               },
               {
                 "kind": "account",
-                "path": "position_owner"
+                "path": "positionOwner"
               }
             ]
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -2031,18 +2037,18 @@
           }
         },
         {
-          "name": "collateral_vault",
+          "name": "collateralVault",
           "writable": true
         },
         {
-          "name": "caller_token_account",
+          "name": "callerTokenAccount",
           "writable": true
         },
         {
-          "name": "collateral_token_mint"
+          "name": "collateralTokenMint"
         },
         {
-          "name": "position_owner"
+          "name": "positionOwner"
         },
         {
           "name": "payer",
@@ -2050,19 +2056,19 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -2097,7 +2103,7 @@
       "args": []
     },
     {
-      "name": "remove_collateral",
+      "name": "removeCollateral",
       "discriminator": [
         86,
         222,
@@ -2131,23 +2137,23 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "user_position",
+          "name": "userPosition",
           "writable": true,
           "pda": {
             "seeds": [
@@ -2181,11 +2187,11 @@
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -2215,15 +2221,15 @@
           }
         },
         {
-          "name": "token_vault",
+          "name": "tokenVault",
           "writable": true
         },
         {
-          "name": "user_token_account",
+          "name": "userTokenAccount",
           "writable": true
         },
         {
-          "name": "vault_token_mint"
+          "name": "vaultTokenMint"
         },
         {
           "name": "user",
@@ -2231,19 +2237,19 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -2280,14 +2286,14 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "AdjustPositionArgs"
+              "name": "adjustPositionArgs"
             }
           }
         }
       ]
     },
     {
-      "name": "remove_liquidity",
+      "name": "removeLiquidity",
       "discriminator": [
         80,
         85,
@@ -2321,27 +2327,27 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -2371,7 +2377,7 @@
           }
         },
         {
-          "name": "token0_vault",
+          "name": "token0Vault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -2419,7 +2425,7 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               }
             ],
             "program": {
@@ -2462,7 +2468,7 @@
           }
         },
         {
-          "name": "token1_vault",
+          "name": "token1Vault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -2510,7 +2516,7 @@
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               }
             ],
             "program": {
@@ -2553,25 +2559,25 @@
           }
         },
         {
-          "name": "user_token0_account",
+          "name": "userToken0Account",
           "writable": true
         },
         {
-          "name": "user_token1_account",
+          "name": "userToken1Account",
           "writable": true
         },
         {
-          "name": "token0_vault_mint"
+          "name": "token0VaultMint"
         },
         {
-          "name": "token1_vault_mint"
+          "name": "token1VaultMint"
         },
         {
-          "name": "lp_mint",
+          "name": "lpMint",
           "writable": true
         },
         {
-          "name": "user_lp_token_account",
+          "name": "userLpTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
@@ -2618,7 +2624,7 @@
               },
               {
                 "kind": "account",
-                "path": "lp_mint"
+                "path": "lpMint"
               }
             ],
             "program": {
@@ -2666,23 +2672,23 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -2719,7 +2725,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "RemoveLiquidityArgs"
+              "name": "removeLiquidityArgs"
             }
           }
         }
@@ -2760,23 +2766,23 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "user_position",
+          "name": "userPosition",
           "writable": true,
           "pda": {
             "seeds": [
@@ -2810,11 +2816,11 @@
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -2844,15 +2850,15 @@
           }
         },
         {
-          "name": "token_vault",
+          "name": "tokenVault",
           "writable": true
         },
         {
-          "name": "user_token_account",
+          "name": "userTokenAccount",
           "writable": true
         },
         {
-          "name": "vault_token_mint"
+          "name": "vaultTokenMint"
         },
         {
           "name": "user",
@@ -2860,19 +2866,19 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -2909,7 +2915,7 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "AdjustPositionArgs"
+              "name": "adjustPositionArgs"
             }
           }
         }
@@ -2950,27 +2956,27 @@
               {
                 "kind": "account",
                 "path": "pair.token0",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
-                "account": "Pair"
+                "account": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.params_hash",
-                "account": "Pair"
+                "account": "pair"
               }
             ]
           }
         },
         {
-          "name": "rate_model",
+          "name": "rateModel",
           "writable": true
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -3000,35 +3006,35 @@
           }
         },
         {
-          "name": "token_in_vault",
+          "name": "tokenInVault",
           "writable": true
         },
         {
-          "name": "token_out_vault",
+          "name": "tokenOutVault",
           "writable": true
         },
         {
-          "name": "user_token_in_account",
+          "name": "userTokenInAccount",
           "writable": true
         },
         {
-          "name": "user_token_out_account",
+          "name": "userTokenOutAccount",
           "writable": true
         },
         {
-          "name": "token_in_mint"
+          "name": "tokenInMint"
         },
         {
-          "name": "token_out_mint"
+          "name": "tokenOutMint"
         },
         {
-          "name": "authority_token_in_account",
+          "name": "authorityTokenInAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "futarchy_authority"
+                "path": "futarchyAuthority"
               },
               {
                 "kind": "const",
@@ -3069,7 +3075,7 @@
               },
               {
                 "kind": "account",
-                "path": "token_in_mint"
+                "path": "tokenInMint"
               }
             ],
             "program": {
@@ -3117,23 +3123,23 @@
           "signer": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_2022_program",
+          "name": "token2022Program",
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "associated_token_program",
+          "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "event_authority",
+          "name": "eventAuthority",
           "pda": {
             "seeds": [
               {
@@ -3170,14 +3176,14 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "SwapArgs"
+              "name": "swapArgs"
             }
           }
         }
       ]
     },
     {
-      "name": "view_pair_data",
+      "name": "viewPairData",
       "docs": [
         "View instructions for client data access (Logs + RPC simulation to parse returned logs for values)",
         "This approach allows for \"view\" functionality of on-chain calculations (similar to Solidity view functions)",
@@ -3199,10 +3205,10 @@
           "writable": true
         },
         {
-          "name": "rate_model"
+          "name": "rateModel"
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -3237,7 +3243,7 @@
           "name": "getter",
           "type": {
             "defined": {
-              "name": "PairViewKind"
+              "name": "pairViewKind"
             }
           }
         },
@@ -3245,14 +3251,14 @@
           "name": "args",
           "type": {
             "defined": {
-              "name": "EmitValueArgs"
+              "name": "emitValueArgs"
             }
           }
         }
       ]
     },
     {
-      "name": "view_user_position_data",
+      "name": "viewUserPositionData",
       "discriminator": [
         203,
         218,
@@ -3269,14 +3275,14 @@
           "writable": true
         },
         {
-          "name": "user_position",
+          "name": "userPosition",
           "writable": true
         },
         {
-          "name": "rate_model"
+          "name": "rateModel"
         },
         {
-          "name": "futarchy_authority",
+          "name": "futarchyAuthority",
           "pda": {
             "seeds": [
               {
@@ -3311,7 +3317,7 @@
           "name": "getter",
           "type": {
             "defined": {
-              "name": "UserPositionViewKind"
+              "name": "userPositionViewKind"
             }
           }
         }
@@ -3320,7 +3326,7 @@
   ],
   "accounts": [
     {
-      "name": "FutarchyAuthority",
+      "name": "futarchyAuthority",
       "discriminator": [
         175,
         247,
@@ -3333,7 +3339,7 @@
       ]
     },
     {
-      "name": "Pair",
+      "name": "pair",
       "discriminator": [
         85,
         72,
@@ -3346,7 +3352,7 @@
       ]
     },
     {
-      "name": "RateModel",
+      "name": "rateModel",
       "discriminator": [
         94,
         3,
@@ -3359,7 +3365,7 @@
       ]
     },
     {
-      "name": "UserPosition",
+      "name": "userPosition",
       "discriminator": [
         251,
         248,
@@ -3374,7 +3380,7 @@
   ],
   "events": [
     {
-      "name": "AdjustCollateralEvent",
+      "name": "adjustCollateralEvent",
       "discriminator": [
         99,
         246,
@@ -3387,7 +3393,7 @@
       ]
     },
     {
-      "name": "AdjustDebtEvent",
+      "name": "adjustDebtEvent",
       "discriminator": [
         153,
         8,
@@ -3400,7 +3406,7 @@
       ]
     },
     {
-      "name": "AdjustLiquidityEvent",
+      "name": "adjustLiquidityEvent",
       "discriminator": [
         229,
         162,
@@ -3413,7 +3419,7 @@
       ]
     },
     {
-      "name": "BurnEvent",
+      "name": "burnEvent",
       "discriminator": [
         33,
         89,
@@ -3426,7 +3432,7 @@
       ]
     },
     {
-      "name": "FlashloanEvent",
+      "name": "flashloanEvent",
       "discriminator": [
         34,
         49,
@@ -3439,7 +3445,7 @@
       ]
     },
     {
-      "name": "MintEvent",
+      "name": "mintEvent",
       "discriminator": [
         197,
         144,
@@ -3452,7 +3458,7 @@
       ]
     },
     {
-      "name": "PairCreatedEvent",
+      "name": "pairCreatedEvent",
       "discriminator": [
         118,
         0,
@@ -3465,7 +3471,7 @@
       ]
     },
     {
-      "name": "SwapEvent",
+      "name": "swapEvent",
       "discriminator": [
         64,
         198,
@@ -3478,7 +3484,7 @@
       ]
     },
     {
-      "name": "UpdatePairEvent",
+      "name": "updatePairEvent",
       "discriminator": [
         44,
         6,
@@ -3491,7 +3497,7 @@
       ]
     },
     {
-      "name": "UserLiquidityPositionUpdatedEvent",
+      "name": "userLiquidityPositionUpdatedEvent",
       "discriminator": [
         255,
         227,
@@ -3504,7 +3510,7 @@
       ]
     },
     {
-      "name": "UserPositionCreatedEvent",
+      "name": "userPositionCreatedEvent",
       "discriminator": [
         240,
         132,
@@ -3517,7 +3523,7 @@
       ]
     },
     {
-      "name": "UserPositionLiquidatedEvent",
+      "name": "userPositionLiquidatedEvent",
       "discriminator": [
         220,
         137,
@@ -3530,7 +3536,7 @@
       ]
     },
     {
-      "name": "UserPositionUpdatedEvent",
+      "name": "userPositionUpdatedEvent",
       "discriminator": [
         83,
         168,
@@ -3546,352 +3552,328 @@
   "errors": [
     {
       "code": 6000,
-      "name": "InvalidDeployer",
+      "name": "invalidDeployer",
       "msg": "Invalid deployer"
     },
     {
       "code": 6001,
-      "name": "ArgumentMissing",
+      "name": "argumentMissing",
       "msg": "Argument missing"
     },
     {
       "code": 6002,
-      "name": "InvalidSwapFeeBps",
+      "name": "invalidSwapFeeBps",
       "msg": "Invalid swap fee bps"
     },
     {
       "code": 6003,
-      "name": "InvalidHalfLife",
+      "name": "invalidHalfLife",
       "msg": "Invalid half life"
     },
     {
       "code": 6004,
-      "name": "InvalidFutarchyAuthority",
+      "name": "invalidFutarchyAuthority",
       "msg": "Invalid futarchy authority"
     },
     {
       "code": 6005,
-      "name": "InvalidArgument",
+      "name": "invalidArgument",
       "msg": "Invalid argument"
     },
     {
       "code": 6006,
-      "name": "InsufficientCollateral",
+      "name": "insufficientCollateral",
       "msg": "Insufficient collateral"
     },
     {
       "code": 6007,
-      "name": "AmountZero",
+      "name": "amountZero",
       "msg": "Amount cannot be zero"
     },
     {
       "code": 6008,
-      "name": "InsufficientAmount0In",
+      "name": "insufficientAmount0In",
       "msg": "Insufficient amount0 in"
     },
     {
       "code": 6009,
-      "name": "InsufficientAmount1In",
+      "name": "insufficientAmount1In",
       "msg": "Insufficient amount1 in"
     },
     {
       "code": 6010,
-      "name": "BorrowingPowerExceeded",
+      "name": "borrowingPowerExceeded",
       "msg": "Borrowing power exceeded"
     },
     {
       "code": 6011,
-      "name": "InvalidTokenAccount",
+      "name": "invalidTokenAccount",
       "msg": "Invalid token account"
     },
     {
       "code": 6012,
-      "name": "InvalidTokenProgram",
+      "name": "invalidTokenProgram",
       "msg": "Invalid token program"
     },
     {
       "code": 6013,
-      "name": "BorrowExceedsReserve",
+      "name": "borrowExceedsReserve",
       "msg": "Borrow exceeds reserve"
     },
     {
       "code": 6014,
-      "name": "InsufficientAmount0",
+      "name": "insufficientAmount0",
       "msg": "Insufficient amount0"
     },
     {
       "code": 6015,
-      "name": "InsufficientAmount1",
+      "name": "insufficientAmount1",
       "msg": "Insufficient amount1"
     },
     {
       "code": 6016,
-      "name": "InsufficientOutputAmount",
+      "name": "insufficientOutputAmount",
       "msg": "Insufficient output amount"
     },
     {
       "code": 6017,
-      "name": "InsufficientLiquidity",
+      "name": "insufficientLiquidity",
       "msg": "Insufficient liquidity"
     },
     {
       "code": 6018,
-      "name": "Overflow",
+      "name": "overflow",
       "msg": "Arithmetic overflow"
     },
     {
       "code": 6019,
-      "name": "Undercollateralized",
-      "msg": "Undercollateralized"
+      "name": "undercollateralized",
+      "msg": "undercollateralized"
     },
     {
       "code": 6020,
-      "name": "InsufficientBalanceForCollateral",
+      "name": "insufficientBalanceForCollateral",
       "msg": "Insufficient balance for collateral"
     },
     {
       "code": 6021,
-      "name": "InsufficientAmount",
+      "name": "insufficientAmount",
       "msg": "Insufficient amount"
     },
     {
       "code": 6022,
-      "name": "InsufficientDebt",
+      "name": "insufficientDebt",
       "msg": "Insufficient debt"
     },
     {
       "code": 6023,
-      "name": "UserPositionNotInitialized",
+      "name": "userPositionNotInitialized",
       "msg": "User position not initialized"
     },
     {
       "code": 6024,
-      "name": "ZeroDebtAmount",
+      "name": "zeroDebtAmount",
       "msg": "Zero debt amount"
     },
     {
       "code": 6025,
-      "name": "NotUndercollateralized",
+      "name": "notUndercollateralized",
       "msg": "Not undercollateralized"
     },
     {
       "code": 6026,
-      "name": "BrokenInvariant",
+      "name": "brokenInvariant",
       "msg": "Broken invariant"
     },
     {
       "code": 6027,
-      "name": "InvariantOverflow",
+      "name": "invariantOverflow",
       "msg": "Math overflow during invariant calculation"
     },
     {
       "code": 6028,
-      "name": "FeeMathOverflow",
+      "name": "feeMathOverflow",
       "msg": "Math overflow during fee calculation."
     },
     {
       "code": 6029,
-      "name": "OutputAmountOverflow",
+      "name": "outputAmountOverflow",
       "msg": "Math overflow during output amount calculation."
     },
     {
       "code": 6030,
-      "name": "ReserveOverflow",
+      "name": "reserveOverflow",
       "msg": "Math overflow during reserve calculation."
     },
     {
       "code": 6031,
-      "name": "DenominatorOverflow",
+      "name": "denominatorOverflow",
       "msg": "Math overflow during denominator calculation."
     },
     {
       "code": 6032,
-      "name": "LiquidityMathOverflow",
+      "name": "liquidityMathOverflow",
       "msg": "Math overflow during liquidity calculation"
     },
     {
       "code": 6033,
-      "name": "LiquiditySqrtOverflow",
+      "name": "liquiditySqrtOverflow",
       "msg": "Math overflow during liquidity square root calculation"
     },
     {
       "code": 6034,
-      "name": "LiquidityUnderflow",
+      "name": "liquidityUnderflow",
       "msg": "Math underflow during liquidity calculation"
     },
     {
       "code": 6035,
-      "name": "LiquidityConversionOverflow",
+      "name": "liquidityConversionOverflow",
       "msg": "Math overflow during liquidity conversion"
     },
     {
       "code": 6036,
-      "name": "SupplyOverflow",
+      "name": "supplyOverflow",
       "msg": "Math overflow during supply calculation"
     },
     {
       "code": 6037,
-      "name": "DebtMathOverflow",
+      "name": "debtMathOverflow",
       "msg": "Math overflow during debt calculation"
     },
     {
       "code": 6038,
-      "name": "DebtShareMathOverflow",
+      "name": "debtShareMathOverflow",
       "msg": "Math overflow during debt share calculation"
     },
     {
       "code": 6039,
-      "name": "DebtShareDivisionOverflow",
+      "name": "debtShareDivisionOverflow",
       "msg": "Math overflow during debt share division"
     },
     {
       "code": 6040,
-      "name": "DebtUtilizationOverflow",
+      "name": "debtUtilizationOverflow",
       "msg": "Math overflow during debt utilization calculation"
     },
     {
       "code": 6041,
-      "name": "InvalidMint",
+      "name": "invalidMint",
       "msg": "Invalid mint"
     },
     {
       "code": 6042,
-      "name": "InvalidMintLen",
+      "name": "invalidMintLen",
       "msg": "Invalid mint length"
     },
     {
       "code": 6043,
-      "name": "InvalidDistribution",
+      "name": "invalidDistribution",
       "msg": "Invalid distribution - percentages must sum to 100%"
     },
     {
       "code": 6044,
-      "name": "InvalidLpMintKey",
+      "name": "invalidLpMintKey",
       "msg": "Invalid LP mint key"
     },
     {
       "code": 6045,
-      "name": "InvalidLpName",
+      "name": "invalidLpName",
       "msg": "Invalid LP name"
     },
     {
       "code": 6046,
-      "name": "InvalidLpSymbol",
+      "name": "invalidLpSymbol",
       "msg": "Invalid LP symbol"
     },
     {
       "code": 6047,
-      "name": "InvalidLpUri",
+      "name": "invalidLpUri",
       "msg": "Invalid LP URI"
     },
     {
       "code": 6048,
-      "name": "AccountNotEmpty",
+      "name": "accountNotEmpty",
       "msg": "Account not empty"
     },
     {
       "code": 6049,
-      "name": "InvalidMintAuthority",
+      "name": "invalidMintAuthority",
       "msg": "Invalid mint authority"
     },
     {
       "code": 6050,
-      "name": "FrozenLpMint",
+      "name": "frozenLpMint",
       "msg": "Frozen LP mint"
     },
     {
       "code": 6051,
-      "name": "NonZeroSupply",
+      "name": "nonZeroSupply",
       "msg": "Non-zero supply"
     },
     {
       "code": 6052,
-      "name": "WrongLpDecimals",
+      "name": "wrongLpDecimals",
       "msg": "Wrong LP decimals"
     },
     {
       "code": 6053,
-      "name": "InvalidVaultIn",
+      "name": "invalidVaultIn",
       "msg": "Invalid vault - token_in_vault must be owned by the pair"
     },
     {
       "code": 6054,
-      "name": "InvalidVaultOut",
+      "name": "invalidVaultOut",
       "msg": "Invalid vault - token_out_vault must be owned by the pair"
     },
     {
       "code": 6055,
-      "name": "InvalidVaultSameAccount",
+      "name": "invalidVaultSameAccount",
       "msg": "Invalid vault - token_in_vault and token_out_vault must be different"
     },
     {
       "code": 6056,
-      "name": "InvalidVault",
+      "name": "invalidVault",
       "msg": "Invalid vault"
     },
     {
       "code": 6057,
-      "name": "InvalidParamsHash",
+      "name": "invalidParamsHash",
       "msg": "Invalid params hash - hash does not match computed parameters"
     },
     {
       "code": 6058,
-      "name": "InvalidVersion",
+      "name": "invalidVersion",
       "msg": "Invalid version"
     },
     {
       "code": 6059,
-      "name": "InvalidTokenOrder",
+      "name": "invalidTokenOrder",
       "msg": "Invalid token order"
     }
   ],
   "types": [
     {
-      "name": "AddLiquidityArgs",
+      "name": "addLiquidityArgs",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "amount0_in",
+            "name": "amount0In",
             "type": "u64"
           },
           {
-            "name": "amount1_in",
+            "name": "amount1In",
             "type": "u64"
           },
           {
-            "name": "min_liquidity_out",
+            "name": "minLiquidityOut",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "AdjustCollateralEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount0",
-            "type": "i64"
-          },
-          {
-            "name": "amount1",
-            "type": "i64"
-          },
-          {
-            "name": "metadata",
-            "type": {
-              "defined": {
-                "name": "EventMetadata"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "AdjustDebtEvent",
+      "name": "adjustCollateralEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3907,7 +3889,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -3915,7 +3897,31 @@
       }
     },
     {
-      "name": "AdjustLiquidityEvent",
+      "name": "adjustDebtEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount0",
+            "type": "i64"
+          },
+          {
+            "name": "amount1",
+            "type": "i64"
+          },
+          {
+            "name": "metadata",
+            "type": {
+              "defined": {
+                "name": "eventMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "adjustLiquidityEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3935,7 +3941,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -3943,7 +3949,7 @@
       }
     },
     {
-      "name": "AdjustPositionArgs",
+      "name": "adjustPositionArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3955,7 +3961,7 @@
       }
     },
     {
-      "name": "BurnEvent",
+      "name": "burnEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3975,7 +3981,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -3983,7 +3989,7 @@
       }
     },
     {
-      "name": "ClaimProtocolFeesArgs",
+      "name": "claimProtocolFeesArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3999,31 +4005,31 @@
       }
     },
     {
-      "name": "DistributeTokensArgs",
+      "name": "distributeTokensArgs",
       "type": {
         "kind": "struct",
         "fields": []
       }
     },
     {
-      "name": "EmitValueArgs",
+      "name": "emitValueArgs",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "debt_amount",
+            "name": "debtAmount",
             "type": {
               "option": "u64"
             }
           },
           {
-            "name": "collateral_amount",
+            "name": "collateralAmount",
             "type": {
               "option": "u64"
             }
           },
           {
-            "name": "collateral_token",
+            "name": "collateralToken",
             "type": {
               "option": "pubkey"
             }
@@ -4032,7 +4038,7 @@
       }
     },
     {
-      "name": "EventMetadata",
+      "name": "eventMetadata",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4052,7 +4058,7 @@
       }
     },
     {
-      "name": "FlashloanArgs",
+      "name": "flashloanArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4072,7 +4078,7 @@
       }
     },
     {
-      "name": "FlashloanEvent",
+      "name": "flashloanEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4100,7 +4106,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4108,7 +4114,7 @@
       }
     },
     {
-      "name": "FutarchyAuthority",
+      "name": "futarchyAuthority",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4124,23 +4130,23 @@
             "name": "recipients",
             "type": {
               "defined": {
-                "name": "RevenueRecipients"
+                "name": "revenueRecipients"
               }
             }
           },
           {
-            "name": "revenue_share",
+            "name": "revenueShare",
             "type": {
               "defined": {
-                "name": "RevenueShare"
+                "name": "revenueShare"
               }
             }
           },
           {
-            "name": "revenue_distribution",
+            "name": "revenueDistribution",
             "type": {
               "defined": {
-                "name": "RevenueDistribution"
+                "name": "revenueDistribution"
               }
             }
           },
@@ -4152,7 +4158,7 @@
       }
     },
     {
-      "name": "InitFutarchyAuthorityArgs",
+      "name": "initFutarchyAuthorityArgs",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4161,61 +4167,61 @@
             "type": "pubkey"
           },
           {
-            "name": "swap_bps",
+            "name": "swapBps",
             "type": "u16"
           },
           {
-            "name": "interest_bps",
+            "name": "interestBps",
             "type": "u16"
           },
           {
-            "name": "futarchy_treasury",
+            "name": "futarchyTreasury",
             "type": "pubkey"
           },
           {
-            "name": "futarchy_treasury_bps",
+            "name": "futarchyTreasuryBps",
             "type": "u16"
           },
           {
-            "name": "buybacks_vault",
+            "name": "buybacksVault",
             "type": "pubkey"
           },
           {
-            "name": "buybacks_vault_bps",
+            "name": "buybacksVaultBps",
             "type": "u16"
           },
           {
-            "name": "team_treasury",
+            "name": "teamTreasury",
             "type": "pubkey"
           },
           {
-            "name": "team_treasury_bps",
+            "name": "teamTreasuryBps",
             "type": "u16"
           }
         ]
       }
     },
     {
-      "name": "InitializeAndBootstrapArgs",
+      "name": "initializeAndBootstrapArgs",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "swap_fee_bps",
+            "name": "swapFeeBps",
             "type": "u16"
           },
           {
-            "name": "half_life",
+            "name": "halfLife",
             "type": "u64"
           },
           {
-            "name": "fixed_cf_bps",
+            "name": "fixedCfBps",
             "type": {
               "option": "u16"
             }
           },
           {
-            "name": "params_hash",
+            "name": "paramsHash",
             "type": {
               "array": [
                 "u8",
@@ -4228,34 +4234,34 @@
             "type": "u8"
           },
           {
-            "name": "amount0_in",
+            "name": "amount0In",
             "type": "u64"
           },
           {
-            "name": "amount1_in",
+            "name": "amount1In",
             "type": "u64"
           },
           {
-            "name": "min_liquidity_out",
+            "name": "minLiquidityOut",
             "type": "u64"
           },
           {
-            "name": "lp_name",
+            "name": "lpName",
             "type": "string"
           },
           {
-            "name": "lp_symbol",
+            "name": "lpSymbol",
             "type": "string"
           },
           {
-            "name": "lp_uri",
+            "name": "lpUri",
             "type": "string"
           }
         ]
       }
     },
     {
-      "name": "MintEvent",
+      "name": "mintEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4275,7 +4281,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4283,7 +4289,7 @@
       }
     },
     {
-      "name": "Pair",
+      "name": "pair",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4296,31 +4302,31 @@
             "type": "pubkey"
           },
           {
-            "name": "lp_mint",
+            "name": "lpMint",
             "type": "pubkey"
           },
           {
-            "name": "token0_decimals",
+            "name": "token0Decimals",
             "type": "u8"
           },
           {
-            "name": "token1_decimals",
+            "name": "token1Decimals",
             "type": "u8"
           },
           {
-            "name": "rate_model",
+            "name": "rateModel",
             "type": "pubkey"
           },
           {
-            "name": "swap_fee_bps",
+            "name": "swapFeeBps",
             "type": "u16"
           },
           {
-            "name": "half_life",
+            "name": "halfLife",
             "type": "u64"
           },
           {
-            "name": "fixed_cf_bps",
+            "name": "fixedCfBps",
             "type": {
               "option": "u16"
             }
@@ -4334,63 +4340,63 @@
             "type": "u64"
           },
           {
-            "name": "protocol_revenue_reserve0",
+            "name": "protocolRevenueReserve0",
             "type": "u64"
           },
           {
-            "name": "protocol_revenue_reserve1",
+            "name": "protocolRevenueReserve1",
             "type": "u64"
           },
           {
-            "name": "last_price0_ema",
+            "name": "lastPrice0Ema",
             "type": "u64"
           },
           {
-            "name": "last_price1_ema",
+            "name": "lastPrice1Ema",
             "type": "u64"
           },
           {
-            "name": "last_update",
+            "name": "lastUpdate",
             "type": "i64"
           },
           {
-            "name": "last_rate0",
+            "name": "lastRate0",
             "type": "u64"
           },
           {
-            "name": "last_rate1",
+            "name": "lastRate1",
             "type": "u64"
           },
           {
-            "name": "total_debt0",
+            "name": "totalDebt0",
             "type": "u64"
           },
           {
-            "name": "total_debt1",
+            "name": "totalDebt1",
             "type": "u64"
           },
           {
-            "name": "total_debt0_shares",
+            "name": "totalDebt0Shares",
             "type": "u64"
           },
           {
-            "name": "total_debt1_shares",
+            "name": "totalDebt1Shares",
             "type": "u64"
           },
           {
-            "name": "total_supply",
+            "name": "totalSupply",
             "type": "u64"
           },
           {
-            "name": "total_collateral0",
+            "name": "totalCollateral0",
             "type": "u64"
           },
           {
-            "name": "total_collateral1",
+            "name": "totalCollateral1",
             "type": "u64"
           },
           {
-            "name": "params_hash",
+            "name": "paramsHash",
             "type": {
               "array": [
                 "u8",
@@ -4410,7 +4416,7 @@
       }
     },
     {
-      "name": "PairCreatedEvent",
+      "name": "pairCreatedEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4423,37 +4429,37 @@
             "type": "pubkey"
           },
           {
-            "name": "lp_mint",
+            "name": "lpMint",
             "type": "pubkey"
           },
           {
-            "name": "token0_decimals",
+            "name": "token0Decimals",
             "type": "u8"
           },
           {
-            "name": "token1_decimals",
+            "name": "token1Decimals",
             "type": "u8"
           },
           {
-            "name": "rate_model",
+            "name": "rateModel",
             "type": "pubkey"
           },
           {
-            "name": "swap_fee_bps",
+            "name": "swapFeeBps",
             "type": "u16"
           },
           {
-            "name": "half_life",
+            "name": "halfLife",
             "type": "u64"
           },
           {
-            "name": "fixed_cf_bps",
+            "name": "fixedCfBps",
             "type": {
               "option": "u16"
             }
           },
           {
-            "name": "params_hash",
+            "name": "paramsHash",
             "type": {
               "array": [
                 "u8",
@@ -4469,7 +4475,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4477,7 +4483,7 @@
       }
     },
     {
-      "name": "PairViewKind",
+      "name": "pairViewKind",
       "docs": [
         "Enum for the different getters that can be emitted",
         "This is used to eliminate off-chain calculations / simulation"
@@ -4486,149 +4492,149 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "EmaPrice0Nad"
+            "name": "emaPrice0Nad"
           },
           {
-            "name": "EmaPrice1Nad"
+            "name": "emaPrice1Nad"
           },
           {
-            "name": "SpotPrice0Nad"
+            "name": "spotPrice0Nad"
           },
           {
-            "name": "SpotPrice1Nad"
+            "name": "spotPrice1Nad"
           },
           {
-            "name": "K"
+            "name": "k"
           },
           {
-            "name": "GetRates"
+            "name": "getRates"
           },
           {
-            "name": "GetBorrowLimitAndCfBpsForCollateral"
+            "name": "getBorrowLimitAndCfBpsForCollateral"
           }
         ]
       }
     },
     {
-      "name": "RateModel",
+      "name": "rateModel",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "exp_rate",
+            "name": "expRate",
             "docs": [
               "exp_rate: NAD/second (k_real = exp_rate / NAD)"
             ],
             "type": "u64"
           },
           {
-            "name": "target_util_start",
+            "name": "targetUtilStart",
             "docs": [
               "utilization band edges (NAD-scaled: 0..NAD)"
             ],
             "type": "u64"
           },
           {
-            "name": "target_util_end",
+            "name": "targetUtilEnd",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "RemoveLiquidityArgs",
+      "name": "removeLiquidityArgs",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "liquidity_in",
+            "name": "liquidityIn",
             "type": "u64"
           },
           {
-            "name": "min_amount0_out",
+            "name": "minAmount0Out",
             "type": "u64"
           },
           {
-            "name": "min_amount1_out",
+            "name": "minAmount1Out",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "RevenueDistribution",
+      "name": "revenueDistribution",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "futarchy_treasury_bps",
+            "name": "futarchyTreasuryBps",
             "type": "u16"
           },
           {
-            "name": "buybacks_vault_bps",
+            "name": "buybacksVaultBps",
             "type": "u16"
           },
           {
-            "name": "team_treasury_bps",
+            "name": "teamTreasuryBps",
             "type": "u16"
           }
         ]
       }
     },
     {
-      "name": "RevenueRecipients",
+      "name": "revenueRecipients",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "futarchy_treasury",
+            "name": "futarchyTreasury",
             "type": "pubkey"
           },
           {
-            "name": "buybacks_vault",
+            "name": "buybacksVault",
             "type": "pubkey"
           },
           {
-            "name": "team_treasury",
+            "name": "teamTreasury",
             "type": "pubkey"
           }
         ]
       }
     },
     {
-      "name": "RevenueShare",
+      "name": "revenueShare",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "swap_bps",
+            "name": "swapBps",
             "type": "u16"
           },
           {
-            "name": "interest_bps",
+            "name": "interestBps",
             "type": "u16"
           }
         ]
       }
     },
     {
-      "name": "SwapArgs",
+      "name": "swapArgs",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "amount_in",
+            "name": "amountIn",
             "type": "u64"
           },
           {
-            "name": "min_amount_out",
+            "name": "minAmountOut",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "SwapEvent",
+      "name": "swapEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4641,26 +4647,26 @@
             "type": "u64"
           },
           {
-            "name": "is_token0_in",
+            "name": "isToken0In",
             "type": "bool"
           },
           {
-            "name": "amount_in",
+            "name": "amountIn",
             "type": "u64"
           },
           {
-            "name": "amount_out",
+            "name": "amountOut",
             "type": "u64"
           },
           {
-            "name": "amount_in_after_fee",
+            "name": "amountInAfterFee",
             "type": "u64"
           },
           {
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4668,16 +4674,16 @@
       }
     },
     {
-      "name": "UpdatePairEvent",
+      "name": "updatePairEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "price0_ema",
+            "name": "price0Ema",
             "type": "u64"
           },
           {
-            "name": "price1_ema",
+            "name": "price1Ema",
             "type": "u64"
           },
           {
@@ -4689,34 +4695,34 @@
             "type": "u64"
           },
           {
-            "name": "accrued_interest0",
+            "name": "accruedInterest0",
             "type": "u128"
           },
           {
-            "name": "accrued_interest1",
+            "name": "accruedInterest1",
             "type": "u128"
           },
           {
-            "name": "protocol_revenue_reserve0",
+            "name": "protocolRevenueReserve0",
             "type": "u64"
           },
           {
-            "name": "protocol_revenue_reserve1",
+            "name": "protocolRevenueReserve1",
             "type": "u64"
           },
           {
-            "name": "reserve0_after_interest",
+            "name": "reserve0AfterInterest",
             "type": "u64"
           },
           {
-            "name": "reserve1_after_interest",
+            "name": "reserve1AfterInterest",
             "type": "u64"
           },
           {
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4724,39 +4730,39 @@
       }
     },
     {
-      "name": "UserLiquidityPositionUpdatedEvent",
+      "name": "userLiquidityPositionUpdatedEvent",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "token0_amount",
+            "name": "token0Amount",
             "type": "u64"
           },
           {
-            "name": "token1_amount",
+            "name": "token1Amount",
             "type": "u64"
           },
           {
-            "name": "lp_amount",
+            "name": "lpAmount",
             "type": "u64"
           },
           {
-            "name": "token0_mint",
+            "name": "token0Mint",
             "type": "pubkey"
           },
           {
-            "name": "token1_mint",
+            "name": "token1Mint",
             "type": "pubkey"
           },
           {
-            "name": "lp_mint",
+            "name": "lpMint",
             "type": "pubkey"
           },
           {
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4764,7 +4770,7 @@
       }
     },
     {
-      "name": "UserPosition",
+      "name": "userPosition",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4777,11 +4783,11 @@
             "type": "pubkey"
           },
           {
-            "name": "collateral0_applied_min_cf_bps",
+            "name": "collateral0AppliedMinCfBps",
             "type": "u16"
           },
           {
-            "name": "collateral1_applied_min_cf_bps",
+            "name": "collateral1AppliedMinCfBps",
             "type": "u16"
           },
           {
@@ -4793,11 +4799,11 @@
             "type": "u64"
           },
           {
-            "name": "debt0_shares",
+            "name": "debt0Shares",
             "type": "u64"
           },
           {
-            "name": "debt1_shares",
+            "name": "debt1Shares",
             "type": "u64"
           },
           {
@@ -4808,7 +4814,7 @@
       }
     },
     {
-      "name": "UserPositionCreatedEvent",
+      "name": "userPositionCreatedEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4820,7 +4826,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4828,7 +4834,7 @@
       }
     },
     {
-      "name": "UserPositionLiquidatedEvent",
+      "name": "userPositionLiquidatedEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4841,23 +4847,23 @@
             "type": "pubkey"
           },
           {
-            "name": "collateral0_liquidated",
+            "name": "collateral0Liquidated",
             "type": "u64"
           },
           {
-            "name": "collateral1_liquidated",
+            "name": "collateral1Liquidated",
             "type": "u64"
           },
           {
-            "name": "debt0_liquidated",
+            "name": "debt0Liquidated",
             "type": "u64"
           },
           {
-            "name": "debt1_liquidated",
+            "name": "debt1Liquidated",
             "type": "u64"
           },
           {
-            "name": "collateral_price",
+            "name": "collateralPrice",
             "type": "u64"
           },
           {
@@ -4865,7 +4871,7 @@
             "type": "u128"
           },
           {
-            "name": "liquidation_bonus_applied",
+            "name": "liquidationBonusApplied",
             "type": "u64"
           },
           {
@@ -4880,7 +4886,7 @@
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4888,7 +4894,7 @@
       }
     },
     {
-      "name": "UserPositionUpdatedEvent",
+      "name": "userPositionUpdatedEvent",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4905,26 +4911,26 @@
             "type": "u64"
           },
           {
-            "name": "debt0_shares",
+            "name": "debt0Shares",
             "type": "u64"
           },
           {
-            "name": "debt1_shares",
+            "name": "debt1Shares",
             "type": "u64"
           },
           {
-            "name": "collateral0_applied_min_cf_bps",
+            "name": "collateral0AppliedMinCfBps",
             "type": "u16"
           },
           {
-            "name": "collateral1_applied_min_cf_bps",
+            "name": "collateral1AppliedMinCfBps",
             "type": "u16"
           },
           {
             "name": "metadata",
             "type": {
               "defined": {
-                "name": "EventMetadata"
+                "name": "eventMetadata"
               }
             }
           }
@@ -4932,27 +4938,27 @@
       }
     },
     {
-      "name": "UserPositionViewKind",
+      "name": "userPositionViewKind",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "UserBorrowingPower"
+            "name": "userBorrowingPower"
           },
           {
-            "name": "UserAppliedCollateralFactorBps"
+            "name": "userAppliedCollateralFactorBps"
           },
           {
-            "name": "UserLiquidationCollateralFactorBps"
+            "name": "userLiquidationCollateralFactorBps"
           },
           {
-            "name": "UserDebtUtilizationBps"
+            "name": "userDebtUtilizationBps"
           },
           {
-            "name": "UserLiquidationPrice"
+            "name": "userLiquidationPrice"
           },
           {
-            "name": "UserDebtWithInterest"
+            "name": "userDebtWithInterest"
           }
         ]
       }
@@ -4960,47 +4966,47 @@
   ],
   "constants": [
     {
-      "name": "BPS_DENOMINATOR",
+      "name": "bpsDenominator",
       "type": "u16",
       "value": "10000"
     },
     {
-      "name": "CLOSE_FACTOR_BPS",
+      "name": "closeFactorBps",
       "type": "u16",
       "value": "5000"
     },
     {
-      "name": "FLASHLOAN_FEE_BPS",
+      "name": "flashloanFeeBps",
       "type": "u16",
       "value": "5"
     },
     {
-      "name": "FUTARCHY_AUTHORITY_SEED_PREFIX",
+      "name": "futarchyAuthoritySeedPrefix",
       "type": "bytes",
       "value": "[102, 117, 116, 97, 114, 99, 104, 121, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121]"
     },
     {
-      "name": "LIQUIDATION_INCENTIVE_BPS",
+      "name": "liquidationIncentiveBps",
       "type": "u16",
       "value": "300"
     },
     {
-      "name": "LTV_BUFFER_BPS",
+      "name": "ltvBufferBps",
       "type": "u16",
       "value": "500"
     },
     {
-      "name": "MAX_COLLATERAL_FACTOR_BPS",
+      "name": "maxCollateralFactorBps",
       "type": "u16",
       "value": "8500"
     },
     {
-      "name": "METADATA_SEED_PREFIX",
+      "name": "metadataSeedPrefix",
       "type": "bytes",
       "value": "[109, 101, 116, 97, 100, 97, 116, 97]"
     },
     {
-      "name": "NAD",
+      "name": "nad",
       "docs": [
         "NAD: Nine-decimal fixed point unit (1e9 scaling), similar to WAD (1e18) by Maker."
       ],
@@ -5008,29 +5014,29 @@
       "value": "1000000000"
     },
     {
-      "name": "NAD_DECIMALS",
+      "name": "nadDecimals",
       "type": "u8",
       "value": "9"
     },
     {
-      "name": "PAIR_CREATION_FEE_LAMPORTS",
+      "name": "pairCreationFeeLamports",
       "type": "u64",
       "value": "200000000"
     },
     {
-      "name": "PAIR_SEED_PREFIX",
+      "name": "pairSeedPrefix",
       "type": "bytes",
       "value": "[103, 97, 109, 109, 95, 112, 97, 105, 114]"
     },
     {
-      "name": "POSITION_SEED_PREFIX",
+      "name": "positionSeedPrefix",
       "type": "bytes",
       "value": "[103, 97, 109, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]"
     },
     {
-      "name": "VERSION",
+      "name": "version",
       "type": "u8",
       "value": "1"
     }
   ]
-}
+};

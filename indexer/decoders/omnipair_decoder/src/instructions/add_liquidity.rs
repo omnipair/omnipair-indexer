@@ -14,6 +14,7 @@ pub struct AddLiquidity{
 pub struct AddLiquidityInstructionAccounts {
     pub pair: solana_pubkey::Pubkey,
     pub rate_model: solana_pubkey::Pubkey,
+    pub futarchy_authority: solana_pubkey::Pubkey,
     pub token0_vault: solana_pubkey::Pubkey,
     pub token1_vault: solana_pubkey::Pubkey,
     pub user_token0_account: solana_pubkey::Pubkey,
@@ -38,6 +39,7 @@ impl carbon_core::deserialize::ArrangeAccounts for AddLiquidity {
         let mut iter = accounts.iter();
         let pair = next_account(&mut iter)?;
         let rate_model = next_account(&mut iter)?;
+        let futarchy_authority = next_account(&mut iter)?;
         let token0_vault = next_account(&mut iter)?;
         let token1_vault = next_account(&mut iter)?;
         let user_token0_account = next_account(&mut iter)?;
@@ -57,6 +59,7 @@ impl carbon_core::deserialize::ArrangeAccounts for AddLiquidity {
         Some(AddLiquidityInstructionAccounts {
             pair,
             rate_model,
+            futarchy_authority,
             token0_vault,
             token1_vault,
             user_token0_account,

@@ -1,24 +1,28 @@
 
+use super::super::types::*;
 
 use carbon_core::{CarbonDeserialize, borsh, account_utils::next_account};
 
 
 #[derive(CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash)]
-#[carbon(discriminator = "0xdfb3e27d302e274a")]
-pub struct Liquidate{
+#[carbon(discriminator = "0x692101032a9ef643")]
+pub struct Flashloan{
+    pub args: FlashloanArgs,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, serde::Serialize, serde::Deserialize)]
-pub struct LiquidateInstructionAccounts {
+pub struct FlashloanInstructionAccounts {
     pub pair: solana_pubkey::Pubkey,
-    pub user_position: solana_pubkey::Pubkey,
     pub rate_model: solana_pubkey::Pubkey,
     pub futarchy_authority: solana_pubkey::Pubkey,
-    pub collateral_vault: solana_pubkey::Pubkey,
-    pub caller_token_account: solana_pubkey::Pubkey,
-    pub collateral_token_mint: solana_pubkey::Pubkey,
-    pub position_owner: solana_pubkey::Pubkey,
-    pub payer: solana_pubkey::Pubkey,
+    pub token0_vault: solana_pubkey::Pubkey,
+    pub token1_vault: solana_pubkey::Pubkey,
+    pub token0_mint: solana_pubkey::Pubkey,
+    pub token1_mint: solana_pubkey::Pubkey,
+    pub receiver_token0_account: solana_pubkey::Pubkey,
+    pub receiver_token1_account: solana_pubkey::Pubkey,
+    pub receiver_program: solana_pubkey::Pubkey,
+    pub user: solana_pubkey::Pubkey,
     pub token_program: solana_pubkey::Pubkey,
     pub token_2022_program: solana_pubkey::Pubkey,
     pub system_program: solana_pubkey::Pubkey,
@@ -26,36 +30,40 @@ pub struct LiquidateInstructionAccounts {
     pub program: solana_pubkey::Pubkey,
 }
 
-impl carbon_core::deserialize::ArrangeAccounts for Liquidate {
-    type ArrangedAccounts = LiquidateInstructionAccounts;
+impl carbon_core::deserialize::ArrangeAccounts for Flashloan {
+    type ArrangedAccounts = FlashloanInstructionAccounts;
 
     fn arrange_accounts(accounts: &[solana_instruction::AccountMeta]) -> Option<Self::ArrangedAccounts> {
         let mut iter = accounts.iter();
         let pair = next_account(&mut iter)?;
-        let user_position = next_account(&mut iter)?;
         let rate_model = next_account(&mut iter)?;
         let futarchy_authority = next_account(&mut iter)?;
-        let collateral_vault = next_account(&mut iter)?;
-        let caller_token_account = next_account(&mut iter)?;
-        let collateral_token_mint = next_account(&mut iter)?;
-        let position_owner = next_account(&mut iter)?;
-        let payer = next_account(&mut iter)?;
+        let token0_vault = next_account(&mut iter)?;
+        let token1_vault = next_account(&mut iter)?;
+        let token0_mint = next_account(&mut iter)?;
+        let token1_mint = next_account(&mut iter)?;
+        let receiver_token0_account = next_account(&mut iter)?;
+        let receiver_token1_account = next_account(&mut iter)?;
+        let receiver_program = next_account(&mut iter)?;
+        let user = next_account(&mut iter)?;
         let token_program = next_account(&mut iter)?;
         let token_2022_program = next_account(&mut iter)?;
         let system_program = next_account(&mut iter)?;
         let event_authority = next_account(&mut iter)?;
         let program = next_account(&mut iter)?;
 
-        Some(LiquidateInstructionAccounts {
+        Some(FlashloanInstructionAccounts {
             pair,
-            user_position,
             rate_model,
             futarchy_authority,
-            collateral_vault,
-            caller_token_account,
-            collateral_token_mint,
-            position_owner,
-            payer,
+            token0_vault,
+            token1_vault,
+            token0_mint,
+            token1_mint,
+            receiver_token0_account,
+            receiver_token1_account,
+            receiver_program,
+            user,
             token_program,
             token_2022_program,
             system_program,

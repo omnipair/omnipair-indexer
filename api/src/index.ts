@@ -3,29 +3,49 @@ import pool from './config/database';
 
 const PORT = process.env.PORT || 3000;
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await pool.end();
-  process.exit(0);
-});
+let server: any;
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await pool.end();
-  process.exit(0);
-});
+// Graceful shutdown function
+const gracefulShutdown = async (signal: string) => {
+  console.log(`${signal} received, shutting down gracefully`);
+  
+  if (server) {
+    server.close(async () => {
+      console.log('HTTP server closed');
+      await pool.end();
+      console.log('Database pool closed');
+      process.exit(0);
+    });
+    
+    // Force close after 10 seconds
+    setTimeout(() => {
+      console.error('Forcing shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+  } else {
+    await pool.end();
+    process.exit(0);
+  }
+};
 
-const server = app.listen(PORT, () => {
+// Graceful shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
 process.on('unhandledRejection', (err: any) => {
   console.error('Unhandled Promise Rejection:', err);
-  server.close(async () => {
-    await pool.end();
-    process.exit(1);
-  });
+  if (server) {
+    server.close(async () => {
+      await pool.end();
+      process.exit(1);
+    });
+  } else {
+    pool.end().then(() => process.exit(1));
+  }
 });
 
 export default server;

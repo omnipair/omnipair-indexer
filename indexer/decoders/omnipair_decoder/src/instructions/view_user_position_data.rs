@@ -15,6 +15,7 @@ pub struct ViewUserPositionDataInstructionAccounts {
     pub pair: solana_pubkey::Pubkey,
     pub user_position: solana_pubkey::Pubkey,
     pub rate_model: solana_pubkey::Pubkey,
+    pub futarchy_authority: solana_pubkey::Pubkey,
 }
 
 impl carbon_core::deserialize::ArrangeAccounts for ViewUserPositionData {
@@ -25,11 +26,13 @@ impl carbon_core::deserialize::ArrangeAccounts for ViewUserPositionData {
         let pair = next_account(&mut iter)?;
         let user_position = next_account(&mut iter)?;
         let rate_model = next_account(&mut iter)?;
+        let futarchy_authority = next_account(&mut iter)?;
 
         Some(ViewUserPositionDataInstructionAccounts {
             pair,
             user_position,
             rate_model,
+            futarchy_authority,
         })
     }
 }

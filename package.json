@@ -10,8 +10,8 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "start": "bun src/index.ts",
-    "dev": "bun --watch src/index.ts"
+    "start": "cd api && npm start",
+    "dev": "cd api && npm run dev"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.31.1",

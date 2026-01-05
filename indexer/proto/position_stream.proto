@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package omnipair.position_stream;
+
+service PositionStreamService {
+  rpc StreamPositionUpdates(StreamRequest) returns (stream PositionUpdate);
+}
+
+message StreamRequest {
+  optional string pair_address = 1;
+  optional string user_address = 2;
+}
+
+message PositionUpdate {
+  string pair = 1;
+  string signer = 2;
+  string position = 3;
+  string collateral0 = 4;
+  string collateral1 = 5;
+  string debt0_shares = 6;
+  string debt1_shares = 7;
+  int32 collateral0_applied_min_cf_bps = 8;
+  int32 collateral1_applied_min_cf_bps = 9;
+  string transaction_signature = 10;
+  string slot = 11;
+  int64 event_timestamp = 12;
+}

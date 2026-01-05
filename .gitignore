@@ -168,3 +168,6 @@ dist
 *.DS_Store
 
 /.vscode
+
+# Claude code
+.claude/

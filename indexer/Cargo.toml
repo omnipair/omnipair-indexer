@@ -6,6 +6,9 @@ edition = { workspace = true }
 [package.metadata.cargo-machete]
 ignored = ["serde", "solana-instruction"]
 
+[lints]
+workspace = true
+
 [dependencies]
 carbon-core = { workspace = true }
 carbon-log-metrics = { workspace = true }

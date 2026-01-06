@@ -18,6 +18,50 @@ edition = "2021"
 license = "MIT"
 repository = "https://github.com/omnipair/omnipair-indexer"
 
+[workspace.lints.rust]
+unsafe_code = "warn"
+missing_docs = "allow"  # Too noisy for moderate strictness
+
+[workspace.lints.clippy]
+# Lint groups - set with lower priority so individual lints can override
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+
+# Correctness lints - deny level (catch actual bugs)
+missing_safety_doc = "deny"
+undocumented_unsafe_blocks = "deny"
+await_holding_lock = "deny"
+await_holding_refcell_ref = "deny"
+
+# Error handling
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+
+# Documentation
+missing_errors_doc = "allow"  # Good practice but too noisy for moderate
+missing_panics_doc = "allow"  # Good practice but too noisy for moderate
+
+# Code quality
+missing_const_for_fn = "allow"  # Nice to have but too pedantic for moderate
+must_use_candidate = "allow"  # Nice to have but too pedantic for moderate
+redundant_closure_for_method_calls = "warn"
+cloned_instead_of_copied = "warn"
+explicit_into_iter_loop = "warn"
+explicit_iter_loop = "warn"
+needless_lifetimes = "warn"
+
+# Reduce noise - allow level
+too_many_arguments = "allow"
+type_complexity = "allow"
+module_name_repetitions = "allow"
+similar_names = "allow"
+
 [workspace.dependencies]
 
 # carbon crates (local)

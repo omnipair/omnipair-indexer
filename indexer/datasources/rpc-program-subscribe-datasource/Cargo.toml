@@ -9,6 +9,9 @@ repository = { workspace = true }
 keywords = ["solana", "indexer", "program", "datasource"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 solana-account = { workspace = true }
 solana-client = { workspace = true }

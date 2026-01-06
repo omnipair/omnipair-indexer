@@ -15,17 +15,17 @@ fmt:
 	cargo +nightly fmt --all --check
 
 clippy:
-	cargo clippy --workspace --all-targets --all-features
+	cargo +nightly clippy --workspace --all-targets --all-features
 
 test:
-	cargo test --workspace --all-features --lib --bins --tests
+	cargo +nightly test --workspace --all-features --lib --bins --tests
 
 build:
 	cargo build --workspace --release
 
 fix:
 	cargo +nightly fmt --all
-	cargo clippy --workspace --all-targets --all-features --fix --allow-dirty --allow-staged
+	cargo +nightly clippy --workspace --all-targets --all-features --fix --allow-dirty --allow-staged
 
 ci: lint test build
 	@echo "✅ All CI checks passed!"

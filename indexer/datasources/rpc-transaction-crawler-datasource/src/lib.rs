@@ -307,7 +307,7 @@ fn signature_fetcher(
                                     }
                                 }
 
-                                for sig_info in signatures.iter() {
+                                for sig_info in &signatures {
                                     let signature = match Signature::from_str(&sig_info.signature) {
                                         Ok(sig) => sig,
                                         Err(e) => {
@@ -408,13 +408,15 @@ fn transaction_fetcher(
                                 Ok(tx) => {
                                     let time_taken = start.elapsed().as_millis();
 
-                                    metrics
+                                    if let Err(e) = metrics
                                         .record_histogram(
                                             "transaction_crawler_transaction_fetch_times_milliseconds",
                                             time_taken as f64,
                                         )
                                         .await
-                                        .expect("Error recording metric");
+                                    {
+                                        log::warn!("Error recording metric: {}", e);
+                                    }
 
                                     return Some((signature, tx));
                                 }
@@ -511,7 +513,7 @@ fn task_processor(
                     };
 
                     if let Some(accounts) = &filters.accounts {
-                        let account_set: HashSet<Pubkey> = accounts.iter().cloned().collect();
+                        let account_set: HashSet<Pubkey> = accounts.iter().copied().collect();
 
                         let static_accounts = decoded_transaction.message.static_account_keys();
 
@@ -526,7 +528,7 @@ fn task_processor(
 
                         let all_accounts: HashSet<Pubkey> = static_accounts
                             .iter()
-                            .cloned()
+                            .copied()
                             .chain(
                                 loaded_addresses
                                     .writable

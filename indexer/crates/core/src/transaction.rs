@@ -29,13 +29,11 @@
 //!   instructions against the provided schema, only processing the data if it
 //!   conforms to the schema.
 
-use crate::filter::Filter;
-use solana_program::hash::Hash;
-
 use {
     crate::{
         collection::InstructionDecoderCollection,
         error::CarbonResult,
+        filter::Filter,
         instruction::{DecodedInstruction, InstructionMetadata, NestedInstruction},
         metrics::MetricsCollection,
         processor::Processor,
@@ -45,6 +43,7 @@ use {
     async_trait::async_trait,
     core::convert::TryFrom,
     serde::de::DeserializeOwned,
+    solana_program::hash::Hash,
     solana_pubkey::Pubkey,
     solana_signature::Signature,
     std::sync::Arc,
@@ -254,7 +253,7 @@ pub fn parse_instructions<T: InstructionDecoderCollection>(
             });
         } else {
             for inner_ix in nested_ix.inner_instructions.iter() {
-                parsed_instructions.extend(parse_instructions(&[inner_ix.clone()]));
+                parsed_instructions.extend(parse_instructions(std::slice::from_ref(inner_ix)));
             }
         }
     }

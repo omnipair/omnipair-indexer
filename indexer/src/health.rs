@@ -1,5 +1,7 @@
-use axum::{routing::get, Router, Json};
-use serde_json::{json, Value};
+use {
+    axum::{routing::get, Json, Router},
+    serde_json::{json, Value},
+};
 
 pub async fn run_health_server(port: u16) {
     let app = Router::new()

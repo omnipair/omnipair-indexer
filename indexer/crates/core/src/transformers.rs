@@ -247,7 +247,7 @@ pub fn extract_account_metas(
     );
     let mut accounts = Vec::<AccountMeta>::with_capacity(compiled_instruction.accounts.len());
 
-    for account_index in compiled_instruction.accounts.iter() {
+    for account_index in &compiled_instruction.accounts {
         accounts.push(AccountMeta {
             pubkey: *message
                 .static_account_keys()
@@ -493,6 +493,7 @@ pub fn transaction_metadata_from_original_meta(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)] // Tests can use expect for clearer test failures
 mod tests {
     use {
         super::*,
@@ -622,7 +623,7 @@ mod tests {
                 "Program MoonCVVNZFSYkqNXP6bxHLPL6QQJiMagDL3qcqUQTrG success",
                 "Program 11111111111111111111111111111111 invoke [1]",
                 "Program 11111111111111111111111111111111 success"
-            ].into_iter().map(|s| s.to_string()).collect()),
+            ].into_iter().map(std::string::ToString::to_string).collect()),
             pre_token_balances: Some(vec![
                 TransactionTokenBalance {
                     account_index:1,
@@ -940,7 +941,7 @@ mod tests {
                 "Program log: commission_direction: true, commission_amount: 80350075000",
                 "Program 6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma consumed 118873 of 187362 compute units",
                 "Program 6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma success"
-            ].into_iter().map(|s| s.to_string()).collect()),
+            ].into_iter().map(std::string::ToString::to_string).collect()),
             pre_token_balances: Some(vec![
                 TransactionTokenBalance {
                     account_index:1,

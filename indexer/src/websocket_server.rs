@@ -1,24 +1,27 @@
 //! WebSocket server that broadcasts SwapEvents to connected clients
 
-use std::{
-    collections::HashMap,
-    net::SocketAddr,
-    sync::{Arc, RwLock},
+use {
+    axum::{
+        extract::{
+            ws::{Message, WebSocket, WebSocketUpgrade},
+            State,
+        },
+        response::Response,
+        routing::get,
+        Router,
+    },
+    carbon_core::error::CarbonResult,
+    carbon_omnipair_decoder::instructions::swap_event::SwapEvent,
+    futures::{sink::SinkExt, stream::StreamExt},
+    serde::{Deserialize, Serialize},
+    std::{
+        collections::HashMap,
+        net::SocketAddr,
+        sync::{Arc, RwLock},
+    },
+    tokio::sync::{broadcast, mpsc},
+    tokio_util::sync::CancellationToken,
 };
-
-use axum::{
-    extract::{ws::{Message, WebSocket, WebSocketUpgrade}, State},
-    response::Response,
-    routing::get,
-    Router,
-};
-use futures::{sink::SinkExt, stream::StreamExt};
-use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, mpsc};
-use tokio_util::sync::CancellationToken;
-
-use carbon_core::error::CarbonResult;
-use carbon_omnipair_decoder::instructions::swap_event::SwapEvent;
 
 /// WebSocket server configuration
 #[derive(Debug, Clone)]
@@ -29,9 +32,7 @@ pub struct WebSocketConfig {
 
 impl Default for WebSocketConfig {
     fn default() -> Self {
-        Self {
-            port: 8081,
-        }
+        Self { port: 8081 }
     }
 }
 
@@ -40,10 +41,7 @@ impl Default for WebSocketConfig {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
     /// Welcome message when client connects
-    Welcome {
-        client_id: String,
-        message: String,
-    },
+    Welcome { client_id: String, message: String },
     /// SwapEvent broadcast with essential data only
     SwapEvent {
         pair: String,
@@ -56,6 +54,7 @@ pub enum ClientMessage {
 #[derive(Debug)]
 struct ClientConnection {
     id: String,
+    #[allow(dead_code)] // Reserved for future per-client messaging
     sender: mpsc::UnboundedSender<ClientMessage>,
 }
 
@@ -68,10 +67,16 @@ pub struct WebSocketServerState {
     event_sender: broadcast::Sender<ClientMessage>,
 }
 
+impl Default for WebSocketServerState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WebSocketServerState {
     pub fn new() -> Self {
         let (event_sender, _) = broadcast::channel(10000);
-        
+
         Self {
             clients: Arc::new(RwLock::new(HashMap::new())),
             event_sender,
@@ -99,21 +104,35 @@ impl WebSocketServerState {
     }
 
     /// Get the number of connected clients
+    #[allow(clippy::unwrap_used)] // Poisoned lock indicates unrecoverable state
     pub fn client_count(&self) -> usize {
         self.clients.read().unwrap().len()
     }
 
     /// Add a new client connection
+    #[allow(clippy::unwrap_used)] // Poisoned lock indicates unrecoverable state
     fn add_client(&self, client: ClientConnection) {
         let client_id = client.id.clone();
-        self.clients.write().unwrap().insert(client_id.clone(), client);
-        log::info!("Client {} connected. Total clients: {}", client_id, self.client_count());
+        self.clients
+            .write()
+            .unwrap()
+            .insert(client_id.clone(), client);
+        log::info!(
+            "Client {} connected. Total clients: {}",
+            client_id,
+            self.client_count()
+        );
     }
 
     /// Remove a client connection
+    #[allow(clippy::unwrap_used)] // Poisoned lock indicates unrecoverable state
     fn remove_client(&self, client_id: &str) {
         self.clients.write().unwrap().remove(client_id);
-        log::info!("Client {} disconnected. Total clients: {}", client_id, self.client_count());
+        log::info!(
+            "Client {} disconnected. Total clients: {}",
+            client_id,
+            self.client_count()
+        );
     }
 }
 
@@ -137,8 +156,9 @@ pub async fn start_websocket_server(
     log::info!("Starting WebSocket server on {}", addr);
 
     // Start the server
-    let listener = tokio::net::TcpListener::bind(addr).await
-        .map_err(|e| carbon_core::error::Error::Custom(format!("Failed to bind WebSocket server: {}", e)))?;
+    let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
+        carbon_core::error::Error::Custom(format!("Failed to bind WebSocket server: {}", e))
+    })?;
 
     // Start server task
     tokio::spawn(async move {

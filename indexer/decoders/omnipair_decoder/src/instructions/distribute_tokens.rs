@@ -1,12 +1,13 @@
+use {
+    super::super::types::*,
+    carbon_core::{account_utils::next_account, borsh, CarbonDeserialize},
+};
 
-use super::super::types::*;
-
-use carbon_core::{CarbonDeserialize, borsh, account_utils::next_account};
-
-
-#[derive(CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash)]
+#[derive(
+    CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
+)]
 #[carbon(discriminator = "0x69458234c41cb078")]
-pub struct DistributeTokens{
+pub struct DistributeTokens {
     pub args: DistributeTokensArgs,
 }
 
@@ -24,7 +25,9 @@ pub struct DistributeTokensInstructionAccounts {
 impl carbon_core::deserialize::ArrangeAccounts for DistributeTokens {
     type ArrangedAccounts = DistributeTokensInstructionAccounts;
 
-    fn arrange_accounts(accounts: &[solana_instruction::AccountMeta]) -> Option<Self::ArrangedAccounts> {
+    fn arrange_accounts(
+        accounts: &[solana_instruction::AccountMeta],
+    ) -> Option<Self::ArrangedAccounts> {
         let mut iter = accounts.iter();
         let futarchy_authority = next_account(&mut iter)?;
         let source_mint = next_account(&mut iter)?;

@@ -1,12 +1,13 @@
+use {
+    super::super::types::*,
+    carbon_core::{account_utils::next_account, borsh, CarbonDeserialize},
+};
 
-use super::super::types::*;
-
-use carbon_core::{CarbonDeserialize, borsh, account_utils::next_account};
-
-
-#[derive(CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash)]
+#[derive(
+    CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
+)]
 #[carbon(discriminator = "0x7f52792aa1b0f9ce")]
-pub struct AddCollateral{
+pub struct AddCollateral {
     pub args: AdjustPositionArgs,
 }
 
@@ -30,7 +31,9 @@ pub struct AddCollateralInstructionAccounts {
 impl carbon_core::deserialize::ArrangeAccounts for AddCollateral {
     type ArrangedAccounts = AddCollateralInstructionAccounts;
 
-    fn arrange_accounts(accounts: &[solana_instruction::AccountMeta]) -> Option<Self::ArrangedAccounts> {
+    fn arrange_accounts(
+        accounts: &[solana_instruction::AccountMeta],
+    ) -> Option<Self::ArrangedAccounts> {
         let mut iter = accounts.iter();
         let pair = next_account(&mut iter)?;
         let rate_model = next_account(&mut iter)?;

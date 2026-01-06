@@ -1,10 +1,11 @@
+use {
+    super::*,
+    carbon_core::{borsh, CarbonDeserialize},
+};
 
-use super::*;
-
-use carbon_core::{CarbonDeserialize, borsh};
-
-
-#[derive(CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash)]
+#[derive(
+    CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
+)]
 pub struct UserLiquidityPositionUpdatedEvent {
     pub token0_amount: u64,
     pub token1_amount: u64,

@@ -71,7 +71,11 @@ impl Datasource for RpcProgramSubscribe {
             let client = match PubsubClient::new(&self.rpc_ws_url).await {
                 Ok(client) => client,
                 Err(err) => {
-                    log::error!("Failed to create RPC subscribe client: {}, rpc is {}", err, self.rpc_ws_url);
+                    log::error!(
+                        "Failed to create RPC subscribe client: {}, rpc is {}",
+                        err,
+                        self.rpc_ws_url
+                    );
                     reconnection_attempts += 1;
                     if reconnection_attempts >= MAX_RECONNECTION_ATTEMPTS {
                         return Err(carbon_core::error::Error::Custom(format!(

@@ -9,6 +9,9 @@ repository = { workspace = true }
 keywords = ["solana", "indexer", "helius", "datasource"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [lib]
 crate-type = ["rlib"]
 

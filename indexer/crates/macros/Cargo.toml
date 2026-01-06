@@ -9,6 +9,9 @@ repository = { workspace = true }
 keywords = ["solana", "indexer", "macros"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 
 [lib]

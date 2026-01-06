@@ -9,6 +9,9 @@ repository = { workspace = true }
 keywords = ["solana", "indexer", "proc-macro"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [lib]
 proc-macro = true
 

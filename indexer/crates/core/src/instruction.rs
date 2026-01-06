@@ -345,8 +345,8 @@ impl UnsafeNestedBuilder {
                 inner_instructions: NestedInstructions::default(),
             };
 
-            // SAFETY:The following operation is safe.
-            // because:
+            #[allow(unsafe_code)] // Documented performance optimization
+            // SAFETY: The following operation is safe because:
             // 1. All pointers come from pre-allocated Vec (no extension)
             // 2. level_ptr does not guarantee any aliasing
             // 3. Lifecycle is limited to the build() method

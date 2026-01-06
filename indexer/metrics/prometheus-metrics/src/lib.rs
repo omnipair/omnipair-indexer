@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use {
     async_trait::async_trait,
     carbon_core::{
@@ -7,7 +6,7 @@ use {
     },
     metrics::{counter, gauge, histogram},
     metrics_exporter_prometheus::PrometheusBuilder,
-    std::{collections::HashMap, sync::Once},
+    std::{collections::HashMap, net::SocketAddr, sync::Once},
     tokio::sync::RwLock,
 };
 
@@ -50,9 +49,13 @@ impl Metrics for PrometheusMetrics {
 
         let mut result = Ok(());
         INIT.call_once(|| {
-            let addr = format!("127.0.0.1:{}", self.listen_port)
-                .parse::<SocketAddr>()
-                .expect("Failed to parse address");
+            let addr = match format!("127.0.0.1:{}", self.listen_port).parse::<SocketAddr>() {
+                Ok(addr) => addr,
+                Err(e) => {
+                    result = Err(Error::Custom(format!("Failed to parse address: {}", e)));
+                    return;
+                }
+            };
 
             let builder = PrometheusBuilder::new().with_http_listener(addr);
 

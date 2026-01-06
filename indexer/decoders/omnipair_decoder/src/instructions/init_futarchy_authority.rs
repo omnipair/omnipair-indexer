@@ -1,12 +1,13 @@
+use {
+    super::super::types::*,
+    carbon_core::{account_utils::next_account, borsh, CarbonDeserialize},
+};
 
-use super::super::types::*;
-
-use carbon_core::{CarbonDeserialize, borsh, account_utils::next_account};
-
-
-#[derive(CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash)]
+#[derive(
+    CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
+)]
 #[carbon(discriminator = "0x856e9a1df0ce4764")]
-pub struct InitFutarchyAuthority{
+pub struct InitFutarchyAuthority {
     pub args: InitFutarchyAuthorityArgs,
 }
 
@@ -20,7 +21,9 @@ pub struct InitFutarchyAuthorityInstructionAccounts {
 impl carbon_core::deserialize::ArrangeAccounts for InitFutarchyAuthority {
     type ArrangedAccounts = InitFutarchyAuthorityInstructionAccounts;
 
-    fn arrange_accounts(accounts: &[solana_instruction::AccountMeta]) -> Option<Self::ArrangedAccounts> {
+    fn arrange_accounts(
+        accounts: &[solana_instruction::AccountMeta],
+    ) -> Option<Self::ArrangedAccounts> {
         let mut iter = accounts.iter();
         let deployer = next_account(&mut iter)?;
         let futarchy_authority = next_account(&mut iter)?;

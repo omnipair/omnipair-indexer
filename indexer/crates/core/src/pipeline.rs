@@ -50,18 +50,17 @@
 //! - Proper metric collection and flushing are essential for monitoring
 //!   pipeline performance, especially in production environments.
 
-use crate::block_details::{BlockDetailsPipe, BlockDetailsPipes};
-use crate::datasource::{BlockDetails, DatasourceId};
-use crate::filter::Filter;
 use {
     crate::{
         account::{
             AccountDecoder, AccountMetadata, AccountPipe, AccountPipes, AccountProcessorInputType,
         },
         account_deletion::{AccountDeletionPipe, AccountDeletionPipes},
+        block_details::{BlockDetailsPipe, BlockDetailsPipes},
         collection::InstructionDecoderCollection,
-        datasource::{AccountDeletion, Datasource, Update},
+        datasource::{AccountDeletion, BlockDetails, Datasource, DatasourceId, Update},
         error::CarbonResult,
+        filter::Filter,
         instruction::{
             InstructionDecoder, InstructionPipe, InstructionPipes, InstructionProcessorInputType,
             InstructionsWithMetadata, NestedInstructions,
@@ -157,8 +156,8 @@ pub const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 1_000;
 ///   account updates.
 /// - `account_deletion_pipes`: A vector of `AccountDeletionPipes` to handle
 ///   deletion events.
-/// - `block_details_pipes`: A vector of `BlockDetailsPipes` to handle
-///   block details.
+/// - `block_details_pipes`: A vector of `BlockDetailsPipes` to handle block
+///   details.
 /// - `instruction_pipes`: A vector of `InstructionPipes` for processing
 ///   instructions within transactions. These pipes work with nested
 ///   instructions and are generically defined to support varied instruction
@@ -527,7 +526,7 @@ impl Pipeline {
                     transaction_signature: account_update.transaction_signature,
                 };
 
-                for pipe in self.account_pipes.iter_mut() {
+                for pipe in &mut self.account_pipes {
                     if pipe.filters().iter().all(|filter| {
                         filter.filter_account(
                             &datasource_id,
@@ -558,7 +557,7 @@ impl Pipeline {
 
                 let nested_instructions: NestedInstructions = instructions_with_metadata.into();
 
-                for pipe in self.instruction_pipes.iter_mut() {
+                for pipe in &mut self.instruction_pipes {
                     for nested_instruction in nested_instructions.iter() {
                         if pipe.filters().iter().all(|filter| {
                             filter.filter_instruction(&datasource_id, nested_instruction)
@@ -568,7 +567,7 @@ impl Pipeline {
                     }
                 }
 
-                for pipe in self.transaction_pipes.iter_mut() {
+                for pipe in &mut self.transaction_pipes {
                     if pipe.filters().iter().all(|filter| {
                         filter.filter_transaction(
                             &datasource_id,
@@ -590,7 +589,7 @@ impl Pipeline {
                     .await?;
             }
             Update::AccountDeletion(account_deletion) => {
-                for pipe in self.account_deletion_pipes.iter_mut() {
+                for pipe in &mut self.account_deletion_pipes {
                     if pipe.filters().iter().all(|filter| {
                         filter.filter_account_deletion(&datasource_id, &account_deletion)
                     }) {
@@ -604,7 +603,7 @@ impl Pipeline {
                     .await?;
             }
             Update::BlockDetails(block_details) => {
-                for pipe in self.block_details_pipes.iter_mut() {
+                for pipe in &mut self.block_details_pipes {
                     if pipe
                         .filters()
                         .iter()
@@ -869,19 +868,20 @@ impl PipelineBuilder {
         self
     }
 
-    /// Adds an account pipe with filters to process account updates selectively.
+    /// Adds an account pipe with filters to process account updates
+    /// selectively.
     ///
-    /// This method creates an account pipe that only processes updates that pass
-    /// all the specified filters. Filters can be used to selectively process
-    /// updates based on criteria such as datasource ID, account properties, or
-    /// other custom logic.
+    /// This method creates an account pipe that only processes updates that
+    /// pass all the specified filters. Filters can be used to selectively
+    /// process updates based on criteria such as datasource ID, account
+    /// properties, or other custom logic.
     ///
     /// # Parameters
     ///
     /// - `decoder`: An `AccountDecoder` that decodes the account data
     /// - `processor`: A `Processor` that processes the decoded account data
-    /// - `filters`: A collection of filters that determine which account updates
-    ///   should be processed
+    /// - `filters`: A collection of filters that determine which account
+    ///   updates should be processed
     ///
     /// # Example
     ///
@@ -952,18 +952,19 @@ impl PipelineBuilder {
         self
     }
 
-    /// Adds an account deletion pipe with filters to handle account deletion events selectively.
+    /// Adds an account deletion pipe with filters to handle account deletion
+    /// events selectively.
     ///
-    /// This method creates an account deletion pipe that only processes deletion
-    /// events that pass all the specified filters. Filters can be used to
-    /// selectively process deletions based on criteria such as datasource ID or
-    /// other custom logic.
+    /// This method creates an account deletion pipe that only processes
+    /// deletion events that pass all the specified filters. Filters can be
+    /// used to selectively process deletions based on criteria such as
+    /// datasource ID or other custom logic.
     ///
     /// # Parameters
     ///
     /// - `processor`: A `Processor` that processes account deletion events
-    /// - `filters`: A collection of filters that determine which account deletion
-    ///   events should be processed
+    /// - `filters`: A collection of filters that determine which account
+    ///   deletion events should be processed
     ///
     /// # Example
     ///
@@ -1031,12 +1032,13 @@ impl PipelineBuilder {
         self
     }
 
-    /// Adds a block details pipe with filters to handle block details updates selectively.
+    /// Adds a block details pipe with filters to handle block details updates
+    /// selectively.
     ///
-    /// This method creates a block details pipe that only processes updates that
-    /// pass all the specified filters. Filters can be used to selectively process
-    /// block details updates based on criteria such as datasource ID, block height,
-    /// or other custom logic.
+    /// This method creates a block details pipe that only processes updates
+    /// that pass all the specified filters. Filters can be used to
+    /// selectively process block details updates based on criteria such as
+    /// datasource ID, block height, or other custom logic.
     ///
     /// # Parameters
     ///
@@ -1114,12 +1116,13 @@ impl PipelineBuilder {
         self
     }
 
-    /// Adds an instruction pipe with filters to process instructions selectively.
+    /// Adds an instruction pipe with filters to process instructions
+    /// selectively.
     ///
     /// This method creates an instruction pipe that only processes instructions
     /// that pass all the specified filters. Filters can be used to selectively
-    /// process instructions based on criteria such as datasource ID, instruction
-    /// type, or other custom logic.
+    /// process instructions based on criteria such as datasource ID,
+    /// instruction type, or other custom logic.
     ///
     /// # Parameters
     ///
@@ -1211,12 +1214,13 @@ impl PipelineBuilder {
         self
     }
 
-    /// Adds a transaction pipe with filters for processing full transaction data selectively.
+    /// Adds a transaction pipe with filters for processing full transaction
+    /// data selectively.
     ///
     /// This method creates a transaction pipe that only processes transactions
     /// that pass all the specified filters. Filters can be used to selectively
-    /// process transactions based on criteria such as datasource ID, transaction
-    /// type, or other custom logic.
+    /// process transactions based on criteria such as datasource ID,
+    /// transaction type, or other custom logic.
     ///
     /// # Parameters
     ///

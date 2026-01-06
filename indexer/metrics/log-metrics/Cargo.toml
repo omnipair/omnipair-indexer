@@ -9,6 +9,9 @@ repository = { workspace = true }
 keywords = ["solana", "log", "metrics"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [dependencies]
 carbon-core = { workspace = true }
 

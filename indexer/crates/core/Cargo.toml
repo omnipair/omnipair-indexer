@@ -9,6 +9,9 @@ repository = { workspace = true }
 keywords = ["solana", "indexer"]
 categories = ["encoding"]
 
+[lints]
+workspace = true
+
 [features]
 default = ["macros"]
 macros = ["carbon-macros", "carbon-proc-macros"]

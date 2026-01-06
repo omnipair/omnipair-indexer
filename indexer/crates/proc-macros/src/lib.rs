@@ -8,6 +8,8 @@
 //! ## Overview
 //!
 //! The macros in this crate are intended to streamline common patterns
+
+#![allow(clippy::expect_used)] // Proc macros often use expect for code generation errors
 //! encountered when working with Carbon, particularly around deserialization,
 //! instruction decoding, and structuring custom types. By leveraging
 //! `carbon-proc-macros`, you can reduce the amount of manual coding and ensure
@@ -420,7 +422,7 @@ struct InstructionMacroInput {
 /// # Example
 ///
 /// ```ignore
-///
+/// 
 /// let program_variant: Ident = parse_quote!(MyProgram);
 /// let decoder_expr: Expr = parse_quote!(MyDecoder);
 /// let instruction_type: TypePath = parse_quote!(MyInstructionType);
@@ -490,7 +492,7 @@ struct InstructionEntry {
 /// # Example
 ///
 /// ```ignore
-///
+/// 
 /// let input = parse_quote! {
 ///     MyInstructionsEnum, MyInstructionTypesEnum, MyProgramsEnum,
 ///     MyProgram => my_decoder => MyInstruction,

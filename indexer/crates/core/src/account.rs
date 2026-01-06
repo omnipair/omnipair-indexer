@@ -71,7 +71,8 @@ use {
 ///
 /// - `slot`: The Solana slot number where the account was updated.
 /// - `pubkey`: The public key of the account.
-/// - `transaction_signature`: Signature of the transaction that caused the update.
+/// - `transaction_signature`: Signature of the transaction that caused the
+///   update.
 #[derive(Debug, Clone)]
 pub struct AccountMetadata {
     pub slot: u64,

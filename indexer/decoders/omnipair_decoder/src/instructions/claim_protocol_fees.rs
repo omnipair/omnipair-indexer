@@ -1,12 +1,13 @@
+use {
+    super::super::types::*,
+    carbon_core::{account_utils::next_account, borsh, CarbonDeserialize},
+};
 
-use super::super::types::*;
-
-use carbon_core::{CarbonDeserialize, borsh, account_utils::next_account};
-
-
-#[derive(CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash)]
+#[derive(
+    CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
+)]
 #[carbon(discriminator = "0x228edb706d368517")]
-pub struct ClaimProtocolFees{
+pub struct ClaimProtocolFees {
     pub args: ClaimProtocolFeesArgs,
 }
 
@@ -30,7 +31,9 @@ pub struct ClaimProtocolFeesInstructionAccounts {
 impl carbon_core::deserialize::ArrangeAccounts for ClaimProtocolFees {
     type ArrangedAccounts = ClaimProtocolFeesInstructionAccounts;
 
-    fn arrange_accounts(accounts: &[solana_instruction::AccountMeta]) -> Option<Self::ArrangedAccounts> {
+    fn arrange_accounts(
+        accounts: &[solana_instruction::AccountMeta],
+    ) -> Option<Self::ArrangedAccounts> {
         let mut iter = accounts.iter();
         let caller = next_account(&mut iter)?;
         let pair = next_account(&mut iter)?;

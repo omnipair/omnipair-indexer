@@ -48,7 +48,7 @@ pub async fn main() -> CarbonResult<()> {
         return Err(e);
     }
 
-    // Create broadcast channel for position updates (capacity: 100 messages)
+    // Create broadcast channel for swap updates (capacity: 100 messages)
     let (broadcast_tx, _broadcast_rx) = tokio::sync::broadcast::channel(100);
 
     // Start DB listener task if gRPC is enabled

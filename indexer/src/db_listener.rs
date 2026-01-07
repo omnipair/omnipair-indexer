@@ -1,31 +1,17 @@
-use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgListener, PgPool};
 use tokio::sync::broadcast;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PositionUpdateNotification {
-    pub pair: String,
-    pub signer: String,
-    pub position: String,
-    pub collateral0: String,
-    pub collateral1: String,
-    pub debt0_shares: String,
-    pub debt1_shares: String,
-    pub collateral0_applied_min_cf_bps: i32,
-    pub collateral1_applied_min_cf_bps: i32,
-    pub transaction_signature: String,
-    pub slot: String,
-    pub event_timestamp: String,
-}
+// Import the proto-generated type from grpc_server module
+use crate::grpc_server::stream::SwapsUpdate;
 
 pub async fn start_db_listener(
     pool: &PgPool,
-    sender: broadcast::Sender<PositionUpdateNotification>,
+    sender: broadcast::Sender<SwapsUpdate>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    log::info!("Starting PostgreSQL LISTEN/NOTIFY listener on channel 'user_position_updates'");
+    log::info!("Starting PostgreSQL LISTEN/NOTIFY listener on channel 'swap_updates'");
 
     let mut listener = PgListener::connect_with(pool).await?;
-    listener.listen("user_position_updates").await?;
+    listener.listen("swap_updates").await?;
 
     log::info!("Successfully connected to PostgreSQL LISTEN channel");
 
@@ -34,14 +20,16 @@ pub async fn start_db_listener(
             Ok(notification) => {
                 log::debug!("Received notification: {}", notification.payload());
 
-                match serde_json::from_str::<PositionUpdateNotification>(notification.payload()) {
+                match serde_json::from_str::<SwapsUpdate>(notification.payload()) {
                     Ok(payload) => {
                         log::info!(
-                            "Parsed position update notification - Position: {}, Pair: {}, User: {}, TxSig: {}",
-                            payload.position,
+                            "Parsed swap notification - Pair: {}, User: {}, Token0In: {}, AmountIn: {}, AmountOut: {}, TxSig: {}",
                             payload.pair,
-                            payload.signer,
-                            payload.transaction_signature
+                            payload.user_address,
+                            payload.is_token0_in,
+                            payload.amount_in,
+                            payload.amount_out,
+                            payload.tx_sig
                         );
 
                         // Broadcast to all subscribed clients
@@ -73,7 +61,7 @@ pub async fn start_db_listener(
                 // Attempt to reconnect
                 match PgListener::connect_with(pool).await {
                     Ok(mut new_listener) => {
-                        match new_listener.listen("user_position_updates").await {
+                        match new_listener.listen("swap_updates").await {
                             Ok(_) => {
                                 log::info!("Successfully reconnected to PostgreSQL LISTEN channel");
                                 listener = new_listener;

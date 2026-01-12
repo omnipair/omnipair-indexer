@@ -6,14 +6,14 @@ FROM rust:1.82-slim as builder
 
 # Install system dependencies for building Rust crates
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    pkg-config \
-    libssl-dev \
-    libpq-dev \
-    perl \
-    perl-modules-5.36 \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+  build-essential \
+  pkg-config \
+  libssl-dev \
+  libpq-dev \
+  perl \
+  perl-modules-5.36 \
+  ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -33,12 +33,12 @@ FROM debian:bookworm-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    curl \
-    libssl3 \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+  ca-certificates \
+  curl \
+  libssl3 \
+  libpq5 \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get clean
 
 # Create a non-root user
 RUN useradd -m -u 1001 indexer
@@ -56,17 +56,19 @@ RUN chown -R indexer:indexer /app
 USER indexer
 
 # Expose health check and websocket ports
-EXPOSE 8080 8081
+EXPOSE 8080 8081 50051
 
 # Set default environment variables
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
 ENV HEALTH_PORT=8080
 ENV WEBSOCKET_PORT=8081
+ENV GRPC_PORT=50051
+ENV NODE_ENV=production
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+  CMD curl -f http://localhost:8080/health || exit 1
 
 # Start the indexer
 ENTRYPOINT ["./omnipair-carbon-indexer"]

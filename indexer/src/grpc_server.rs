@@ -5,11 +5,14 @@ use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 use tonic::{Request, Response, Status};
+use tonic_health::server::health_reporter;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 pub mod stream {
     tonic::include_proto!("omnipair.stream");
 }
+
+pub const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("stream_descriptor");
 
 use stream::{
     stream_service_server::{StreamService, StreamServiceServer},
@@ -122,12 +125,25 @@ pub async fn start_grpc_server(
     let addr = format!("0.0.0.0:{}", port).parse()?;
     let server = SwapStreamServer::new(broadcast_tx);
 
-    log::info!("Starting gRPC server on {}", addr);
-
-    // Configure CORS based on environment
     let is_production = std::env::var("NODE_ENV")
         .map(|env| env.to_lowercase() == "production")
         .unwrap_or(false);
+
+    // Create health reporter for health checks
+    let (mut health_reporter, health_service) = health_reporter();
+
+    // Set the overall server health to serving
+    health_reporter
+        .set_serving::<StreamServiceServer<SwapStreamServer>>()
+        .await;
+
+    log::info!("Starting gRPC server on {}", addr);
+    log::info!("Health check endpoint available at /grpc.health.v1.Health/Check");
+
+    // Enable reflection only in development (for grpcurl and debugging tools)
+    if !is_production {
+        log::info!("gRPC reflection enabled for development/debugging");
+    }
 
     let allowed_origin = if is_production {
         log::info!("Running in production mode with restricted CORS");
@@ -160,17 +176,40 @@ pub async fn start_grpc_server(
 
     log::info!("gRPC server listening on {}", addr);
 
-    tonic::transport::Server::builder()
-        .accept_http1(true)
-        .timeout(Duration::from_secs(30))
-        .concurrency_limit_per_connection(256)
-        .tcp_keepalive(Some(Duration::from_secs(60)))
-        .tcp_nodelay(true)
-        .layer(cors)
-        .layer(GrpcWebLayer::new())
-        .add_service(server.into_service())
-        .serve_with_shutdown(addr, shutdown_signal())
-        .await?;
+    // Add reflection service only in development
+    if !is_production {
+        let reflection_service = tonic_reflection::server::Builder::configure()
+            .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+            .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
+            .build_v1()?;
+
+        tonic::transport::Server::builder()
+            .accept_http1(true)
+            .timeout(Duration::from_secs(30))
+            .concurrency_limit_per_connection(256)
+            .tcp_keepalive(Some(Duration::from_secs(60)))
+            .tcp_nodelay(true)
+            .layer(cors)
+            .layer(GrpcWebLayer::new())
+            .add_service(reflection_service)
+            .add_service(health_service)
+            .add_service(server.into_service())
+            .serve_with_shutdown(addr, shutdown_signal())
+            .await?;
+    } else {
+        tonic::transport::Server::builder()
+            .accept_http1(true)
+            .timeout(Duration::from_secs(30))
+            .concurrency_limit_per_connection(256)
+            .tcp_keepalive(Some(Duration::from_secs(60)))
+            .tcp_nodelay(true)
+            .layer(cors)
+            .layer(GrpcWebLayer::new())
+            .add_service(health_service)
+            .add_service(server.into_service())
+            .serve_with_shutdown(addr, shutdown_signal())
+            .await?;
+    }
 
     log::info!("gRPC server shut down gracefully");
 

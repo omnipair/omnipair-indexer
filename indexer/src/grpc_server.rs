@@ -1,5 +1,6 @@
 use axum::http;
 use std::time::Duration;
+use tokio::signal;
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
@@ -86,6 +87,34 @@ impl StreamService for SwapStreamServer {
     }
 }
 
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("Failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("Failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {
+            log::info!("Received SIGINT (Ctrl+C), initiating graceful shutdown...");
+        },
+        _ = terminate => {
+            log::info!("Received SIGTERM, initiating graceful shutdown...");
+        },
+    }
+}
+
 pub async fn start_grpc_server(
     broadcast_tx: broadcast::Sender<SwapsUpdate>,
     port: u16,
@@ -140,8 +169,10 @@ pub async fn start_grpc_server(
         .layer(cors)
         .layer(GrpcWebLayer::new())
         .add_service(server.into_service())
-        .serve(addr)
+        .serve_with_shutdown(addr, shutdown_signal())
         .await?;
+
+    log::info!("gRPC server shut down gracefully");
 
     Ok(())
 }

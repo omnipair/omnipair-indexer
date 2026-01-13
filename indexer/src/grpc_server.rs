@@ -102,7 +102,8 @@ pub async fn start_grpc_server(
 
     let allowed_origin = if is_production {
         log::info!("Running in production mode with restricted CORS");
-        let allowed_origins = "https://omnipair.fi,https://legacy.omnipair.fi";
+        let allowed_origins = std::env::var("ALLOWED_ORIGINS")
+            .unwrap_or_else(|_| "https://omnipair.fi,https://legacy.omnipair.fi".to_string());
 
         let origins: Vec<_> = allowed_origins
             .split(',')

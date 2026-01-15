@@ -2,7 +2,7 @@
 # Optimized for Railway deployment
 
 # Stage 1: Build stage
-FROM rust:1.82-slim as builder
+FROM rust:1.85-slim as builder
 
 # Install system dependencies for building Rust crates
 RUN apt-get update && apt-get install -y \
@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+RUN rustup toolchain install 1.86.0 --profile minimal && rustup default 1.86.0
+RUN rustc --version && cargo --version && which cargo
+
 # Set working directory
 WORKDIR /app
 
@@ -24,6 +27,9 @@ COPY . ./
 # Set environment variables to use system OpenSSL
 ENV OPENSSL_NO_VENDOR=1
 ENV PKG_CONFIG_ALLOW_CROSS=1
+
+# Print Rust and Cargo versions
+RUN rustc --version && cargo --version
 
 # Build the indexer binary in release mode
 RUN cargo build --release --bin omnipair-carbon-indexer

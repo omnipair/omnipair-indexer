@@ -168,3 +168,9 @@ dist
 *.DS_Store
 
 /.vscode
+
+# Claude code
+.claude/
+
+# gRPC Reflection service files
+/indexer/proto/*.bin

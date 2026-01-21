@@ -1,7 +1,6 @@
 use sqlx::postgres::{PgListener, PgPool};
 use tokio::sync::broadcast;
 
-// Import the proto-generated type from grpc_server module
 use crate::grpc_server::stream::SwapsUpdate;
 
 pub async fn start_db_listener(

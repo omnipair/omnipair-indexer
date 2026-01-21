@@ -1,0 +1,38 @@
+[package]
+name = "omnipair-grpc-server"
+version = "0.2.1"
+edition = { workspace = true }
+
+[dependencies]
+# Logging and environment
+dotenv = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+
+# gRPC dependencies
+tonic = "0.12"
+tonic-web = "0.12"
+tonic-health = "0.12"
+tonic-reflection = "0.12"
+prost = "0.13"
+
+# HTTP/CORS for gRPC-Web
+http = "1.1"
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Database
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres"] }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# CLI
+clap = { version = "4.4", features = ["derive", "env"] }
+
+[build-dependencies]
+tonic-build = "0.12"

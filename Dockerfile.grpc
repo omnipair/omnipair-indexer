@@ -1,4 +1,4 @@
-# Multi-stage build for Omnipair Indexer
+# Multi-stage build for Omnipair gRPC Server
 # Optimized for Railway deployment
 
 # Stage 1: Build stage
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
   libpq-dev \
   perl \
   ca-certificates \
+  protobuf-compiler \
   && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -25,8 +26,8 @@ ENV OPENSSL_NO_VENDOR=1
 ENV PKG_CONFIG_ALLOW_CROSS=1
 ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
-# Build the indexer binary in release mode
-RUN cargo build --release --bin omnipair-carbon-indexer
+# Build the gRPC server binary in release mode
+RUN cargo build --release --bin omnipair-grpc-server
 
 # Stage 2: Runtime stage
 FROM debian:bookworm-slim
@@ -34,7 +35,6 @@ FROM debian:bookworm-slim
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
   ca-certificates \
-  curl \
   libssl3 \
   libpq5 \
   libc6 \
@@ -42,33 +42,28 @@ RUN apt-get update && apt-get install -y \
   && apt-get clean
 
 # Create a non-root user
-RUN useradd -m -u 1001 indexer
+RUN useradd -m -u 1001 grpc
 
 # Set working directory
 WORKDIR /app
 
 # Copy the binary from builder stage
-COPY --from=builder /app/target/release/omnipair-carbon-indexer /app/omnipair-carbon-indexer
+COPY --from=builder /app/target/release/omnipair-grpc-server /app/omnipair-grpc-server
 
-# Change ownership to the indexer user
-RUN chown -R indexer:indexer /app
+# Change ownership to the grpc user
+RUN chown -R grpc:grpc /app
 
 # Switch to non-root user
-USER indexer
+USER grpc
 
-# Expose health check and websocket ports
-EXPOSE 8080 8081
+# Expose gRPC port
+EXPOSE 50051
 
 # Set default environment variables
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
-ENV HEALTH_PORT=8080
-ENV WEBSOCKET_PORT=8081
+ENV GRPC_PORT=50051
 ENV NODE_ENV=production
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
-
-# Start the indexer
-ENTRYPOINT ["./omnipair-carbon-indexer"]
+# Start the gRPC server
+ENTRYPOINT ["./omnipair-grpc-server"]

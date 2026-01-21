@@ -13,7 +13,7 @@ message SwapsUpdate {
   string pair = 2;
   string user_address = 3;
   bool is_token0_in = 4;
-  string amount_in = 5; 
+  string amount_in = 5;
   string amount_out = 6;
   string reserve0 = 7;
   string reserve1 = 8;

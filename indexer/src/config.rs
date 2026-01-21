@@ -31,10 +31,6 @@ pub struct Args {
     /// WebSocket server port (0 disables WebSocket server)
     #[arg(long, default_value_t = 8081)]
     pub websocket_port: u16,
-
-    /// gRPC server port (0 disables gRPC server)
-    #[arg(long, default_value_t = 50051)]
-    pub grpc_port: u16,
 }
 
 #[derive(Debug, Clone)]
@@ -45,7 +41,6 @@ pub struct Config {
     pub rpc_ws_url: Option<String>,
     pub health_port: u16,
     pub websocket_port: u16,
-    pub grpc_port: u16,
 }
 
 impl Config {
@@ -72,7 +67,6 @@ impl Config {
             rpc_ws_url,
             health_port: args.health_port,
             websocket_port: args.websocket_port,
-            grpc_port: args.grpc_port,
         }
     }
 
@@ -108,12 +102,6 @@ impl Config {
             log::info!("  WebSocket server: Port {}", self.websocket_port);
         } else {
             log::info!("  WebSocket server: Disabled");
-        }
-
-        if self.grpc_port != 0 {
-            log::info!("  gRPC server: Port {}", self.grpc_port);
-        } else {
-            log::info!("  gRPC server: Disabled");
         }
     }
 }

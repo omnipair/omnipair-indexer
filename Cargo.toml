@@ -1,13 +1,14 @@
 [workspace]
 members = [
-    "indexer/crates/core", 
-    "indexer/crates/macros", 
-    "indexer/crates/proc-macros", 
-    "indexer/crates/test-utils", 
-    "indexer/metrics/*", 
-    "indexer/datasources/*", 
-    "indexer/decoders/*", 
-    "indexer"
+    "indexer/crates/core",
+    "indexer/crates/macros",
+    "indexer/crates/proc-macros",
+    "indexer/crates/test-utils",
+    "indexer/metrics/*",
+    "indexer/datasources/*",
+    "indexer/decoders/*",
+    "indexer",
+    "grpc"
 ]
 resolver = "2"
 

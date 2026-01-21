@@ -7,7 +7,9 @@ startCommand = "./omnipair-carbon-indexer"
 restartPolicyType = "always"
 numReplicas = 1
 healthcheckPath = "/health"
-healthcheckTimeout = 10
+healthcheckTimeout = 30
+healthcheckPort = 8080
+healthcheckStartPeriod = 60
 
 [env]
 RUST_LOG = "info"

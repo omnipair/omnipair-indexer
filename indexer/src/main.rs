@@ -39,20 +39,21 @@ pub async fn main() -> CarbonResult<()> {
     // Log configuration
     config.log_configuration();
 
-    // Initialize database connection pool
-    log::info!("Initializing database connection pool...");
-    if let Err(e) = database::init_db_pool().await {
-        log::error!("Failed to initialize database pool: {}", e);
-        return Err(e);
-    }
-
-    // Start health check server if enabled
+    // Start health check server FIRST before any other initialization
+    // This ensures Railway health checks pass while services are starting
     if config.health_port != 0 {
         log::info!(
             "Starting health check server on port {}",
             config.health_port
         );
         tokio::spawn(run_health_server(config.health_port));
+    }
+
+    // Initialize database connection pool
+    log::info!("Initializing database connection pool...");
+    if let Err(e) = database::init_db_pool().await {
+        log::error!("Failed to initialize database pool: {}", e);
+        return Err(e);
     }
 
     // Start WebSocket server if enabled and store the state

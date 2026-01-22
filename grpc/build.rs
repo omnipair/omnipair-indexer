@@ -5,6 +5,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build_server(true)
         .build_client(false)
         .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
+        .field_attribute("omnipair.stream.SwapsUpdate.price", "#[serde(default)]")
         .file_descriptor_set_path(out_dir.join("stream_descriptor.bin"))
         .compile_protos(&["proto/stream.proto"], &["proto"])?;
     Ok(())

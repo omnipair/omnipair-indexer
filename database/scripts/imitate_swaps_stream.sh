@@ -18,14 +18,19 @@ echo "Will execute $ITERATIONS times over $DURATION seconds"
 
 # Run the loop for the specified duration
 for i in $(seq 1 $ITERATIONS); do
+  AMOUNT_IN=$((1000000 + i * 10000))
+  AMOUNT_OUT=$((900000 + i * 9000))
+
   # Alternate between token0 and token1 as input
   if [ $((i % 2)) -eq 0 ]; then
     IS_TOKEN0_IN="true"
+    RESERVE0=$((10000000 + AMOUNT_IN))
+    RESERVE1=$((10000000 - AMOUNT_OUT))
   else
     IS_TOKEN0_IN="false"
+    RESERVE0=$((10000000 - AMOUNT_OUT))
+    RESERVE1=$((10000000 + AMOUNT_IN))
   fi
-  AMOUNT_IN=$((1000000 + i * 10000))
-  AMOUNT_OUT=$((900000 + i * 9000))
 
   echo "[$i/$ITERATIONS] Inserting swap (token0_in: $IS_TOKEN0_IN)"
 
@@ -50,8 +55,8 @@ for i in $(seq 1 $ITERATIONS); do
       $IS_TOKEN0_IN,
       $AMOUNT_IN,
       $AMOUNT_OUT,
-      50000000,
-      75000000,
+      $RESERVE0,
+      $RESERVE1,
       NOW(),
       gen_random_uuid()::text,
       123456,

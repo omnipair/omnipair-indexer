@@ -64,3 +64,7 @@ pub mod user_position_updated_event;
 pub use user_position_updated_event::*;
 pub mod user_position_view_kind;
 pub use user_position_view_kind::*;
+pub mod update_futarchy_authority_args;
+pub use update_futarchy_authority_args::*;
+pub mod update_protocol_revenue_args;
+pub use update_protocol_revenue_args::*;

@@ -10,6 +10,8 @@ pub mod claim_protocol_fees;
 pub mod distribute_tokens;
 pub mod flashloan;
 pub mod init_futarchy_authority;
+pub mod update_futarchy_authority;
+pub mod update_protocol_revenue;
 pub mod initialize;
 pub mod liquidate;
 pub mod remove_collateral;
@@ -41,6 +43,8 @@ pub enum OmnipairInstruction {
     DistributeTokens(distribute_tokens::DistributeTokens),
     Flashloan(flashloan::Flashloan),
     InitFutarchyAuthority(init_futarchy_authority::InitFutarchyAuthority),
+    UpdateFutarchyAuthority(update_futarchy_authority::UpdateFutarchyAuthority),
+    UpdateProtocolRevenue(update_protocol_revenue::UpdateProtocolRevenue),
     Initialize(initialize::Initialize),
     Liquidate(liquidate::Liquidate),
     RemoveCollateral(remove_collateral::RemoveCollateral),
@@ -79,6 +83,8 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairDecoder {
             OmnipairInstruction::DistributeTokens => distribute_tokens::DistributeTokens,
             OmnipairInstruction::Flashloan => flashloan::Flashloan,
             OmnipairInstruction::InitFutarchyAuthority => init_futarchy_authority::InitFutarchyAuthority,
+            OmnipairInstruction::UpdateFutarchyAuthority => update_futarchy_authority::UpdateFutarchyAuthority,
+            OmnipairInstruction::UpdateProtocolRevenue => update_protocol_revenue::UpdateProtocolRevenue,
             OmnipairInstruction::Initialize => initialize::Initialize,
             OmnipairInstruction::Liquidate => liquidate::Liquidate,
             OmnipairInstruction::RemoveCollateral => remove_collateral::RemoveCollateral,

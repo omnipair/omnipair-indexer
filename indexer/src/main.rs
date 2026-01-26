@@ -6,8 +6,6 @@ use std::time::Duration;
 mod config;
 mod database;
 mod datasources;
-mod db_listener;
-mod grpc_server;
 mod health;
 mod pipeline;
 mod processors;
@@ -41,49 +39,21 @@ pub async fn main() -> CarbonResult<()> {
     // Log configuration
     config.log_configuration();
 
-    // Initialize database connection pool
-    log::info!("Initializing database connection pool...");
-    if let Err(e) = database::init_db_pool().await {
-        log::error!("Failed to initialize database pool: {}", e);
-        return Err(e);
-    }
-
-    // Create broadcast channel for swap updates (capacity: 100 messages)
-    let (broadcast_tx, _broadcast_rx) = tokio::sync::broadcast::channel(100);
-
-    // Start DB listener task if gRPC is enabled
-    if config.grpc_port != 0 {
-        let listener_tx = broadcast_tx.clone();
-        let pool = database::get_db_pool()?.clone();
-
-        tokio::spawn(async move {
-            log::info!("Starting PostgreSQL LISTEN/NOTIFY listener task");
-            if let Err(e) = db_listener::start_db_listener(&pool, listener_tx).await {
-                log::error!("DB listener task failed: {}", e);
-            }
-        });
-    }
-
-    // Start gRPC server if enabled
-    if config.grpc_port != 0 {
-        let grpc_tx = broadcast_tx.clone();
-        let grpc_port = config.grpc_port;
-
-        tokio::spawn(async move {
-            log::info!("Starting gRPC server task on port {}", grpc_port);
-            if let Err(e) = grpc_server::start_grpc_server(grpc_tx, grpc_port).await {
-                log::error!("gRPC server task failed: {}", e);
-            }
-        });
-    }
-
-    // Start health check server if enabled
+    // Start health check server FIRST before any other initialization
+    // This ensures Railway health checks pass while services are starting
     if config.health_port != 0 {
         log::info!(
             "Starting health check server on port {}",
             config.health_port
         );
         tokio::spawn(run_health_server(config.health_port));
+    }
+
+    // Initialize database connection pool
+    log::info!("Initializing database connection pool...");
+    if let Err(e) = database::init_db_pool().await {
+        log::error!("Failed to initialize database pool: {}", e);
+        return Err(e);
     }
 
     // Start WebSocket server if enabled and store the state

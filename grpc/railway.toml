@@ -1,0 +1,14 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "../Dockerfile.grpc"
+
+[deploy]
+startCommand = "./omnipair-grpc-server"
+restartPolicyType = "always"
+numReplicas = 1
+
+[env]
+RUST_LOG = "info"
+RUST_BACKTRACE = "1"
+GRPC_PORT = "50051"
+NODE_ENV = "production"

@@ -7,23 +7,13 @@ use carbon_core::{
     instruction::{DecodedInstruction, InstructionMetadata, NestedInstructions},
 };
 use carbon_omnipair_decoder::instructions::OmnipairInstruction;
-use crate::{database, websocket_server::WebSocketServerState};
+use crate::database;
 
-pub struct OmnipairInstructionProcessor {
-    websocket_state: Option<WebSocketServerState>,
-}
+pub struct OmnipairInstructionProcessor;
 
 impl OmnipairInstructionProcessor {
     pub fn new() -> Self {
-        Self {
-            websocket_state: None,
-        }
-    }
-
-    pub fn with_websocket_state(websocket_state: WebSocketServerState) -> Self {
-        Self {
-            websocket_state: Some(websocket_state),
-        }
+        Self
     }
 }
 
@@ -108,12 +98,6 @@ impl OmnipairInstructionProcessor {
             return Err(e);
         }
 
-        // Broadcast to WebSocket clients if WebSocket server is running
-        if let Some(ref ws_state) = self.websocket_state {
-            ws_state.broadcast_swap_event(&swap_event, &tx_signature, slot);
-            log::debug!("Broadcasted SwapEvent to {} WebSocket clients", ws_state.client_count());
-        }
-        
         log::info!(
             "Successfully processed SwapEvent - Pair: {}, User: {}, TxSig: {}", 
             swap_event.metadata.pair, 

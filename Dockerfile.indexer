@@ -56,14 +56,13 @@ RUN chown -R indexer:indexer /app
 # Switch to non-root user
 USER indexer
 
-# Expose health check and websocket ports
-EXPOSE 8080 8081
+# Expose health check port
+EXPOSE 8080
 
 # Set default environment variables
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
 ENV HEALTH_PORT=8080
-ENV WEBSOCKET_PORT=8081
 ENV NODE_ENV=production
 
 # Health check

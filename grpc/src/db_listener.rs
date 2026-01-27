@@ -20,14 +20,24 @@ pub async fn start_db_listener(
                 log::debug!("Received notification: {}", notification.payload());
 
                 match serde_json::from_str::<SwapsUpdate>(notification.payload()) {
-                    Ok(payload) => {
+                    Ok(mut payload) => {
+                        // Calculate price as reserve1/reserve0 ratio
+                        let reserve0: f64 = payload.reserve0.parse().unwrap_or(0.0);
+                        let reserve1: f64 = payload.reserve1.parse().unwrap_or(0.0);
+                        payload.price = if reserve0 > 0.0 {
+                            (reserve1 / reserve0) as f32
+                        } else {
+                            0.0
+                        };
+
                         log::info!(
-                            "Parsed swap notification - Pair: {}, User: {}, Token0In: {}, AmountIn: {}, AmountOut: {}, TxSig: {}",
+                            "Parsed swap notification - Pair: {}, User: {}, Token0In: {}, AmountIn: {}, AmountOut: {}, Price: {}, TxSig: {}",
                             payload.pair,
                             payload.user_address,
                             payload.is_token0_in,
                             payload.amount_in,
                             payload.amount_out,
+                            payload.price,
                             payload.tx_sig
                         );
 

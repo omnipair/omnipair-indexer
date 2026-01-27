@@ -10,7 +10,6 @@ pub mod health;
 pub mod pipeline;
 pub mod processors;
 pub mod signals;
-pub mod websocket_server;
 
 // Re-export commonly used types for convenience
 pub use config::{Args, Config};
@@ -19,5 +18,4 @@ pub use processors::OmnipairInstructionProcessor;
 pub use datasources::{create_helius_datasource, GpaBackfillDatasource};
 pub use pipeline::{create_pipeline, run_pipeline};
 pub use health::run_health_server;
-pub use signals::{shutdown_signal, shutdown_signal_token};
-pub use websocket_server::{start_websocket_server, WebSocketConfig, WebSocketServerState};
+pub use signals::shutdown_signal;

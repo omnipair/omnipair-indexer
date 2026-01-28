@@ -1,5 +1,5 @@
 {
-  "address": "Bd9Uhf5S8yzfop8cG9oqRs6jVcLtu8B4cb2gvRmtbNzk",
+  "address": "omniSVEL3cY36TYhunvJC6vBXxbJrqrn7JhDrXUTerb",
   "metadata": {
     "name": "omnipair",
     "version": "0.1.0",
@@ -1473,7 +1473,7 @@
           "name": "deployer",
           "writable": true,
           "signer": true,
-          "address": "C7GKpfqQyBoFR6S13DECwBjdi7aCQKbbeKjXm4Jt5Hds"
+          "address": "8tF4uYMBXqGhCUGRZL3AmPqRzbX8JJ1TpYnY3uJKN4kt"
         },
         {
           "name": "futarchy_authority",

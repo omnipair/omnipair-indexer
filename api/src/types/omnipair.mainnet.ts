@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/omnipair.json`.
  */
 export type Omnipair = {
-  "address": "A5EJxu1ipate2ur7GPgLuK86bv85pyG1G6fPrhP7xKC5",
+  "address": "omniSVEL3cY36TYhunvJC6vBXxbJrqrn7JhDrXUTerb",
   "metadata": {
     "name": "omnipair",
     "version": "0.1.0",
@@ -133,7 +133,40 @@ export type Omnipair = {
         },
         {
           "name": "collateralVault",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
+                  101,
+                  114,
+                  97,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "collateralTokenMint"
+              }
+            ]
+          }
         },
         {
           "name": "userCollateralTokenAccount",
@@ -197,7 +230,7 @@ export type Omnipair = {
           "name": "args",
           "type": {
             "defined": {
-              "name": "adjustPositionArgs"
+              "name": "adjustCollateralArgs"
             }
           }
         }
@@ -288,185 +321,73 @@ export type Omnipair = {
           }
         },
         {
-          "name": "token0Vault",
+          "name": "reserve0Vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
-                "kind": "account",
-                "path": "pair"
-              },
-              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
+                  114,
                   101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
                   95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token0",
                 "account": "pair"
               }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
+            ]
           }
         },
         {
-          "name": "token1Vault",
+          "name": "reserve1Vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
-                "kind": "account",
-                "path": "pair"
-              },
-              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
+                  114,
                   101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
                   95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
                 "account": "pair"
               }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
+            ]
           }
         },
         {
@@ -478,10 +399,10 @@ export type Omnipair = {
           "writable": true
         },
         {
-          "name": "token0VaultMint"
+          "name": "token0Mint"
         },
         {
-          "name": "token1VaultMint"
+          "name": "token1Mint"
         },
         {
           "name": "lpMint",
@@ -761,15 +682,45 @@ export type Omnipair = {
           }
         },
         {
-          "name": "tokenVault",
+          "name": "reserveVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "reserveTokenMint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userReserveTokenAccount",
           "writable": true
         },
         {
-          "name": "userTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenMint"
+          "name": "reserveTokenMint"
         },
         {
           "name": "user",
@@ -826,7 +777,7 @@ export type Omnipair = {
           "name": "args",
           "type": {
             "defined": {
-              "name": "adjustPositionArgs"
+              "name": "adjustDebtArgs"
             }
           }
         }
@@ -891,6 +842,10 @@ export type Omnipair = {
           }
         },
         {
+          "name": "rateModel",
+          "writable": true
+        },
+        {
           "name": "futarchyAuthority",
           "pda": {
             "seeds": [
@@ -921,12 +876,74 @@ export type Omnipair = {
           }
         },
         {
-          "name": "token0Vault",
-          "writable": true
+          "name": "reserve0Vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.token0",
+                "account": "pair"
+              }
+            ]
+          }
         },
         {
-          "name": "token1Vault",
-          "writable": true
+          "name": "reserve1Vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.token1",
+                "account": "pair"
+              }
+            ]
+          }
         },
         {
           "name": "authorityToken0Account",
@@ -1131,16 +1148,7 @@ export type Omnipair = {
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "claimProtocolFeesArgs"
-            }
-          }
-        }
-      ]
+      "args": []
     },
     {
       "name": "distributeTokens",
@@ -1305,12 +1313,74 @@ export type Omnipair = {
           }
         },
         {
-          "name": "token0Vault",
-          "writable": true
+          "name": "reserve0Vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.token0",
+                "account": "pair"
+              }
+            ]
+          }
         },
         {
-          "name": "token1Vault",
-          "writable": true
+          "name": "reserve1Vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "pair.token1",
+                "account": "pair"
+              }
+            ]
+          }
         },
         {
           "name": "token0Mint"
@@ -1659,183 +1729,145 @@ export type Omnipair = {
           "writable": true
         },
         {
-          "name": "token0Vault",
+          "name": "reserve0Vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
-                "kind": "account",
-                "path": "pair"
-              },
-              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
+                  114,
                   101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
                   95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
               },
               {
                 "kind": "account",
                 "path": "token0Mint"
               }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
+            ]
           }
         },
         {
-          "name": "token1Vault",
+          "name": "reserve1Vault",
           "writable": true,
           "pda": {
             "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
               {
                 "kind": "account",
                 "path": "pair"
               },
               {
+                "kind": "account",
+                "path": "token1Mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral0Vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
                   101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
+                  114,
+                  97,
+                  108,
                   95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "token0Mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "collateral1Vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
+                  101,
+                  114,
+                  97,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
               },
               {
                 "kind": "account",
                 "path": "token1Mint"
               }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
+            ]
           }
         },
         {
@@ -2038,7 +2070,40 @@ export type Omnipair = {
         },
         {
           "name": "collateralVault",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
+                  101,
+                  114,
+                  97,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "collateralTokenMint"
+              }
+            ]
+          }
         },
         {
           "name": "callerTokenAccount",
@@ -2046,6 +2111,40 @@ export type Omnipair = {
         },
         {
           "name": "collateralTokenMint"
+        },
+        {
+          "name": "reserveVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "collateralTokenMint"
+              }
+            ]
+          }
         },
         {
           "name": "positionOwner"
@@ -2221,15 +2320,48 @@ export type Omnipair = {
           }
         },
         {
-          "name": "tokenVault",
+          "name": "collateralVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  108,
+                  108,
+                  97,
+                  116,
+                  101,
+                  114,
+                  97,
+                  108,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "collateralTokenMint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userCollateralTokenAccount",
           "writable": true
         },
         {
-          "name": "userTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenMint"
+          "name": "collateralTokenMint"
         },
         {
           "name": "user",
@@ -2286,7 +2418,7 @@ export type Omnipair = {
           "name": "args",
           "type": {
             "defined": {
-              "name": "adjustPositionArgs"
+              "name": "adjustCollateralArgs"
             }
           }
         }
@@ -2377,185 +2509,73 @@ export type Omnipair = {
           }
         },
         {
-          "name": "token0Vault",
+          "name": "reserve0Vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
-                "kind": "account",
-                "path": "pair"
-              },
-              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
+                  114,
                   101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
                   95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token0",
                 "account": "pair"
               }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
+            ]
           }
         },
         {
-          "name": "token1Vault",
+          "name": "reserve1Vault",
           "writable": true,
           "pda": {
             "seeds": [
               {
-                "kind": "account",
-                "path": "pair"
-              },
-              {
                 "kind": "const",
                 "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
+                  114,
                   101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
                   95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
               },
               {
                 "kind": "account",
                 "path": "pair.token1",
                 "account": "pair"
               }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
+            ]
           }
         },
         {
@@ -2567,10 +2587,10 @@ export type Omnipair = {
           "writable": true
         },
         {
-          "name": "token0VaultMint"
+          "name": "token0Mint"
         },
         {
-          "name": "token1VaultMint"
+          "name": "token1Mint"
         },
         {
           "name": "lpMint",
@@ -2850,15 +2870,45 @@ export type Omnipair = {
           }
         },
         {
-          "name": "tokenVault",
+          "name": "reserveVault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "reserveTokenMint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userReserveTokenAccount",
           "writable": true
         },
         {
-          "name": "userTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "vaultTokenMint"
+          "name": "reserveTokenMint"
         },
         {
           "name": "user",
@@ -2915,7 +2965,7 @@ export type Omnipair = {
           "name": "args",
           "type": {
             "defined": {
-              "name": "adjustPositionArgs"
+              "name": "adjustDebtArgs"
             }
           }
         }
@@ -3007,11 +3057,71 @@ export type Omnipair = {
         },
         {
           "name": "tokenInVault",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "tokenInMint"
+              }
+            ]
+          }
         },
         {
           "name": "tokenOutVault",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pair"
+              },
+              {
+                "kind": "account",
+                "path": "tokenOutMint"
+              }
+            ]
+          }
         },
         {
           "name": "userTokenInAccount",
@@ -3183,6 +3293,136 @@ export type Omnipair = {
       ]
     },
     {
+      "name": "updateFutarchyAuthority",
+      "discriminator": [
+        15,
+        196,
+        157,
+        217,
+        113,
+        226,
+        89,
+        25
+      ],
+      "accounts": [
+        {
+          "name": "authoritySigner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "futarchyAuthority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  116,
+                  97,
+                  114,
+                  99,
+                  104,
+                  121,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "updateFutarchyAuthorityArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "updateProtocolRevenue",
+      "discriminator": [
+        176,
+        139,
+        131,
+        197,
+        40,
+        225,
+        125,
+        200
+      ],
+      "accounts": [
+        {
+          "name": "authoritySigner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "futarchyAuthority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  117,
+                  116,
+                  97,
+                  114,
+                  99,
+                  104,
+                  121,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "updateProtocolRevenueArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "viewPairData",
       "docs": [
         "View instructions for client data access (Logs + RPC simulation to parse returned logs for values)",
@@ -3201,8 +3441,7 @@ export type Omnipair = {
       ],
       "accounts": [
         {
-          "name": "pair",
-          "writable": true
+          "name": "pair"
         },
         {
           "name": "rateModel"
@@ -3271,12 +3510,10 @@ export type Omnipair = {
       ],
       "accounts": [
         {
-          "name": "pair",
-          "writable": true
+          "name": "pair"
         },
         {
-          "name": "userPosition",
-          "writable": true
+          "name": "userPosition"
         },
         {
           "name": "rateModel"
@@ -3567,23 +3804,23 @@ export type Omnipair = {
     },
     {
       "code": 6003,
+      "name": "invalidInterestFeeBps",
+      "msg": "Invalid interest fee bps"
+    },
+    {
+      "code": 6004,
       "name": "invalidHalfLife",
       "msg": "Invalid half life"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "invalidFutarchyAuthority",
       "msg": "Invalid futarchy authority"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "invalidArgument",
       "msg": "Invalid argument"
-    },
-    {
-      "code": 6006,
-      "name": "insufficientCollateral",
-      "msg": "Insufficient collateral"
     },
     {
       "code": 6007,
@@ -3637,218 +3874,258 @@ export type Omnipair = {
     },
     {
       "code": 6017,
+      "name": "slippageExceeded",
+      "msg": "Output amount below minimum requested (slippage exceeded)"
+    },
+    {
+      "code": 6018,
       "name": "insufficientLiquidity",
       "msg": "Insufficient liquidity"
     },
     {
-      "code": 6018,
+      "code": 6019,
+      "name": "insufficientCashReserve0",
+      "msg": "Insufficient cash reserve0"
+    },
+    {
+      "code": 6020,
+      "name": "insufficientCashReserve1",
+      "msg": "Insufficient cash reserve1"
+    },
+    {
+      "code": 6021,
       "name": "overflow",
       "msg": "Arithmetic overflow"
     },
     {
-      "code": 6019,
+      "code": 6022,
       "name": "undercollateralized",
       "msg": "undercollateralized"
     },
     {
-      "code": 6020,
+      "code": 6023,
       "name": "insufficientBalanceForCollateral",
       "msg": "Insufficient balance for collateral"
     },
     {
-      "code": 6021,
+      "code": 6024,
       "name": "insufficientAmount",
       "msg": "Insufficient amount"
     },
     {
-      "code": 6022,
+      "code": 6025,
+      "name": "insufficientBalance",
+      "msg": "User balance insufficient to cover requested amount"
+    },
+    {
+      "code": 6026,
       "name": "insufficientDebt",
       "msg": "Insufficient debt"
     },
     {
-      "code": 6023,
+      "code": 6027,
       "name": "userPositionNotInitialized",
       "msg": "User position not initialized"
     },
     {
-      "code": 6024,
+      "code": 6028,
       "name": "zeroDebtAmount",
       "msg": "Zero debt amount"
     },
     {
-      "code": 6025,
+      "code": 6029,
       "name": "notUndercollateralized",
       "msg": "Not undercollateralized"
     },
     {
-      "code": 6026,
+      "code": 6030,
       "name": "brokenInvariant",
       "msg": "Broken invariant"
     },
     {
-      "code": 6027,
+      "code": 6031,
       "name": "invariantOverflow",
       "msg": "Math overflow during invariant calculation"
     },
     {
-      "code": 6028,
+      "code": 6032,
       "name": "feeMathOverflow",
       "msg": "Math overflow during fee calculation."
     },
     {
-      "code": 6029,
+      "code": 6033,
       "name": "outputAmountOverflow",
       "msg": "Math overflow during output amount calculation."
     },
     {
-      "code": 6030,
+      "code": 6034,
       "name": "reserveOverflow",
       "msg": "Math overflow during reserve calculation."
     },
     {
-      "code": 6031,
+      "code": 6035,
+      "name": "reserveUnderflow",
+      "msg": "Math underflow during reserve calculation."
+    },
+    {
+      "code": 6036,
+      "name": "cashReserveUnderflow",
+      "msg": "Math underflow during cash reserve calculation."
+    },
+    {
+      "code": 6037,
       "name": "denominatorOverflow",
       "msg": "Math overflow during denominator calculation."
     },
     {
-      "code": 6032,
+      "code": 6038,
       "name": "liquidityMathOverflow",
       "msg": "Math overflow during liquidity calculation"
     },
     {
-      "code": 6033,
+      "code": 6039,
       "name": "liquiditySqrtOverflow",
       "msg": "Math overflow during liquidity square root calculation"
     },
     {
-      "code": 6034,
+      "code": 6040,
       "name": "liquidityUnderflow",
       "msg": "Math underflow during liquidity calculation"
     },
     {
-      "code": 6035,
+      "code": 6041,
       "name": "liquidityConversionOverflow",
       "msg": "Math overflow during liquidity conversion"
     },
     {
-      "code": 6036,
+      "code": 6042,
       "name": "supplyOverflow",
       "msg": "Math overflow during supply calculation"
     },
     {
-      "code": 6037,
+      "code": 6043,
+      "name": "supplyUnderflow",
+      "msg": "Math underflow during supply calculation"
+    },
+    {
+      "code": 6044,
       "name": "debtMathOverflow",
       "msg": "Math overflow during debt calculation"
     },
     {
-      "code": 6038,
+      "code": 6045,
       "name": "debtShareMathOverflow",
       "msg": "Math overflow during debt share calculation"
     },
     {
-      "code": 6039,
+      "code": 6046,
       "name": "debtShareDivisionOverflow",
       "msg": "Math overflow during debt share division"
     },
     {
-      "code": 6040,
+      "code": 6047,
       "name": "debtUtilizationOverflow",
       "msg": "Math overflow during debt utilization calculation"
     },
     {
-      "code": 6041,
+      "code": 6048,
       "name": "invalidMint",
       "msg": "Invalid mint"
     },
     {
-      "code": 6042,
+      "code": 6049,
       "name": "invalidMintLen",
       "msg": "Invalid mint length"
     },
     {
-      "code": 6043,
+      "code": 6050,
       "name": "invalidDistribution",
       "msg": "Invalid distribution - percentages must sum to 100%"
     },
     {
-      "code": 6044,
+      "code": 6051,
       "name": "invalidLpMintKey",
       "msg": "Invalid LP mint key"
     },
     {
-      "code": 6045,
+      "code": 6052,
       "name": "invalidLpName",
       "msg": "Invalid LP name"
     },
     {
-      "code": 6046,
+      "code": 6053,
       "name": "invalidLpSymbol",
       "msg": "Invalid LP symbol"
     },
     {
-      "code": 6047,
+      "code": 6054,
       "name": "invalidLpUri",
       "msg": "Invalid LP URI"
     },
     {
-      "code": 6048,
+      "code": 6055,
       "name": "accountNotEmpty",
       "msg": "Account not empty"
     },
     {
-      "code": 6049,
+      "code": 6056,
       "name": "invalidMintAuthority",
       "msg": "Invalid mint authority"
     },
     {
-      "code": 6050,
+      "code": 6057,
       "name": "frozenLpMint",
       "msg": "Frozen LP mint"
     },
     {
-      "code": 6051,
+      "code": 6058,
       "name": "nonZeroSupply",
       "msg": "Non-zero supply"
     },
     {
-      "code": 6052,
+      "code": 6059,
       "name": "wrongLpDecimals",
       "msg": "Wrong LP decimals"
     },
     {
-      "code": 6053,
-      "name": "invalidVaultIn",
-      "msg": "Invalid vault - token_in_vault must be owned by the pair"
-    },
-    {
-      "code": 6054,
-      "name": "invalidVaultOut",
-      "msg": "Invalid vault - token_out_vault must be owned by the pair"
-    },
-    {
-      "code": 6055,
+      "code": 6060,
       "name": "invalidVaultSameAccount",
       "msg": "Invalid vault - token_in_vault and token_out_vault must be different"
     },
     {
-      "code": 6056,
+      "code": 6061,
       "name": "invalidVault",
       "msg": "Invalid vault"
     },
     {
-      "code": 6057,
+      "code": 6062,
       "name": "invalidParamsHash",
       "msg": "Invalid params hash - hash does not match computed parameters"
     },
     {
-      "code": 6058,
+      "code": 6063,
       "name": "invalidVersion",
       "msg": "Invalid version"
     },
     {
-      "code": 6059,
+      "code": 6064,
       "name": "invalidTokenOrder",
       "msg": "Invalid token order"
+    },
+    {
+      "code": 6065,
+      "name": "invalidRateModel",
+      "msg": "Invalid rate model - rate_model does not match pair.rate_model"
+    },
+    {
+      "code": 6066,
+      "name": "invalidPair",
+      "msg": "Invalid pair - pair does not match user_position.pair"
+    },
+    {
+      "code": 6067,
+      "name": "invalidUtilBounds",
+      "msg": "Invalid utilization bounds - must satisfy: MIN <= start < end <= MAX"
     }
   ],
   "types": [
@@ -3867,6 +4144,18 @@ export type Omnipair = {
           },
           {
             "name": "minLiquidityOut",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "adjustCollateralArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
             "type": "u64"
           }
         ]
@@ -3892,6 +4181,18 @@ export type Omnipair = {
                 "name": "eventMetadata"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "adjustDebtArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }
@@ -3949,18 +4250,6 @@ export type Omnipair = {
       }
     },
     {
-      "name": "adjustPositionArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "burnEvent",
       "type": {
         "kind": "struct",
@@ -3984,22 +4273,6 @@ export type Omnipair = {
                 "name": "eventMetadata"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "claimProtocolFeesArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount0",
-            "type": "u64"
-          },
-          {
-            "name": "amount1",
-            "type": "u64"
           }
         ]
       }
@@ -4051,8 +4324,8 @@ export type Omnipair = {
             "type": "pubkey"
           },
           {
-            "name": "timestamp",
-            "type": "i64"
+            "name": "slot",
+            "type": "u64"
           }
         ]
       }
@@ -4221,6 +4494,18 @@ export type Omnipair = {
             }
           },
           {
+            "name": "targetUtilStartBps",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "targetUtilEndBps",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
             "name": "paramsHash",
             "type": {
               "array": [
@@ -4256,6 +4541,27 @@ export type Omnipair = {
           {
             "name": "lpUri",
             "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lastPriceEma",
+      "docs": [
+        "Tracks exponential moving averages (EMAs) for the last observed price.",
+        "- `symmetric`: standard two-way EMA (exponential price growth and decay)",
+        "- `directional`: one-way bottom-up asymmetric EMA (exponential price growth, but snaps instantly on price drops)"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "symmetric",
+            "type": "u64"
+          },
+          {
+            "name": "directional",
+            "type": "u64"
           }
         ]
       }
@@ -4306,14 +4612,6 @@ export type Omnipair = {
             "type": "pubkey"
           },
           {
-            "name": "token0Decimals",
-            "type": "u8"
-          },
-          {
-            "name": "token1Decimals",
-            "type": "u8"
-          },
-          {
             "name": "rateModel",
             "type": "pubkey"
           },
@@ -4340,24 +4638,32 @@ export type Omnipair = {
             "type": "u64"
           },
           {
-            "name": "protocolRevenueReserve0",
+            "name": "cashReserve0",
             "type": "u64"
           },
           {
-            "name": "protocolRevenueReserve1",
+            "name": "cashReserve1",
             "type": "u64"
           },
           {
             "name": "lastPrice0Ema",
-            "type": "u64"
+            "type": {
+              "defined": {
+                "name": "lastPriceEma"
+              }
+            }
           },
           {
             "name": "lastPrice1Ema",
-            "type": "u64"
+            "type": {
+              "defined": {
+                "name": "lastPriceEma"
+              }
+            }
           },
           {
             "name": "lastUpdate",
-            "type": "i64"
+            "type": "u64"
           },
           {
             "name": "lastRate0",
@@ -4377,11 +4683,11 @@ export type Omnipair = {
           },
           {
             "name": "totalDebt0Shares",
-            "type": "u64"
+            "type": "u128"
           },
           {
             "name": "totalDebt1Shares",
-            "type": "u64"
+            "type": "u128"
           },
           {
             "name": "totalSupply",
@@ -4394,6 +4700,14 @@ export type Omnipair = {
           {
             "name": "totalCollateral1",
             "type": "u64"
+          },
+          {
+            "name": "token0Decimals",
+            "type": "u8"
+          },
+          {
+            "name": "token1Decimals",
+            "type": "u8"
           },
           {
             "name": "paramsHash",
@@ -4411,6 +4725,14 @@ export type Omnipair = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "vaultBumps",
+            "type": {
+              "defined": {
+                "name": "vaultBumps"
+              }
+            }
           }
         ]
       }
@@ -4523,7 +4845,7 @@ export type Omnipair = {
           {
             "name": "expRate",
             "docs": [
-              "exp_rate: NAD/second (k_real = exp_rate / NAD)"
+              "exp_rate: NAD/millisecond (k_real = exp_rate / NAD)"
             ],
             "type": "u64"
           },
@@ -4674,6 +4996,18 @@ export type Omnipair = {
       }
     },
     {
+      "name": "updateFutarchyAuthorityArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newAuthority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
       "name": "updatePairEvent",
       "type": {
         "kind": "struct",
@@ -4703,11 +5037,11 @@ export type Omnipair = {
             "type": "u128"
           },
           {
-            "name": "protocolRevenueReserve0",
+            "name": "cashReserve0",
             "type": "u64"
           },
           {
-            "name": "protocolRevenueReserve1",
+            "name": "cashReserve1",
             "type": "u64"
           },
           {
@@ -4723,6 +5057,36 @@ export type Omnipair = {
             "type": {
               "defined": {
                 "name": "eventMetadata"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "updateProtocolRevenueArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "swapBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "interestBps",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "revenueDistribution",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "revenueDistribution"
+                }
               }
             }
           }
@@ -4800,11 +5164,11 @@ export type Omnipair = {
           },
           {
             "name": "debt0Shares",
-            "type": "u64"
+            "type": "u128"
           },
           {
             "name": "debt1Shares",
-            "type": "u64"
+            "type": "u128"
           },
           {
             "name": "bump",
@@ -4912,11 +5276,11 @@ export type Omnipair = {
           },
           {
             "name": "debt0Shares",
-            "type": "u64"
+            "type": "u128"
           },
           {
             "name": "debt1Shares",
-            "type": "u64"
+            "type": "u128"
           },
           {
             "name": "collateral0AppliedMinCfBps",
@@ -4959,6 +5323,33 @@ export type Omnipair = {
           },
           {
             "name": "userDebtWithInterest"
+          },
+          {
+            "name": "userIsLiquidatable"
+          }
+        ]
+      }
+    },
+    {
+      "name": "vaultBumps",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "reserve0",
+            "type": "u8"
+          },
+          {
+            "name": "reserve1",
+            "type": "u8"
+          },
+          {
+            "name": "collateral0",
+            "type": "u8"
+          },
+          {
+            "name": "collateral1",
+            "type": "u8"
           }
         ]
       }
@@ -4976,6 +5367,16 @@ export type Omnipair = {
       "value": "5000"
     },
     {
+      "name": "collateralVaultSeedPrefix",
+      "type": "bytes",
+      "value": "[99, 111, 108, 108, 97, 116, 101, 114, 97, 108, 95, 118, 97, 117, 108, 116]"
+    },
+    {
+      "name": "directionalEmaHalfLifeMs",
+      "type": "u64",
+      "value": "3000"
+    },
+    {
       "name": "flashloanFeeBps",
       "type": "u16",
       "value": "5"
@@ -4988,7 +5389,17 @@ export type Omnipair = {
     {
       "name": "liquidationIncentiveBps",
       "type": "u16",
+      "value": "50"
+    },
+    {
+      "name": "liquidationPenaltyBps",
+      "type": "u16",
       "value": "300"
+    },
+    {
+      "name": "liquidityWithdrawalFeeBps",
+      "type": "u16",
+      "value": "100"
     },
     {
       "name": "ltvBufferBps",
@@ -5032,6 +5443,19 @@ export type Omnipair = {
       "name": "positionSeedPrefix",
       "type": "bytes",
       "value": "[103, 97, 109, 109, 95, 112, 111, 115, 105, 116, 105, 111, 110]"
+    },
+    {
+      "name": "reserveVaultSeedPrefix",
+      "type": "bytes",
+      "value": "[114, 101, 115, 101, 114, 118, 101, 95, 118, 97, 117, 108, 116]"
+    },
+    {
+      "name": "targetMsPerSlot",
+      "docs": [
+        "The nominal slot duration in milliseconds."
+      ],
+      "type": "u64",
+      "value": "400"
     },
     {
       "name": "version",

@@ -7,5 +7,5 @@ use carbon_core::{CarbonDeserialize, borsh};
 pub struct EventMetadata {
     pub signer: solana_pubkey::Pubkey,
     pub pair: solana_pubkey::Pubkey,
-    pub timestamp: i64,
+    pub slot: u64,
 }

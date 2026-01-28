@@ -10,14 +10,14 @@ pub mod claim_protocol_fees;
 pub mod distribute_tokens;
 pub mod flashloan;
 pub mod init_futarchy_authority;
-pub mod update_futarchy_authority;
-pub mod update_protocol_revenue;
 pub mod initialize;
 pub mod liquidate;
 pub mod remove_collateral;
 pub mod remove_liquidity;
 pub mod repay;
 pub mod swap;
+pub mod update_futarchy_authority;
+pub mod update_protocol_revenue;
 pub mod view_pair_data;
 pub mod view_user_position_data;
 pub mod adjust_collateral_event;
@@ -43,14 +43,14 @@ pub enum OmnipairInstruction {
     DistributeTokens(distribute_tokens::DistributeTokens),
     Flashloan(flashloan::Flashloan),
     InitFutarchyAuthority(init_futarchy_authority::InitFutarchyAuthority),
-    UpdateFutarchyAuthority(update_futarchy_authority::UpdateFutarchyAuthority),
-    UpdateProtocolRevenue(update_protocol_revenue::UpdateProtocolRevenue),
     Initialize(initialize::Initialize),
     Liquidate(liquidate::Liquidate),
     RemoveCollateral(remove_collateral::RemoveCollateral),
     RemoveLiquidity(remove_liquidity::RemoveLiquidity),
     Repay(repay::Repay),
     Swap(swap::Swap),
+    UpdateFutarchyAuthority(update_futarchy_authority::UpdateFutarchyAuthority),
+    UpdateProtocolRevenue(update_protocol_revenue::UpdateProtocolRevenue),
     ViewPairData(view_pair_data::ViewPairData),
     ViewUserPositionData(view_user_position_data::ViewUserPositionData),
     AdjustCollateralEvent(adjust_collateral_event::AdjustCollateralEvent),
@@ -83,14 +83,14 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairDecoder {
             OmnipairInstruction::DistributeTokens => distribute_tokens::DistributeTokens,
             OmnipairInstruction::Flashloan => flashloan::Flashloan,
             OmnipairInstruction::InitFutarchyAuthority => init_futarchy_authority::InitFutarchyAuthority,
-            OmnipairInstruction::UpdateFutarchyAuthority => update_futarchy_authority::UpdateFutarchyAuthority,
-            OmnipairInstruction::UpdateProtocolRevenue => update_protocol_revenue::UpdateProtocolRevenue,
             OmnipairInstruction::Initialize => initialize::Initialize,
             OmnipairInstruction::Liquidate => liquidate::Liquidate,
             OmnipairInstruction::RemoveCollateral => remove_collateral::RemoveCollateral,
             OmnipairInstruction::RemoveLiquidity => remove_liquidity::RemoveLiquidity,
             OmnipairInstruction::Repay => repay::Repay,
             OmnipairInstruction::Swap => swap::Swap,
+            OmnipairInstruction::UpdateFutarchyAuthority => update_futarchy_authority::UpdateFutarchyAuthority,
+            OmnipairInstruction::UpdateProtocolRevenue => update_protocol_revenue::UpdateProtocolRevenue,
             OmnipairInstruction::ViewPairData => view_pair_data::ViewPairData,
             OmnipairInstruction::ViewUserPositionData => view_user_position_data::ViewUserPositionData,
             OmnipairInstruction::AdjustCollateralEvent => adjust_collateral_event::AdjustCollateralEvent,

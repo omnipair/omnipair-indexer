@@ -1,6 +1,7 @@
 
+use super::*;
+
 use carbon_core::{CarbonDeserialize, borsh};
-use super::revenue_distribution::RevenueDistribution;
 
 
 #[derive(CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash)]

@@ -12,7 +12,6 @@ use carbon_omnipair_decoder::instructions::{
 };
 use sqlx::PgPool;
 use tokio::sync::OnceCell;
-use chrono::{DateTime, Utc};
 
 static DB_POOL: OnceCell<PgPool> = OnceCell::const_new();
 
@@ -93,8 +92,7 @@ pub async fn upsert_swap_event(
     .bind(bigdecimal::BigDecimal::from(swap_event.amount_out))
     .bind(bigdecimal::BigDecimal::from(swap_event.reserve0))
     .bind(bigdecimal::BigDecimal::from(swap_event.reserve1))
-    .bind(DateTime::<Utc>::from_timestamp(swap_event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(chrono::Utc::now())
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
     .bind(bigdecimal::BigDecimal::from(fee_paid0))
@@ -139,8 +137,7 @@ pub async fn upsert_mint_event(
     .bind(bigdecimal::BigDecimal::from(event.amount1))
     .bind(bigdecimal::BigDecimal::from(event.liquidity))
     .bind(tx_signature)
-    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(chrono::Utc::now())
     .bind("add") // MintEvent = "add" liquidity
     .execute(pool)
     .await;
@@ -182,8 +179,7 @@ pub async fn upsert_burn_event(
     .bind(bigdecimal::BigDecimal::from(event.amount1))
     .bind(bigdecimal::BigDecimal::from(event.liquidity))
     .bind(tx_signature)
-    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(chrono::Utc::now())
     .bind("remove") // BurnEvent = "remove" liquidity
     .execute(pool)
     .await;
@@ -224,8 +220,7 @@ pub async fn upsert_adjust_collateral_event(
     .bind(bigdecimal::BigDecimal::from(event.amount1))
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
-    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(chrono::Utc::now())
     .execute(pool)
     .await;
     
@@ -265,8 +260,7 @@ pub async fn upsert_adjust_debt_event(
     .bind(bigdecimal::BigDecimal::from(event.amount1))
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
-    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(chrono::Utc::now())
     .execute(pool)
     .await;
     
@@ -287,8 +281,7 @@ pub async fn upsert_user_position_updated_event(
     let pool = get_db_pool()?;
     
     // Compute event_timestamp once for reuse
-    let event_timestamp = DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?;
+    let event_timestamp = chrono::Utc::now();
     
     let upsert_result = sqlx::query(
         r#"
@@ -316,8 +309,8 @@ pub async fn upsert_user_position_updated_event(
     .bind(event.position.to_string())
     .bind(bigdecimal::BigDecimal::from(event.collateral0))
     .bind(bigdecimal::BigDecimal::from(event.collateral1))
-    .bind(bigdecimal::BigDecimal::from(event.debt0_shares))
-    .bind(bigdecimal::BigDecimal::from(event.debt1_shares))
+    .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt0_shares)))
+    .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt1_shares)))
     .bind(event.collateral0_applied_min_cf_bps as i32)
     .bind(event.collateral1_applied_min_cf_bps as i32)
     .bind(tx_signature)
@@ -358,8 +351,8 @@ pub async fn upsert_user_position_updated_event(
     .bind(event.position.to_string())
     .bind(bigdecimal::BigDecimal::from(event.collateral0))
     .bind(bigdecimal::BigDecimal::from(event.collateral1))
-    .bind(bigdecimal::BigDecimal::from(event.debt0_shares))
-    .bind(bigdecimal::BigDecimal::from(event.debt1_shares))
+    .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt0_shares)))
+    .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt1_shares)))
     .bind(event.collateral0_applied_min_cf_bps as i32)
     .bind(event.collateral1_applied_min_cf_bps as i32)
     .bind(bigdecimal::BigDecimal::from(slot))
@@ -424,8 +417,7 @@ pub async fn upsert_user_position_liquidated_event(
     .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.k1)))
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
-    .bind(DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?)
+    .bind(chrono::Utc::now())
     .execute(pool)
     .await;
     
@@ -492,8 +484,7 @@ pub async fn upsert_user_liquidity_position_updated_event(
     let pool = get_db_pool()?;
     
     // Compute event_timestamp once for reuse
-    let event_timestamp = DateTime::<Utc>::from_timestamp(event.metadata.timestamp, 0)
-        .ok_or_else(|| carbon_core::error::Error::Custom("Invalid timestamp".to_string()))?;
+    let event_timestamp = chrono::Utc::now();
     
     // First, upsert into user_lp_position_updated_events table
     let upsert_event_result = sqlx::query(

@@ -119,8 +119,8 @@ pub async fn upsert_mint_event(
     let upsert_result = sqlx::query(
         r#"
         INSERT INTO adjust_liquidity (
-            pair, user_address, amount0, amount1, liquidity, tx_sig, timestamp, event_type
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::liquidity_event_type)
+            pair, user_address, amount0, amount1, liquidity, tx_sig, timestamp, event_type, slot
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::liquidity_event_type, $9)
         ON CONFLICT (tx_sig, timestamp) DO UPDATE SET
             pair = EXCLUDED.pair,
             user_address = EXCLUDED.user_address,
@@ -128,7 +128,8 @@ pub async fn upsert_mint_event(
             amount1 = EXCLUDED.amount1,
             liquidity = EXCLUDED.liquidity,
             timestamp = EXCLUDED.timestamp,
-            event_type = EXCLUDED.event_type
+            event_type = EXCLUDED.event_type,
+            slot = EXCLUDED.slot
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -139,6 +140,7 @@ pub async fn upsert_mint_event(
     .bind(tx_signature)
     .bind(chrono::Utc::now())
     .bind("add") // MintEvent = "add" liquidity
+    .bind(bigdecimal::BigDecimal::from(event.metadata.slot))
     .execute(pool)
     .await;
     
@@ -161,8 +163,8 @@ pub async fn upsert_burn_event(
     let upsert_result = sqlx::query(
         r#"
         INSERT INTO adjust_liquidity (
-            pair, user_address, amount0, amount1, liquidity, tx_sig, timestamp, event_type
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::liquidity_event_type)
+            pair, user_address, amount0, amount1, liquidity, tx_sig, timestamp, event_type, slot
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::liquidity_event_type, $9)
         ON CONFLICT (tx_sig, timestamp) DO UPDATE SET
             pair = EXCLUDED.pair,
             user_address = EXCLUDED.user_address,
@@ -170,7 +172,8 @@ pub async fn upsert_burn_event(
             amount1 = EXCLUDED.amount1,
             liquidity = EXCLUDED.liquidity,
             timestamp = EXCLUDED.timestamp,
-            event_type = EXCLUDED.event_type
+            event_type = EXCLUDED.event_type,
+            slot = EXCLUDED.slot
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -181,6 +184,7 @@ pub async fn upsert_burn_event(
     .bind(tx_signature)
     .bind(chrono::Utc::now())
     .bind("remove") // BurnEvent = "remove" liquidity
+    .bind(bigdecimal::BigDecimal::from(event.metadata.slot))
     .execute(pool)
     .await;
     
@@ -490,15 +494,16 @@ pub async fn upsert_user_liquidity_position_updated_event(
     let upsert_event_result = sqlx::query(
         r#"
         INSERT INTO user_lp_position_updated_events (
-            pair_address, lp_amount, amount0, amount1, signer, timestamp
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+            pair_address, lp_amount, amount0, amount1, signer, timestamp, slot
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (id, timestamp) DO UPDATE SET
             pair_address = EXCLUDED.pair_address,
             lp_amount = EXCLUDED.lp_amount,
             amount0 = EXCLUDED.amount0,
             amount1 = EXCLUDED.amount1,
             signer = EXCLUDED.signer,
-            timestamp = EXCLUDED.timestamp
+            timestamp = EXCLUDED.timestamp,
+            slot = EXCLUDED.slot
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -507,6 +512,7 @@ pub async fn upsert_user_liquidity_position_updated_event(
     .bind(bigdecimal::BigDecimal::from(event.token1_amount))
     .bind(event.metadata.signer.to_string())
     .bind(event_timestamp)
+    .bind(bigdecimal::BigDecimal::from(event.metadata.slot))
     .execute(pool)
     .await;
     
@@ -526,7 +532,8 @@ pub async fn upsert_user_liquidity_position_updated_event(
             amount1 = $6,
             lp_mint = $7,
             lp_amount = $8,
-            timestamp = $9
+            timestamp = $9,
+            slot = $10
         WHERE pair = $1 AND signer = $2
         "#
     )
@@ -539,6 +546,7 @@ pub async fn upsert_user_liquidity_position_updated_event(
     .bind(event.lp_mint.to_string())
     .bind(bigdecimal::BigDecimal::from(event.lp_amount))
     .bind(event_timestamp)
+    .bind(bigdecimal::BigDecimal::from(event.metadata.slot))
     .execute(pool)
     .await;
     
@@ -548,8 +556,8 @@ pub async fn upsert_user_liquidity_position_updated_event(
             let insert_result = sqlx::query(
                 r#"
                 INSERT INTO user_liquidity_positions (
-                    signer, pair, token0_mint, token1_mint, amount0, amount1, lp_mint, lp_amount, timestamp
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    signer, pair, token0_mint, token1_mint, amount0, amount1, lp_mint, lp_amount, timestamp, slot
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 "#
             )
             .bind(event.metadata.signer.to_string())
@@ -561,6 +569,7 @@ pub async fn upsert_user_liquidity_position_updated_event(
             .bind(event.lp_mint.to_string())
             .bind(bigdecimal::BigDecimal::from(event.lp_amount))
             .bind(event_timestamp)
+            .bind(bigdecimal::BigDecimal::from(event.metadata.slot))
             .execute(pool)
             .await;
             

@@ -87,9 +87,9 @@ CREATE TABLE swaps (
     amount_out NUMERIC,
     reserve0 NUMERIC,
     reserve1 NUMERIC,
-    "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL,
+    "timestamp" TIMESTAMPTZ NOT NULL,
     tx_sig VARCHAR,
-    slot NUMERIC,
+    slot BIGINT,
     fee_paid0 NUMERIC,
     fee_paid1 NUMERIC,
     ema_price NUMERIC,
@@ -106,7 +106,7 @@ CREATE TABLE adjust_liquidity (
     amount1 NUMERIC,
     liquidity NUMERIC,
     tx_sig VARCHAR,
-    "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL,
+    "timestamp" TIMESTAMPTZ NOT NULL,
     event_type liquidity_event_type,
     PRIMARY KEY (id, "timestamp"),
     CONSTRAINT adjust_liquidity_tx_sig_timestamp_key UNIQUE (tx_sig, "timestamp")
@@ -114,7 +114,6 @@ CREATE TABLE adjust_liquidity (
 
 -- User liquidity positions table (time-series)
 CREATE TABLE user_liquidity_positions (
-    id BIGSERIAL,
     signer TEXT NOT NULL,
     pair TEXT NOT NULL,
     token0_mint TEXT NOT NULL,
@@ -123,8 +122,9 @@ CREATE TABLE user_liquidity_positions (
     amount1 NUMERIC NOT NULL,
     lp_mint TEXT NOT NULL,
     lp_amount NUMERIC NOT NULL,
-    "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id, "timestamp")
+    slot BIGINT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (signer, pair)
 );
 
 -- User LP position updated events table (time-series)
@@ -135,7 +135,7 @@ CREATE TABLE user_lp_position_updated_events (
     amount0 NUMERIC NOT NULL,
     amount1 NUMERIC NOT NULL,
     signer TEXT NOT NULL,
-    "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "timestamp" TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (id, "timestamp")
 );
 
@@ -150,9 +150,9 @@ CREATE TABLE user_borrow_positions (
     debt1_shares NUMERIC NOT NULL,
     collateral0_applied_min_cf_bps INTEGER NOT NULL,
     collateral1_applied_min_cf_bps INTEGER NOT NULL,
-    slot NUMERIC NOT NULL,
-    event_timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    slot BIGINT NOT NULL,
+    event_timestamp TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (pair, signer)
 );
 
@@ -170,7 +170,7 @@ CREATE TABLE user_position_updated_events (
     collateral1_applied_min_cf_bps INTEGER NOT NULL,
     transaction_signature VARCHAR(88) NOT NULL UNIQUE,
     slot BIGINT NOT NULL,
-    event_timestamp TIMESTAMP WITH TIME ZONE NOT NULL
+    event_timestamp TIMESTAMPTZ NOT NULL
 );
 
 -- User position liquidated events table
@@ -191,7 +191,7 @@ CREATE TABLE user_position_liquidated_events (
     k1 NUMERIC NOT NULL,
     transaction_signature VARCHAR(88) NOT NULL UNIQUE,
     slot BIGINT NOT NULL,
-    event_timestamp TIMESTAMP WITH TIME ZONE NOT NULL
+    event_timestamp TIMESTAMPTZ NOT NULL
 );
 
 -- Adjust collateral events table
@@ -203,7 +203,7 @@ CREATE TABLE adjust_collateral_events (
     amount1 BIGINT NOT NULL,
     transaction_signature VARCHAR(88) NOT NULL UNIQUE,
     slot BIGINT NOT NULL,
-    event_timestamp TIMESTAMP WITH TIME ZONE NOT NULL
+    event_timestamp TIMESTAMPTZ NOT NULL
 );
 
 -- Adjust debt events table
@@ -215,7 +215,7 @@ CREATE TABLE adjust_debt_events (
     amount1 BIGINT NOT NULL,
     transaction_signature VARCHAR(88) NOT NULL UNIQUE,
     slot BIGINT NOT NULL,
-    event_timestamp TIMESTAMP WITH TIME ZONE NOT NULL
+    event_timestamp TIMESTAMPTZ NOT NULL
 );
 
 -- Leverage position created events table
@@ -224,10 +224,10 @@ CREATE TABLE leverage_position_created_events (
     position_address VARCHAR(44) NOT NULL,
     pair_address VARCHAR(44) NOT NULL,
     user_address VARCHAR(44) NOT NULL,
-    "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL,
+    "timestamp" TIMESTAMPTZ NOT NULL,
     tx_signature VARCHAR(88) NOT NULL,
     slot BIGINT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Leverage position updated events table
@@ -247,10 +247,10 @@ CREATE TABLE leverage_position_updated_events (
     applied_cf_bps SMALLINT NOT NULL,
     liquidation_price_nad BIGINT NOT NULL,
     entry_price_nad BIGINT NOT NULL,
-    "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL,
+    "timestamp" TIMESTAMPTZ NOT NULL,
     tx_signature VARCHAR(88) NOT NULL,
     slot BIGINT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ----------------------------------------------------------------------------
@@ -259,7 +259,6 @@ CREATE TABLE leverage_position_updated_events (
 
 SELECT create_hypertable('swaps', 'timestamp', chunk_time_interval => INTERVAL '7 days', if_not_exists => TRUE);
 SELECT create_hypertable('adjust_liquidity', 'timestamp', chunk_time_interval => INTERVAL '7 days', if_not_exists => TRUE);
-SELECT create_hypertable('user_liquidity_positions', 'timestamp', chunk_time_interval => INTERVAL '7 days', if_not_exists => TRUE);
 SELECT create_hypertable('user_lp_position_updated_events', 'timestamp', chunk_time_interval => INTERVAL '7 days', if_not_exists => TRUE);
 
 -- ----------------------------------------------------------------------------
@@ -268,6 +267,8 @@ SELECT create_hypertable('user_lp_position_updated_events', 'timestamp', chunk_t
 
 -- Swaps indexes
 CREATE INDEX swaps_timestamp_idx ON swaps USING btree ("timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_swaps_pair ON swaps USING btree (pair);
+
 
 -- Adjust liquidity indexes
 CREATE INDEX adjust_liquidity_timestamp_idx ON adjust_liquidity USING btree ("timestamp" DESC);
@@ -277,13 +278,10 @@ CREATE INDEX idx_adjust_liquidity_timestamp ON adjust_liquidity USING btree ("ti
 CREATE INDEX idx_adjust_liquidity_event_type ON adjust_liquidity USING btree (event_type);
 
 -- User liquidity positions indexes
-CREATE INDEX user_liquidity_positions_timestamp_idx ON user_liquidity_positions USING btree ("timestamp" DESC);
-CREATE INDEX idx_user_liquidity_positions_signer ON user_liquidity_positions USING btree (signer);
 CREATE INDEX idx_user_liquidity_positions_pair ON user_liquidity_positions USING btree (pair);
-CREATE INDEX idx_user_liquidity_positions_signer_pair ON user_liquidity_positions USING btree (signer, pair);
-CREATE INDEX idx_user_liquidity_positions_timestamp ON user_liquidity_positions USING btree ("timestamp");
 CREATE INDEX idx_user_liquidity_positions_token0_mint ON user_liquidity_positions USING btree (token0_mint);
 CREATE INDEX idx_user_liquidity_positions_token1_mint ON user_liquidity_positions USING btree (token1_mint);
+CREATE INDEX idx_user_liquidity_positions_updated_at ON user_liquidity_positions USING btree (updated_at DESC);
 
 -- User LP position updated events indexes
 CREATE INDEX user_lp_position_updated_events_timestamp_idx ON user_lp_position_updated_events USING btree ("timestamp" DESC);

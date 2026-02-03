@@ -82,7 +82,6 @@ if [ -n "$DATABASE_URL" ]; then
         echo ""
         echo "Changes:"
         echo "  - Added 'slot' column to adjust_liquidity table"
-        echo "  - Added 'slot' column to user_liquidity_positions table"
         echo "  - Added 'slot' column to user_lp_position_updated_events table"
     else
         echo ""
@@ -97,7 +96,6 @@ else
         echo ""
         echo "Changes:"
         echo "  - Added 'slot' column to adjust_liquidity table"
-        echo "  - Added 'slot' column to user_liquidity_positions table"
         echo "  - Added 'slot' column to user_lp_position_updated_events table"
     else
         echo ""

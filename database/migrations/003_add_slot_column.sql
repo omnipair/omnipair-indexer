@@ -20,13 +20,6 @@ ALTER TABLE adjust_liquidity
 ADD COLUMN slot NUMERIC;
 
 -- ----------------------------------------------------------------------------
--- Add slot column to user_liquidity_positions table
--- ----------------------------------------------------------------------------
-
-ALTER TABLE user_liquidity_positions
-ADD COLUMN slot NUMERIC;
-
--- ----------------------------------------------------------------------------
 -- Add slot column to user_lp_position_updated_events table
 -- ----------------------------------------------------------------------------
 

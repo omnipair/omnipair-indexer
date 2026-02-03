@@ -347,7 +347,7 @@ pub async fn upsert_user_position_updated_event(
             collateral1_applied_min_cf_bps = EXCLUDED.collateral1_applied_min_cf_bps,
             slot = EXCLUDED.slot,
             event_timestamp = EXCLUDED.event_timestamp,
-            updated_at = EXCLUDED.updated_at
+            updated_at = now()
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -490,20 +490,12 @@ pub async fn upsert_user_liquidity_position_updated_event(
     // Compute event_timestamp once for reuse
     let event_timestamp = chrono::Utc::now();
     
-    // First, upsert into user_lp_position_updated_events table
-    let upsert_event_result = sqlx::query(
+    // Insert into user_lp_position_updated_events table (always inserts)
+    let insert_event_result = sqlx::query(
         r#"
         INSERT INTO user_lp_position_updated_events (
             pair_address, lp_amount, amount0, amount1, signer, timestamp, slot
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (id, timestamp) DO UPDATE SET
-            pair_address = EXCLUDED.pair_address,
-            lp_amount = EXCLUDED.lp_amount,
-            amount0 = EXCLUDED.amount0,
-            amount1 = EXCLUDED.amount1,
-            signer = EXCLUDED.signer,
-            timestamp = EXCLUDED.timestamp,
-            slot = EXCLUDED.slot
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -516,25 +508,27 @@ pub async fn upsert_user_liquidity_position_updated_event(
     .execute(pool)
     .await;
     
-    if let Err(e) = upsert_event_result {
-        log::error!("Failed to upsert into user_lp_position_updated_events table: {}", e);
-        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user liquidity position updated event: {}", e)));
+    if let Err(e) = insert_event_result {
+        log::error!("Failed to insert into user_lp_position_updated_events table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to insert user liquidity position updated event: {}", e)));
     }
     
-    // Also upsert into user_liquidity_positions table (latest position per pair per signer)
-    // Since there's no unique constraint on (pair, signer), we use UPDATE then INSERT pattern
-    let update_result = sqlx::query(
+    // Upsert into user_liquidity_positions table (latest position per pair per signer)
+    // Uses ON CONFLICT with unique constraint on (pair, signer)
+    let upsert_result = sqlx::query(
         r#"
-        UPDATE user_liquidity_positions
-        SET token0_mint = $3,
-            token1_mint = $4,
-            amount0 = $5,
-            amount1 = $6,
-            lp_mint = $7,
-            lp_amount = $8,
-            timestamp = $9,
-            slot = $10
-        WHERE pair = $1 AND signer = $2
+        INSERT INTO user_liquidity_positions (
+            pair, signer, token0_mint, token1_mint, amount0, amount1, lp_mint, lp_amount, slot
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (pair, signer) DO UPDATE SET
+            token0_mint = EXCLUDED.token0_mint,
+            token1_mint = EXCLUDED.token1_mint,
+            amount0 = EXCLUDED.amount0,
+            amount1 = EXCLUDED.amount1,
+            lp_mint = EXCLUDED.lp_mint,
+            lp_amount = EXCLUDED.lp_amount,
+            updated_at = now(),
+            slot = EXCLUDED.slot
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -545,44 +539,13 @@ pub async fn upsert_user_liquidity_position_updated_event(
     .bind(bigdecimal::BigDecimal::from(event.token1_amount))
     .bind(event.lp_mint.to_string())
     .bind(bigdecimal::BigDecimal::from(event.lp_amount))
-    .bind(event_timestamp)
     .bind(bigdecimal::BigDecimal::from(event.metadata.slot))
     .execute(pool)
     .await;
     
-    // If no rows were updated, insert a new record
-    if let Ok(update_result) = update_result {
-        if update_result.rows_affected() == 0 {
-            let insert_result = sqlx::query(
-                r#"
-                INSERT INTO user_liquidity_positions (
-                    signer, pair, token0_mint, token1_mint, amount0, amount1, lp_mint, lp_amount, timestamp, slot
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                "#
-            )
-            .bind(event.metadata.signer.to_string())
-            .bind(event.metadata.pair.to_string())
-            .bind(event.token0_mint.to_string())
-            .bind(event.token1_mint.to_string())
-            .bind(bigdecimal::BigDecimal::from(event.token0_amount))
-            .bind(bigdecimal::BigDecimal::from(event.token1_amount))
-            .bind(event.lp_mint.to_string())
-            .bind(bigdecimal::BigDecimal::from(event.lp_amount))
-            .bind(event_timestamp)
-            .bind(bigdecimal::BigDecimal::from(event.metadata.slot))
-            .execute(pool)
-            .await;
-            
-            if let Err(e) = insert_result {
-                log::error!("Failed to insert into user_liquidity_positions table: {}", e);
-                return Err(carbon_core::error::Error::Custom(format!("Failed to insert user liquidity position: {}", e)));
-            }
-        }
-    } else {
-        // If update failed, return the error
-        let update_err = update_result.unwrap_err();
-        log::error!("Failed to update user_liquidity_positions table: {}", update_err);
-        return Err(carbon_core::error::Error::Custom(format!("Failed to update user liquidity position: {}", update_err)));
+    if let Err(e) = upsert_result {
+        log::error!("Failed to upsert into user_liquidity_positions table: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!("Failed to upsert user liquidity position: {}", e)));
     }
     
     Ok(())

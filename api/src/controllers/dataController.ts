@@ -1413,10 +1413,10 @@ export class DataController {
             amount1,
             lp_mint,
             lp_amount,
-            timestamp
+            updated_at
           FROM user_liquidity_positions
           WHERE signer = $1
-          ORDER BY timestamp DESC
+          ORDER BY updated_at DESC
           LIMIT $2 OFFSET $3
         `;
         queryParams = [userAddress, limit, offset];
@@ -1433,9 +1433,9 @@ export class DataController {
             amount1,
             lp_mint,
             lp_amount,
-            timestamp
+            updated_at
           FROM user_liquidity_positions
-          ORDER BY timestamp DESC
+          ORDER BY updated_at DESC
           LIMIT $1 OFFSET $2
         `;
         queryParams = [limit, offset];
@@ -1461,7 +1461,7 @@ export class DataController {
             amount1: row.amount1,
             lpMint: row.lp_mint,
             lpAmount: row.lp_amount,
-            timestamp: row.timestamp,
+            timestamp: row.updated_at, // From timestamp to updated_at, kept the index name for backwards compatibility
             token0Address: row.token0_mint, // Use token0_mint as token0Address
             token1Address: row.token1_mint, // Use token1_mint as token1Address
           };

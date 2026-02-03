@@ -744,16 +744,20 @@ export class DataController {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 100, 1000);
       const offset = parseInt(req.query.offset as string) || 0;
+      const visibility = req.query.visibility as string | undefined;
 
-      // Get total count of visible pools
-      const countResult = await pool.query('SELECT COUNT(*) FROM pools WHERE visible = TRUE');
+      // If visibility=all, return all pools; otherwise filter by visible = TRUE
+      const visibilityFilter = visibility === 'all' ? '' : 'WHERE visible = TRUE';
+
+      // Get total count of pools
+      const countResult = await pool.query(`SELECT COUNT(*) FROM pools ${visibilityFilter}`);
       const totalCount = parseInt(countResult.rows[0].count);
 
-      // Get visible pools with pagination
+      // Get pools with pagination
       const result = await pool.query(`
         SELECT id, pair_address, token0, token1 
         FROM pools 
-        WHERE visible = TRUE
+        ${visibilityFilter}
         ORDER BY id ASC 
         LIMIT $1 OFFSET $2
       `, [limit, offset]);

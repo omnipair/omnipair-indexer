@@ -1145,18 +1145,6 @@ export class DataController {
         return;
       }
 
-      const cacheKey = `all_positions_${userAddress || 'all'}_${limit}_${offset}`;
-      const cachedData = cache.get(cacheKey);
-      
-      if (cachedData) {
-        const response: ApiResponse = {
-          success: true,
-          data: cachedData
-        };
-        res.json(response);
-        return;
-      }
-
       let countQuery: string;
       let dataQuery: string;
       let countParams: any[];
@@ -1348,9 +1336,6 @@ export class DataController {
         }
       };
 
-      // Cache for 15 seconds
-      cache.set(cacheKey, responseData, 15 * 1000);
-
       const response: ApiResponse = {
         success: true,
         data: responseData
@@ -1380,18 +1365,6 @@ export class DataController {
           error: 'Invalid user address format'
         };
         res.status(400).json(response);
-        return;
-      }
-
-      const cacheKey = `all_liquidity_positions_${userAddress || 'all'}_${limit}_${offset}`;
-      const cachedData = cache.get(cacheKey);
-      
-      if (cachedData) {
-        const response: ApiResponse = {
-          success: true,
-          data: cachedData
-        };
-        res.json(response);
         return;
       }
 
@@ -1493,9 +1466,6 @@ export class DataController {
         }
       };
 
-      // Cache for 15 seconds
-      cache.set(cacheKey, responseData, 15 * 1000);
-
       const response: ApiResponse = {
         success: true,
         data: responseData
@@ -1525,18 +1495,6 @@ export class DataController {
           error: 'User address is required'
         };
         res.status(400).json(response);
-        return;
-      }
-
-      const cacheKey = `user_lending_history_${userAddress}_${limit}_${offset}`;
-      const cachedData = cache.get(cacheKey);
-      
-      if (cachedData) {
-        const response: ApiResponse = {
-          success: true,
-          data: cachedData
-        };
-        res.json(response);
         return;
       }
 
@@ -1759,9 +1717,6 @@ export class DataController {
           hasNext: offset + limit < totalCount
         }
       };
-
-      // Cache for 30 seconds
-      cache.set(cacheKey, responseData, 30 * 1000);
 
       const response: ApiResponse = {
         success: true,

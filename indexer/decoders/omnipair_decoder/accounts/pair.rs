@@ -38,5 +38,6 @@ pub struct Pair {
         pub params_hash: [u8; 32],
         pub version: u8,
         pub bump: u8,
-        pub vault_bumps: VaultBumps, 
+        pub vault_bumps: VaultBumps,
+        pub reduce_only: bool, 
 }

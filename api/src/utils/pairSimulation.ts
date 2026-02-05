@@ -16,8 +16,7 @@ const SIMULATE_CACHE_DURATION = 5000; // 5 seconds cache
 const simulateCache = new Map<string, CacheEntry>();
 const inFlightRequests = new Map<string, Promise<SimulationResult>>();
 
-// Separate cache and in-flight requests for user position getters
-const userPositionCache = new Map<string, CacheEntry>();
+// In-flight requests for user position getters
 const userPositionInFlightRequests = new Map<string, Promise<SimulationResult>>();
 
 /**
@@ -169,18 +168,12 @@ export async function simulateUserPositionGetter(
   userPositionPda: PublicKey,
   getter: UserPositionGetterType
 ): Promise<SimulationResult> {
-  // Create cache key based on parameters
+  // Create key based on parameters for in-flight request deduplication only
   const getterKey = Object.keys(getter)[0];
-  const cacheKey = `userPosition:${pairPda.toString()}:${userPositionPda.toString()}:${getterKey}`;
+  const requestKey = `userPosition:${pairPda.toString()}:${userPositionPda.toString()}:${getterKey}`;
 
-  // Check cache first
-  const cached = userPositionCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < SIMULATE_CACHE_DURATION) {
-    return cached.result;
-  }
-
-  // Check if there's already an in-flight request for this key
-  const inFlight = userPositionInFlightRequests.get(cacheKey);
+  // Check if there's already an in-flight request for this key (deduplication only, no caching)
+  const inFlight = userPositionInFlightRequests.get(requestKey);
   if (inFlight) {
     return inFlight;
   }
@@ -217,18 +210,15 @@ export async function simulateUserPositionGetter(
 
       const result: SimulationResult = { label, value0, value1 };
 
-      // Cache the result
-      userPositionCache.set(cacheKey, { result, timestamp: Date.now() });
-
       return result;
     } finally {
       // Remove from in-flight requests
-      userPositionInFlightRequests.delete(cacheKey);
+      userPositionInFlightRequests.delete(requestKey);
     }
   })();
 
   // Store in-flight request
-  userPositionInFlightRequests.set(cacheKey, requestPromise);
+  userPositionInFlightRequests.set(requestKey, requestPromise);
 
   return requestPromise;
 }
@@ -239,7 +229,6 @@ export async function simulateUserPositionGetter(
 export function clearSimulationCache(): void {
   simulateCache.clear();
   inFlightRequests.clear();
-  userPositionCache.clear();
   userPositionInFlightRequests.clear();
 }
 

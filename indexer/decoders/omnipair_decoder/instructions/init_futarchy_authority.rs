@@ -14,6 +14,7 @@ pub struct InitFutarchyAuthority{
 pub struct InitFutarchyAuthorityInstructionAccounts {
     pub deployer: solana_pubkey::Pubkey,
     pub futarchy_authority: solana_pubkey::Pubkey,
+    pub program_data: solana_pubkey::Pubkey,
     pub system_program: solana_pubkey::Pubkey,
 }
 
@@ -24,11 +25,13 @@ impl carbon_core::deserialize::ArrangeAccounts for InitFutarchyAuthority {
         let mut iter = accounts.iter();
         let deployer = next_account(&mut iter)?;
         let futarchy_authority = next_account(&mut iter)?;
+        let program_data = next_account(&mut iter)?;
         let system_program = next_account(&mut iter)?;
 
         Some(InitFutarchyAuthorityInstructionAccounts {
             deployer,
             futarchy_authority,
+            program_data,
             system_program,
         })
     }

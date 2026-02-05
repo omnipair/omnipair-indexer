@@ -444,8 +444,9 @@ pub async fn upsert_pair_created_event(
     let upsert_result = sqlx::query(
         r#"
         INSERT INTO pools (
-            pair_address, token0, token1, lp_mint, rate_model, swap_fee_bps, half_life, fixed_cf_bps, params_hash, version
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            pair_address, token0, token1, lp_mint, rate_model, swap_fee_bps, half_life, fixed_cf_bps, params_hash, version,
+            target_util_start_bps, target_util_end_bps, rate_half_life_ms, min_rate_bps, max_rate_bps
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         ON CONFLICT (pair_address) DO UPDATE SET
             token0 = EXCLUDED.token0,
             token1 = EXCLUDED.token1,
@@ -455,7 +456,12 @@ pub async fn upsert_pair_created_event(
             half_life = EXCLUDED.half_life,
             fixed_cf_bps = EXCLUDED.fixed_cf_bps,
             params_hash = EXCLUDED.params_hash,
-            version = EXCLUDED.version
+            version = EXCLUDED.version,
+            target_util_start_bps = EXCLUDED.target_util_start_bps,
+            target_util_end_bps = EXCLUDED.target_util_end_bps,
+            rate_half_life_ms = EXCLUDED.rate_half_life_ms,
+            min_rate_bps = EXCLUDED.min_rate_bps,
+            max_rate_bps = EXCLUDED.max_rate_bps
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -468,6 +474,11 @@ pub async fn upsert_pair_created_event(
     .bind(event.fixed_cf_bps.map(|bps| bps as i32))
     .bind(event.params_hash)
     .bind(event.version as i32)
+    .bind(event.target_util_start_bps as i64)
+    .bind(event.target_util_end_bps as i64)
+    .bind(event.rate_half_life_ms as i64)
+    .bind(event.min_rate_bps as i64)
+    .bind(event.max_rate_bps as i64)
     .execute(pool)
     .await;
     

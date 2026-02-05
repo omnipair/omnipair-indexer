@@ -1,23 +1,20 @@
 [package]
 name = "carbon-omnipair-decoder"
 version = "0.9.1"
-description = "Omnipair Decoder"
-license = { workspace = true }
 edition = { workspace = true }
-readme = "README.md"
+description = "Omnipair decoder for Carbon indexer"
+license = { workspace = true }
 repository = { workspace = true }
-keywords = ["solana", "decoder", "omnipair"]
+keywords = ["solana", "indexer", "omnipair"]
 categories = ["encoding"]
-
-[lib]
-crate-type = ["rlib"]
 
 [dependencies]
 carbon-core = { workspace = true }
-serde = { workspace = true }
 solana-account = { workspace = true }
-solana-instruction = { workspace = true, default-features = false }
+solana-instruction = { workspace = true }
 solana-pubkey = { workspace = true }
+serde = { workspace = true }
 
-[dev-dependencies]
-# carbon-test-utils = { workspace = true }
+[lib]
+path = "mod.rs"
+crate-type = ["rlib"]

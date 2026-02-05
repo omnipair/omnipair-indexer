@@ -7,7 +7,6 @@ pub mod add_collateral;
 pub mod add_liquidity;
 pub mod borrow;
 pub mod claim_protocol_fees;
-pub mod distribute_tokens;
 pub mod flashloan;
 pub mod init_futarchy_authority;
 pub mod initialize;
@@ -15,15 +14,19 @@ pub mod liquidate;
 pub mod remove_collateral;
 pub mod remove_liquidity;
 pub mod repay;
+pub mod set_global_reduce_only;
+pub mod set_pair_reduce_only;
 pub mod swap;
 pub mod update_futarchy_authority;
 pub mod update_protocol_revenue;
+pub mod update_revenue_recipients;
 pub mod view_pair_data;
 pub mod view_user_position_data;
 pub mod adjust_collateral_event;
 pub mod adjust_debt_event;
 pub mod adjust_liquidity_event;
 pub mod burn_event;
+pub mod claim_protocol_fees_event;
 pub mod flashloan_event;
 pub mod mint_event;
 pub mod pair_created_event;
@@ -40,7 +43,6 @@ pub enum OmnipairInstruction {
     AddLiquidity(add_liquidity::AddLiquidity),
     Borrow(borrow::Borrow),
     ClaimProtocolFees(claim_protocol_fees::ClaimProtocolFees),
-    DistributeTokens(distribute_tokens::DistributeTokens),
     Flashloan(flashloan::Flashloan),
     InitFutarchyAuthority(init_futarchy_authority::InitFutarchyAuthority),
     Initialize(initialize::Initialize),
@@ -48,15 +50,19 @@ pub enum OmnipairInstruction {
     RemoveCollateral(remove_collateral::RemoveCollateral),
     RemoveLiquidity(remove_liquidity::RemoveLiquidity),
     Repay(repay::Repay),
+    SetGlobalReduceOnly(set_global_reduce_only::SetGlobalReduceOnly),
+    SetPairReduceOnly(set_pair_reduce_only::SetPairReduceOnly),
     Swap(swap::Swap),
     UpdateFutarchyAuthority(update_futarchy_authority::UpdateFutarchyAuthority),
     UpdateProtocolRevenue(update_protocol_revenue::UpdateProtocolRevenue),
+    UpdateRevenueRecipients(update_revenue_recipients::UpdateRevenueRecipients),
     ViewPairData(view_pair_data::ViewPairData),
     ViewUserPositionData(view_user_position_data::ViewUserPositionData),
     AdjustCollateralEvent(adjust_collateral_event::AdjustCollateralEvent),
     AdjustDebtEvent(adjust_debt_event::AdjustDebtEvent),
     AdjustLiquidityEvent(adjust_liquidity_event::AdjustLiquidityEvent),
     BurnEvent(burn_event::BurnEvent),
+    ClaimProtocolFeesEvent(claim_protocol_fees_event::ClaimProtocolFeesEvent),
     FlashloanEvent(flashloan_event::FlashloanEvent),
     MintEvent(mint_event::MintEvent),
     PairCreatedEvent(pair_created_event::PairCreatedEvent),
@@ -80,7 +86,6 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairDecoder {
             OmnipairInstruction::AddLiquidity => add_liquidity::AddLiquidity,
             OmnipairInstruction::Borrow => borrow::Borrow,
             OmnipairInstruction::ClaimProtocolFees => claim_protocol_fees::ClaimProtocolFees,
-            OmnipairInstruction::DistributeTokens => distribute_tokens::DistributeTokens,
             OmnipairInstruction::Flashloan => flashloan::Flashloan,
             OmnipairInstruction::InitFutarchyAuthority => init_futarchy_authority::InitFutarchyAuthority,
             OmnipairInstruction::Initialize => initialize::Initialize,
@@ -88,15 +93,19 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairDecoder {
             OmnipairInstruction::RemoveCollateral => remove_collateral::RemoveCollateral,
             OmnipairInstruction::RemoveLiquidity => remove_liquidity::RemoveLiquidity,
             OmnipairInstruction::Repay => repay::Repay,
+            OmnipairInstruction::SetGlobalReduceOnly => set_global_reduce_only::SetGlobalReduceOnly,
+            OmnipairInstruction::SetPairReduceOnly => set_pair_reduce_only::SetPairReduceOnly,
             OmnipairInstruction::Swap => swap::Swap,
             OmnipairInstruction::UpdateFutarchyAuthority => update_futarchy_authority::UpdateFutarchyAuthority,
             OmnipairInstruction::UpdateProtocolRevenue => update_protocol_revenue::UpdateProtocolRevenue,
+            OmnipairInstruction::UpdateRevenueRecipients => update_revenue_recipients::UpdateRevenueRecipients,
             OmnipairInstruction::ViewPairData => view_pair_data::ViewPairData,
             OmnipairInstruction::ViewUserPositionData => view_user_position_data::ViewUserPositionData,
             OmnipairInstruction::AdjustCollateralEvent => adjust_collateral_event::AdjustCollateralEvent,
             OmnipairInstruction::AdjustDebtEvent => adjust_debt_event::AdjustDebtEvent,
             OmnipairInstruction::AdjustLiquidityEvent => adjust_liquidity_event::AdjustLiquidityEvent,
             OmnipairInstruction::BurnEvent => burn_event::BurnEvent,
+            OmnipairInstruction::ClaimProtocolFeesEvent => claim_protocol_fees_event::ClaimProtocolFeesEvent,
             OmnipairInstruction::FlashloanEvent => flashloan_event::FlashloanEvent,
             OmnipairInstruction::MintEvent => mint_event::MintEvent,
             OmnipairInstruction::PairCreatedEvent => pair_created_event::PairCreatedEvent,

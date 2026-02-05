@@ -6,7 +6,7 @@ import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 import { PairStateService, PairState } from '../services/PairStateService';
 import { simulateUserPositionGetter } from '../utils/pairSimulation';
-import path from 'path';
+import { loadOmnipairIdl } from '../config/idl-loader';
 
 /**
  * Split a position into two separate token positions:
@@ -87,9 +87,8 @@ export class DataController {
     const service = new PairStateService(rpcUrl);
     
     try {
-      // Load IDL
-      const idlPath = path.join(__dirname, '../idl/omnipair.mainnet.json');
-      const idl = require(idlPath);
+      // Load IDL from @omnipair/program-interface
+      const idl = loadOmnipairIdl();
       service.initializeProgram(idl);
       
       DataController.pairStateService = service;

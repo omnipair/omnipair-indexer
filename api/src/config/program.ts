@@ -1,8 +1,8 @@
 import { PublicKey, Connection } from '@solana/web3.js';
 import { AnchorProvider, Program, Idl } from '@coral-xyz/anchor';
 import dotenv from 'dotenv';
-import type { Omnipair } from '../types/omnipair.mainnet';
-import mainnetIdl from '../idl/omnipair.mainnet.json';
+import type { Omnipair } from '@omnipair/program-interface';
+import { loadOmnipairIdl } from './idl-loader';
 
 dotenv.config();
 
@@ -103,6 +103,6 @@ export function loadProgram(provider: AnchorProvider, idl: Idl): Program<Idl> {
  * Get typed Omnipair program instance
  */
 export function getOmnipairProgram(provider: AnchorProvider): Program<Omnipair> {
-  return new Program(mainnetIdl as Omnipair, provider) as Program<Omnipair>;
+  return new Program(loadOmnipairIdl() as Omnipair, provider) as Program<Omnipair>;
 }
 

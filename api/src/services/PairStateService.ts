@@ -11,7 +11,7 @@ import {
   getOmnipairProgram
 } from '../config/program';
 import { simulatePairGetter } from '../utils/pairSimulation';
-import type { Omnipair } from '../types/omnipair.mainnet';
+import type { Omnipair } from '@omnipair/program-interface';
 
 export interface TokenMetadata {
   symbol: string;

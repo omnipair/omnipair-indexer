@@ -1,7 +1,7 @@
 import { PublicKey, Connection, Transaction } from '@solana/web3.js';
 import { Program } from '@coral-xyz/anchor';
 import { GetterType, UserPositionGetterType, SimulationResult, EmitValueArgs } from '../types/pairTypes';
-import type { Omnipair } from '../types/omnipair.mainnet';
+import type { Omnipair } from '@omnipair/program-interface';
 import { GENERIC_READONLY_PUBKEY } from '../config/program';
 
 /**

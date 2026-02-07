@@ -56,7 +56,8 @@ router.get('/', (req, res) => {
     notes: {
       'chart-intervals': 'Chart automatically selects intervals: ≤24hrs=1min, ≤168hrs=1hr, >168hrs=1day',
       'caching': 'Responses are cached per pool to improve performance',
-      'pagination': 'Most endpoints support pagination with limit and offset parameters'
+      'pagination': 'Most endpoints support pagination with limit and offset parameters',
+      'pool-fields': 'Pool endpoints return swap_fee_bps (swap fee in basis points) and fixed_cf_bps (fixed collateral factor in basis points)'
     }
   });
 });

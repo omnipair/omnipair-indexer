@@ -670,14 +670,21 @@ export class DataController {
         return;
       }
 
-      // Get latest swap data for reserves
-      const swapResult = await pool.query(`
-        SELECT reserve0, reserve1, timestamp, ema_price
-        FROM swaps 
-        WHERE pair = $1
-        ORDER BY id DESC
-        LIMIT 2
-      `, [pairAddress]);
+      // Get latest swap data for reserves and pool metadata in parallel
+      const [swapResult, poolMetaResult] = await Promise.all([
+        pool.query(`
+          SELECT reserve0, reserve1, timestamp, ema_price
+          FROM swaps 
+          WHERE pair = $1
+          ORDER BY id DESC
+          LIMIT 2
+        `, [pairAddress]),
+        pool.query(`
+          SELECT swap_fee_bps, fixed_cf_bps
+          FROM pools
+          WHERE pair_address = $1
+        `, [pairAddress])
+      ]);
 
       if (swapResult.rows.length === 0) {
         const response: ApiResponse = {
@@ -687,6 +694,8 @@ export class DataController {
         res.status(404).json(response);
         return;
       }
+
+      const poolMeta = poolMetaResult.rows[0] || {};
 
       const reserve0 = parseFloat(swapResult.rows[0].reserve0);
       const reserve1 = parseFloat(swapResult.rows[0].reserve1);
@@ -718,7 +727,9 @@ export class DataController {
         reserve0: reserve0,
         reserve1: reserve1,
         timestamp: new Date(swapResult.rows[0].timestamp).toISOString().replace('T', ' ').replace('Z', '+00'),
-        pairAddress
+        pairAddress,
+        swap_fee_bps: poolMeta.swap_fee_bps ?? null,
+        fixed_cf_bps: poolMeta.fixed_cf_bps ?? null
       };
 
       cache.set(cacheKey, poolData, 5 * 1000);
@@ -754,7 +765,7 @@ export class DataController {
 
       // Get pools with pagination
       const result = await pool.query(`
-        SELECT id, pair_address, token0, token1 
+        SELECT id, pair_address, token0, token1, swap_fee_bps, fixed_cf_bps 
         FROM pools 
         ${visibilityFilter}
         ORDER BY id ASC 
@@ -837,6 +848,9 @@ export class DataController {
                 total_supply: pairState.totalSupply,
                 decimals: pairState.lpTokenDecimals
               },
+              // Fee configuration
+              swap_fee_bps: poolData.swap_fee_bps,
+              fixed_cf_bps: poolData.fixed_cf_bps,
               // APR and fees
               apr: aprData,
               total_fees_paid: feesData,
@@ -891,6 +905,8 @@ export class DataController {
                 total_supply: '0',
                 decimals: 0
               },
+              swap_fee_bps: poolData.swap_fee_bps,
+              fixed_cf_bps: poolData.fixed_cf_bps,
               apr: {
                 apr: 0,
                 apr_breakdown: {
@@ -955,7 +971,7 @@ export class DataController {
       }
 
       const result = await pool.query(`
-        SELECT id, pair_address, token0, token1 
+        SELECT id, pair_address, token0, token1, swap_fee_bps, fixed_cf_bps 
         FROM pools 
         WHERE (token0 = $1 AND token1 = $2) OR (token0 = $2 AND token1 = $1)
         ORDER BY id ASC
@@ -1000,22 +1016,34 @@ export class DataController {
       }
 
       // Query pools to find all tokens paired with the input token
-      // Get token1 where token0 matches, and token0 where token1 matches
+      // Get paired token and pool info for each match
       const result = await pool.query(`
-        SELECT DISTINCT token1 as token FROM pools WHERE token0 = $1
+        SELECT 
+          pair_address,
+          token1 as paired_token,
+          swap_fee_bps,
+          fixed_cf_bps
+        FROM pools WHERE token0 = $1
         UNION
-        SELECT DISTINCT token0 as token FROM pools WHERE token1 = $1
-        ORDER BY token ASC
+        SELECT 
+          pair_address,
+          token0 as paired_token,
+          swap_fee_bps,
+          fixed_cf_bps
+        FROM pools WHERE token1 = $1
+        ORDER BY paired_token ASC
       `, [token]);
 
-      const tokens = result.rows.map(row => row.token);
+      // Also provide a simple list of tokens for backward compatibility
+      const tokens = result.rows.map(row => row.paired_token);
 
       const response: ApiResponse = {
         success: true,
         data: {
           tokens,
+          pools: result.rows,
           inputToken: token,
-          count: tokens.length
+          count: result.rows.length
         }
       };
 

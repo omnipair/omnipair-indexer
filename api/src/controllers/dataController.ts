@@ -5,6 +5,7 @@ import { ApiResponse, PoolRow } from '../types';
 import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 import { PairStateService, PairState } from '../services/PairStateService';
+import { OlpValueService } from '../services/LpValueService';
 import { simulateUserPositionGetter } from '../utils/pairSimulation';
 import { loadOmnipairIdl } from '../config/idl-loader';
 
@@ -74,8 +75,27 @@ function splitPosition(position: any): Array<any> {
 }
 
 export class DataController {
-  // Singleton instance for PairStateService
+  // Singleton instances
   private static pairStateService: PairStateService | null = null;
+  private static olpValueService: OlpValueService | null = null;
+
+  // Initialize OlpValueService once
+  static async initializeOlpValueService(): Promise<OlpValueService> {
+    if (DataController.olpValueService?.isInitialized()) {
+      return DataController.olpValueService;
+    }
+
+    const pairService = await DataController.initializePairStateService();
+    const program = pairService.getProgram();
+    if (!program) {
+      throw new Error('Solana program not initialized');
+    }
+
+    const service = new OlpValueService();
+    await service.initialize(program);
+    DataController.olpValueService = service;
+    return service;
+  }
 
   // Initialize PairStateService once
   private static async initializePairStateService(): Promise<PairStateService> {
@@ -747,6 +767,25 @@ export class DataController {
         error: 'Failed to fetch pool info'
       };
       res.status(500).json(response);
+    }
+  }
+
+  static async getOlpTokenValue(req: Request, res: Response): Promise<void> {
+    try {
+      const { olpMints } = req.body;
+
+      if (!olpMints || !Array.isArray(olpMints) || olpMints.length === 0) {
+        res.status(400).json({ success: false, error: 'Request body must contain an "olpMints" array of oLP token mint addresses' });
+        return;
+      }
+
+      const service = await DataController.initializeOlpValueService();
+      const results = service.getValues(olpMints);
+
+      res.json({ success: true, data: results });
+    } catch (error) {
+      console.error('Error fetching oLP token values:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch oLP token values' });
     }
   }
 

@@ -1,5 +1,6 @@
 import app from './app';
 import pool from './config/database';
+import { DataController } from './controllers/dataController';
 
 const PORT = process.env.PORT || 3000;
 
@@ -32,8 +33,13 @@ const gracefulShutdown = async (signal: string) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-server = app.listen(PORT, () => {
+server = app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  try {
+    await DataController.initializeOlpValueService();
+  } catch (error) {
+    console.error('Failed to initialize OlpValueService:', error);
+  }
 });
 
 process.on('unhandledRejection', (err: any) => {

@@ -12,6 +12,12 @@ const normalizeWindowHours = (req: Request, res: Response, next: NextFunction) =
 
 router.get('/', DataController.getPools);
 
+// POST because it receives a list of oLP token mints
+// body: { "olpMints": ["mint1", "mint2"] }
+router.post('/olp-value', async (req: Request, res: Response) => {
+  await DataController.getOlpTokenValue(req, res);
+});
+
 router.get('/paired-tokens/:tokenAddress', async (req: Request, res: Response) => {
   req.params.token = req.params.tokenAddress;
   await DataController.getTokensByToken(req, res);

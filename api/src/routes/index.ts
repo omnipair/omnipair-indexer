@@ -25,7 +25,8 @@ router.get('/', (req, res) => {
         'price-chart': 'GET /api/v1/pools/{poolAddress}/price-chart?windowHours=24',
         'pool-swaps': 'GET /api/v1/pools/{poolAddress}/swaps?limit=100&offset=0',
         'liquidity-events': 'GET /api/v1/pools/{poolAddress}/liquidity-events?userAddress=ADDR',
-        'paired-tokens': 'GET /api/v1/pools/paired-tokens/{tokenAddress}'
+        'paired-tokens': 'GET /api/v1/pools/paired-tokens/{tokenAddress}',
+        'olp-value': 'POST /api/v1/pools/olp-value  body: { "olpMints": ["mint1", "mint2"] }'
       },
       users: {
         'user-swaps': 'GET /api/v1/users/{userAddress}/swaps?poolAddress=ADDR&limit=100&offset=0',

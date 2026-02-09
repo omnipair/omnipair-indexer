@@ -4,7 +4,7 @@ use std::env;
 
 pub static PROGRAM_ID: LazyLock<Pubkey> = LazyLock::new(|| {
     let program_id_str = env::var("OMNIPAIR_PROGRAM_ID")
-        .unwrap_or_else(|_| "3tJrAXnjofAw8oskbMaSo9oMAYuzdBgVbW3TvQLdMEBd".to_string());
+        .unwrap_or_else(|_| "omnixgS8fnqHfCcTGKWj6JtKjzpJZ1Y5y9pyFkQDkYE".to_string());
     program_id_str.parse().expect("Invalid program ID")
 });
 

@@ -246,8 +246,8 @@ export class DataController {
 
     const pairState = await pairService.fetchPairState(pairAddress);
 
-    // Cache for 10 minutes
-    cache.set(cacheKey, pairState, 10 * 60 * 1000);
+    // Cache for 5 seconds
+    cache.set(cacheKey, pairState, 5 * 1000);
 
     return pairState;
   }
@@ -283,8 +283,8 @@ export class DataController {
       period: `${hours}hrs`
     };
 
-    // Cache for 1 minute
-    cache.set(cacheKey, volumeData, 1 * 60 * 1000);
+    // Cache for 10 seconds
+    cache.set(cacheKey, volumeData, 10 * 1000);
 
     return volumeData;
   }
@@ -626,8 +626,8 @@ export class DataController {
         pairAddress
       };
 
-      // Cache for 15 seconds
-      cache.set(cacheKey, responseData, 15 * 1000);
+      // Cache for 10 seconds
+      cache.set(cacheKey, responseData, 10 * 1000);
 
       const response: ApiResponse = {
         success: true,

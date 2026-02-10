@@ -680,16 +680,16 @@ export class DataController {
           LIMIT 2
         `, [pairAddress]),
         pool.query(`
-          SELECT swap_fee_bps, fixed_cf_bps
+          SELECT swap_fee_bps, fixed_cf_bps, token0, token1, lp_mint, rate_model, half_life, version
           FROM pools
           WHERE pair_address = $1
         `, [pairAddress])
       ]);
 
-      if (swapResult.rows.length === 0) {
+      if (swapResult.rows.length === 0 && poolMetaResult.rows.length === 0) {
         const response: ApiResponse = {
           success: false,
-          error: 'No swap data found for this pair address'
+          error: 'No pool found for this pair address'
         };
         res.status(404).json(response);
         return;
@@ -697,37 +697,53 @@ export class DataController {
 
       const poolMeta = poolMetaResult.rows[0] || {};
 
-      const reserve0 = parseFloat(swapResult.rows[0].reserve0);
-      const reserve1 = parseFloat(swapResult.rows[0].reserve1);
-
+      let reserve0: number | null = null;
+      let reserve1: number | null = null;
       let currentEmaPrice0: number | null = null;
       let currentEmaPrice1: number | null = null;
-      
-      if (swapResult.rows.length > 1 && swapResult.rows[1].ema_price) {
-        console.log('Calculating EMA prices using the latest swap data');
-        // Calculate current EMA prices using the latest swap data
-        const lastPrice0Ema = parseFloat(swapResult.rows[1].ema_price);
-        const lastPrice1Ema = parseFloat(swapResult.rows[1].ema_price);
-        const lastUpdate = Math.floor(new Date(swapResult.rows[1].timestamp).getTime() / 1000);
-        
-        const emaResult = calculateEmaFromPoolData(reserve0, reserve1, lastPrice0Ema, lastPrice1Ema, lastUpdate);
-        
-        currentEmaPrice0 = fromNad(emaResult.price0Ema);
-        currentEmaPrice1 = fromNad(emaResult.price1Ema);
-      } else {
-        console.log('No EMA prices found, using current spot prices');
-        console.log(swapResult.rows)
+      let price0: number | null = null;
+      let price1: number | null = null;
+      let timestamp: string | null = null;
+
+      if (swapResult.rows.length > 0) {
+        reserve0 = parseFloat(swapResult.rows[0].reserve0);
+        reserve1 = parseFloat(swapResult.rows[0].reserve1);
+        price0 = reserve1 / reserve0;
+        price1 = reserve0 / reserve1;
+        timestamp = new Date(swapResult.rows[0].timestamp).toISOString().replace('T', ' ').replace('Z', '+00');
+
+        if (swapResult.rows.length > 1 && swapResult.rows[1].ema_price) {
+          console.log('Calculating EMA prices using the latest swap data');
+          // Calculate current EMA prices using the latest swap data
+          const lastPrice0Ema = parseFloat(swapResult.rows[1].ema_price);
+          const lastPrice1Ema = parseFloat(swapResult.rows[1].ema_price);
+          const lastUpdate = Math.floor(new Date(swapResult.rows[1].timestamp).getTime() / 1000);
+          
+          const emaResult = calculateEmaFromPoolData(reserve0, reserve1, lastPrice0Ema, lastPrice1Ema, lastUpdate);
+          
+          currentEmaPrice0 = fromNad(emaResult.price0Ema);
+          currentEmaPrice1 = fromNad(emaResult.price1Ema);
+        } else {
+          console.log('No EMA prices found, using current spot prices');
+          console.log(swapResult.rows)
+        }
       }
-      
+
       const poolData = {
-        price0: reserve1 / reserve0,
-        price1: reserve0 / reserve1,
-        emaPrice0: currentEmaPrice0 !== undefined ? currentEmaPrice0 : reserve1 / reserve0,
-        emaPrice1: currentEmaPrice1 !== undefined ? currentEmaPrice1 : reserve0 / reserve1,
+        price0: price0,
+        price1: price1,
+        emaPrice0: currentEmaPrice0 ?? price0,
+        emaPrice1: currentEmaPrice1 ?? price1,
         reserve0: reserve0,
         reserve1: reserve1,
-        timestamp: new Date(swapResult.rows[0].timestamp).toISOString().replace('T', ' ').replace('Z', '+00'),
+        timestamp: timestamp,
         pairAddress,
+        token0: poolMeta.token0 ?? null,
+        token1: poolMeta.token1 ?? null,
+        lp_mint: poolMeta.lp_mint ?? null,
+        rate_model: poolMeta.rate_model ?? null,
+        half_life: poolMeta.half_life ?? null,
+        version: poolMeta.version ?? null,
         swap_fee_bps: poolMeta.swap_fee_bps ?? null,
         fixed_cf_bps: poolMeta.fixed_cf_bps ?? null
       };

@@ -185,7 +185,6 @@ pub async fn start_grpc_server(
 
         tonic::transport::Server::builder()
             .accept_http1(true)
-            .timeout(Duration::from_secs(30))
             .concurrency_limit_per_connection(256)
             .tcp_keepalive(Some(Duration::from_secs(60)))
             .tcp_nodelay(true)
@@ -199,7 +198,6 @@ pub async fn start_grpc_server(
     } else {
         tonic::transport::Server::builder()
             .accept_http1(true)
-            .timeout(Duration::from_secs(30))
             .concurrency_limit_per_connection(256)
             .tcp_keepalive(Some(Duration::from_secs(60)))
             .tcp_nodelay(true)

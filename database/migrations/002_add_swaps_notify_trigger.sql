@@ -3,12 +3,14 @@
 -- Channel: swap_updates
 
 -- Function that sends the notification with swap data as JSON
+-- Includes 'op' field (INSERT/UPDATE) so listeners can distinguish initial vs enriched swaps
 CREATE OR REPLACE FUNCTION notify_swap_updated()
 RETURNS TRIGGER AS $$
 BEGIN
     PERFORM pg_notify(
         'swap_updates',
         json_build_object(
+            'op', TG_OP,
             'id', NEW.id::text,
             'pair', NEW.pair,
             'user_address', NEW.user_address,
@@ -22,7 +24,8 @@ BEGIN
             'slot', NEW.slot::text,
             'fee_paid0', NEW.fee_paid0::text,
             'fee_paid1', NEW.fee_paid1::text,
-            'ema_price', COALESCE(NEW.ema_price::text, '')
+            'ema_price', COALESCE(NEW.ema_price::text, ''),
+            'volume_usd', COALESCE(NEW.volume_usd::text, '')
         )::text
     );
     RETURN NEW;

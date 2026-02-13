@@ -10,7 +10,9 @@
     "clean": "rm -rf dist",
     "fill-ema": "npm run build && node dist/scripts/fillEmaPrices.js",
     "verify-ema": "npm run build && node dist/scripts/fillEmaPrices.js verify",
-    "ema-both": "npm run build && node dist/scripts/fillEmaPrices.js both"
+    "ema-both": "npm run build && node dist/scripts/fillEmaPrices.js both",
+    "start:volume-enricher": "node dist/scripts/volumeEnricher.js",
+    "backfill-volume": "npm run build && node dist/scripts/backfillVolume.js"
   },
   "keywords": [
     "typescript",

@@ -93,6 +93,7 @@ CREATE TABLE swaps (
     fee_paid0 NUMERIC,
     fee_paid1 NUMERIC,
     ema_price NUMERIC,
+    volume_usd NUMERIC DEFAULT NULL,
     PRIMARY KEY ("timestamp", id),
     CONSTRAINT tx_sig UNIQUE (tx_sig, "timestamp")
 );
@@ -148,8 +149,10 @@ CREATE TABLE user_borrow_positions (
     collateral1 NUMERIC NOT NULL,
     debt0_shares NUMERIC NOT NULL,
     debt1_shares NUMERIC NOT NULL,
-    collateral0_applied_min_cf_bps INTEGER NOT NULL,
-    collateral1_applied_min_cf_bps INTEGER NOT NULL,
+    collateral0_liquidation_cf_bps INTEGER NOT NULL,
+    collateral1_liquidation_cf_bps INTEGER NOT NULL,
+    collateral0_max_cf_bps INTEGER NOT NULL DEFAULT 0,
+    collateral1_max_cf_bps INTEGER NOT NULL DEFAULT 0,
     slot BIGINT NOT NULL,
     event_timestamp TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -166,8 +169,10 @@ CREATE TABLE user_position_updated_events (
     collateral1 BIGINT NOT NULL,
     debt0_shares BIGINT NOT NULL,
     debt1_shares BIGINT NOT NULL,
-    collateral0_applied_min_cf_bps INTEGER NOT NULL,
-    collateral1_applied_min_cf_bps INTEGER NOT NULL,
+    collateral0_liquidation_cf_bps INTEGER NOT NULL,
+    collateral1_liquidation_cf_bps INTEGER NOT NULL,
+    collateral0_max_cf_bps INTEGER NOT NULL DEFAULT 0,
+    collateral1_max_cf_bps INTEGER NOT NULL DEFAULT 0,
     transaction_signature VARCHAR(88) NOT NULL UNIQUE,
     slot BIGINT NOT NULL,
     event_timestamp TIMESTAMPTZ NOT NULL

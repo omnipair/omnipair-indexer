@@ -24,4 +24,5 @@ message SwapsUpdate {
   string fee_paid1 = 13;
   string ema_price = 14;
   float price = 15;
+  string volume_usd = 16;
 }

@@ -28,6 +28,10 @@ export interface PairState {
     token0: string;
     token1: string;
   };
+  cashReserves: {
+    token0: string;
+    token1: string;
+  };
   oraclePrices: {
     token0: string;
     token1: string;
@@ -183,6 +187,8 @@ export class PairStateService {
         token1Decimals,
         reserve0,
         reserve1,
+        cashReserve0,
+        cashReserve1,
         totalDebt0,
         totalDebt1,
         totalSupply,
@@ -253,6 +259,10 @@ export class PairStateService {
         reserves: {
           token0: (Number(reserve0) / Math.pow(10, token0Decimals)).toString(),
           token1: (Number(reserve1) / Math.pow(10, token1Decimals)).toString(),
+        },
+        cashReserves: {
+          token0: (Number(cashReserve0) / Math.pow(10, token0Decimals)).toString(),
+          token1: (Number(cashReserve1) / Math.pow(10, token1Decimals)).toString(),
         },
         oraclePrices: {
           token0: emaPrice0.toString(),

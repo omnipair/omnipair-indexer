@@ -12,6 +12,9 @@ pub enum PairViewKind {
     K,
     GetRates,
     GetBorrowLimitAndCfBpsForCollateral,
+    Reserves,
+    CashReserves,
+    SwapQuote,
 }
 
 

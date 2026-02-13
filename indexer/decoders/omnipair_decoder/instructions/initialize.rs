@@ -27,7 +27,8 @@ pub struct InitializeInstructionAccounts {
     pub collateral1_vault: solana_pubkey::Pubkey,
     pub deployer_token0_account: solana_pubkey::Pubkey,
     pub deployer_token1_account: solana_pubkey::Pubkey,
-    pub authority_wsol_account: solana_pubkey::Pubkey,
+    pub team_treasury: solana_pubkey::Pubkey,
+    pub team_treasury_wsol_account: solana_pubkey::Pubkey,
     pub system_program: solana_pubkey::Pubkey,
     pub token_program: solana_pubkey::Pubkey,
     pub token_2022_program: solana_pubkey::Pubkey,
@@ -58,7 +59,8 @@ impl carbon_core::deserialize::ArrangeAccounts for Initialize {
         let collateral1_vault = next_account(&mut iter)?;
         let deployer_token0_account = next_account(&mut iter)?;
         let deployer_token1_account = next_account(&mut iter)?;
-        let authority_wsol_account = next_account(&mut iter)?;
+        let team_treasury = next_account(&mut iter)?;
+        let team_treasury_wsol_account = next_account(&mut iter)?;
         let system_program = next_account(&mut iter)?;
         let token_program = next_account(&mut iter)?;
         let token_2022_program = next_account(&mut iter)?;
@@ -84,7 +86,8 @@ impl carbon_core::deserialize::ArrangeAccounts for Initialize {
             collateral1_vault,
             deployer_token0_account,
             deployer_token1_account,
-            authority_wsol_account,
+            team_treasury,
+            team_treasury_wsol_account,
             system_program,
             token_program,
             token_2022_program,

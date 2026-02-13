@@ -7,8 +7,8 @@ use carbon_core::{CarbonDeserialize, borsh};
 pub struct UserPosition {
     pub owner: solana_pubkey::Pubkey,
     pub pair: solana_pubkey::Pubkey,
-    pub collateral0_applied_min_cf_bps: u16,
-    pub collateral1_applied_min_cf_bps: u16,
+    pub collateral0_liquidation_cf_bps: u16,
+    pub collateral1_liquidation_cf_bps: u16,
     pub collateral0: u64,
     pub collateral1: u64,
     pub debt0_shares: u128,

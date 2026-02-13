@@ -6,6 +6,7 @@ import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad, toNad } from '../utils/emaCalculator';
 import { PairStateService, PairState } from '../services/PairStateService';
 import { simulateUserPositionGetter } from '../utils/pairSimulation';
+import { SimulationResult } from '../types/pairTypes';
 import { loadOmnipairIdl } from '../config/idl-loader';
 
 /**
@@ -20,6 +21,10 @@ function splitPosition(position: any): Array<any> {
 
   // Position 1: collateral0 + debt1 (token0 collateral, token1 debt)
   // Return position if collateral > 0, regardless of debt
+  //
+  // On-chain simulation returns (value0, value1) mapped to { token0, token1 }:
+  //   Collateral-indexed: value0 = token0 as collateral, value1 = token1 as collateral
+  //   Debt-indexed:       value0 = token0 as debt,       value1 = token1 as debt
   if (position.collateral0 && position.collateral0 !== '0') {
     positions.push({
       signer: position.signer,
@@ -31,16 +36,23 @@ function splitPosition(position: any): Array<any> {
       debtShares: position.debt1_shares || '0',
       token0Address: position.token0Address || null,
       token1Address: position.token1Address || null,
-      // Use enriched value if available, otherwise fall back to DB value
-      appliedCollateralFactorBps: position.appliedCollateralFactorBps?.token1 // in debt token (token1)
-        ? parseInt(position.appliedCollateralFactorBps.token1) 
-        : position.collateral0_applied_min_cf_bps, // in collateral token (token0)
+      // Collateral factors from DB (stored at borrow time, bps)
+      collateralFactors: {
+        liquidation: position.collateral0_liquidation_cf_bps,
+        max: position.collateral0_max_cf_bps,
+      },
+      // Borrow limits from simulation (collateral-indexed → token0 = value0)
+      borrowLimits: {
+        liquidation: position.liquidationBorrowLimit?.token0 || null,
+        dynamic: position.dynamicBorrowLimit?.token0 || null,
+      },
+      // Position health from simulation
+      health: {
+        debtWithInterest: position.debtWithInterest?.token1 || null,              // debt-indexed → token1
+        collateralValueWithImpact: position.collateralValueWithImpact?.token0 || null, // collateral-indexed → token0
+        liquidationPrice: position.liquidationPrice?.token1 || null,              // debt-indexed → token1
+      },
       event_timestamp: position.event_timestamp,
-      // Enriched data from simulation (in debt token)
-      borrowingPower: position.borrowingPower?.token1 || null,
-      liquidationCollateralFactorBps: position.liquidationCollateralFactorBps?.token1 || null,
-      liquidationPrice: position.liquidationPrice?.token1 || null,
-      debtWithInterest: position.debtWithInterest?.token1 || null,
     });
   }
 
@@ -57,16 +69,23 @@ function splitPosition(position: any): Array<any> {
       debtShares: position.debt0_shares || '0',
       token0Address: position.token0Address || null,
       token1Address: position.token1Address || null,
-      // Use enriched value if available, otherwise fall back to DB value
-      appliedCollateralFactorBps: position.appliedCollateralFactorBps?.token0 // in debt token (token0)
-        ? parseInt(position.appliedCollateralFactorBps.token0) 
-        : position.collateral1_applied_min_cf_bps, // in collateral token (token1)
+      // Collateral factors from DB (stored at borrow time, bps)
+      collateralFactors: {
+        liquidation: position.collateral1_liquidation_cf_bps,
+        max: position.collateral1_max_cf_bps,
+      },
+      // Borrow limits from simulation (collateral-indexed → token1 = value1)
+      borrowLimits: {
+        liquidation: position.liquidationBorrowLimit?.token1 || null,
+        dynamic: position.dynamicBorrowLimit?.token1 || null,
+      },
+      // Position health from simulation
+      health: {
+        debtWithInterest: position.debtWithInterest?.token0 || null,              // debt-indexed → token0
+        collateralValueWithImpact: position.collateralValueWithImpact?.token1 || null, // collateral-indexed → token1
+        liquidationPrice: position.liquidationPrice?.token0 || null,              // debt-indexed → token0
+      },
       event_timestamp: position.event_timestamp,
-      // Enriched data from simulation (in debt token)
-      borrowingPower: position.borrowingPower?.token0 || null,
-      liquidationCollateralFactorBps: position.liquidationCollateralFactorBps?.token0 || null,
-      liquidationPrice: position.liquidationPrice?.token0 || null,
-      debtWithInterest: position.debtWithInterest?.token0 || null,
     });
   }
 
@@ -1209,8 +1228,10 @@ export class DataController {
             collateral1,
             debt0_shares,
             debt1_shares,
-            collateral0_applied_min_cf_bps,
-            collateral1_applied_min_cf_bps,
+            collateral0_liquidation_cf_bps,
+            collateral1_liquidation_cf_bps,
+            collateral0_max_cf_bps,
+            collateral1_max_cf_bps,
             event_timestamp
           FROM user_borrow_positions
           WHERE signer = $1
@@ -1230,8 +1251,10 @@ export class DataController {
             collateral1,
             debt0_shares,
             debt1_shares,
-            collateral0_applied_min_cf_bps,
-            collateral1_applied_min_cf_bps,
+            collateral0_liquidation_cf_bps,
+            collateral1_liquidation_cf_bps,
+            collateral0_max_cf_bps,
+            collateral1_max_cf_bps,
             event_timestamp
           FROM user_borrow_positions
           ORDER BY event_timestamp DESC
@@ -1261,8 +1284,10 @@ export class DataController {
             collateral1: row.collateral1,
             debt0_shares: row.debt0_shares,
             debt1_shares: row.debt1_shares,
-            collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
-            collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
+            collateral0_liquidation_cf_bps: row.collateral0_liquidation_cf_bps,
+            collateral1_liquidation_cf_bps: row.collateral1_liquidation_cf_bps,
+            collateral0_max_cf_bps: row.collateral0_max_cf_bps,
+            collateral1_max_cf_bps: row.collateral1_max_cf_bps,
             event_timestamp: row.event_timestamp,
           };
 
@@ -1280,22 +1305,18 @@ export class DataController {
             const token0Address = pairAccount.token0.toString();
             const token1Address = pairAccount.token1.toString();
 
-            // Fetch all position metrics in parallel
+            // Fetch position metrics in parallel (5 simulation calls)
+            // Note: dynamicCollateralFactorBps and liquidationCfBps are NOT fetched here --
+            // CFs come from DB (stored at borrow time), FE simulates them client-side for previews
             const [
-              borrowingPowerResult,
-              appliedCfBpsResult,
-              liquidationCfBpsResult,
+              dynamicBorrowLimitResult,
               liquidationPriceResult,
               debtWithInterestResult,
+              collateralValueResult,
+              liquidationBorrowLimitResult,
             ] = await Promise.allSettled([
               simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
-                userBorrowingPower: {},
-              }),
-              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
-                userAppliedCollateralFactorBps: {},
-              }),
-              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
-                userLiquidationCollateralFactorBps: {},
+                userDynamicBorrowLimit: {},
               }),
               simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
                 userLiquidationPrice: {},
@@ -1303,58 +1324,29 @@ export class DataController {
               simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
                 userDebtWithInterest: {},
               }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userCollateralValueWithImpact: {},
+              }),
+              simulateUserPositionGetter(program, connection, pairPda, userPositionPda, {
+                userLiquidationBorrowLimit: {},
+              }),
             ]);
 
-            // Extract values from results
-            const borrowingPower =
-              borrowingPowerResult.status === 'fulfilled'
-                ? {
-                    token0: borrowingPowerResult.value.value0,
-                    token1: borrowingPowerResult.value.value1,
-                  }
-                : null;
-
-            const appliedCollateralFactorBps =
-              appliedCfBpsResult.status === 'fulfilled'
-                ? {
-                    token0: appliedCfBpsResult.value.value0,
-                    token1: appliedCfBpsResult.value.value1,
-                  }
-                : null;
-
-            const liquidationCollateralFactorBps =
-              liquidationCfBpsResult.status === 'fulfilled'
-                ? {
-                    token0: liquidationCfBpsResult.value.value0,
-                    token1: liquidationCfBpsResult.value.value1,
-                  }
-                : null;
-
-            const liquidationPrice =
-              liquidationPriceResult.status === 'fulfilled'
-                ? {
-                    token0: liquidationPriceResult.value.value0,
-                    token1: liquidationPriceResult.value.value1,
-                  }
-                : null;
-
-            const debtWithInterest =
-              debtWithInterestResult.status === 'fulfilled'
-                ? {
-                    token0: debtWithInterestResult.value.value0,
-                    token1: debtWithInterestResult.value.value1,
-                  }
+            // Helper to extract token0/token1 from a settled result
+            const extract = (result: PromiseSettledResult<SimulationResult>) =>
+              result.status === 'fulfilled'
+                ? { token0: result.value.value0, token1: result.value.value1 }
                 : null;
 
             const enrichedPosition = {
               ...basePosition,
               token0Address,
               token1Address,
-              borrowingPower,
-              appliedCollateralFactorBps,
-              liquidationCollateralFactorBps,
-              liquidationPrice,
-              debtWithInterest,
+              dynamicBorrowLimit: extract(dynamicBorrowLimitResult),
+              liquidationPrice: extract(liquidationPriceResult),
+              debtWithInterest: extract(debtWithInterestResult),
+              collateralValueWithImpact: extract(collateralValueResult),
+              liquidationBorrowLimit: extract(liquidationBorrowLimitResult),
             };
 
             // Split position into two separate token positions
@@ -1582,8 +1574,10 @@ export class DataController {
             NULL::bigint as collateral1,
             NULL::bigint as debt0_shares,
             NULL::bigint as debt1_shares,
-            NULL::integer as collateral0_applied_min_cf_bps,
-            NULL::integer as collateral1_applied_min_cf_bps,
+            NULL::integer as collateral0_liquidation_cf_bps,
+            NULL::integer as collateral1_liquidation_cf_bps,
+            NULL::integer as collateral0_max_cf_bps,
+            NULL::integer as collateral1_max_cf_bps,
             transaction_signature,
             slot,
             event_timestamp
@@ -1614,8 +1608,10 @@ export class DataController {
             NULL::bigint as collateral1,
             NULL::bigint as debt0_shares,
             NULL::bigint as debt1_shares,
-            NULL::integer as collateral0_applied_min_cf_bps,
-            NULL::integer as collateral1_applied_min_cf_bps,
+            NULL::integer as collateral0_liquidation_cf_bps,
+            NULL::integer as collateral1_liquidation_cf_bps,
+            NULL::integer as collateral0_max_cf_bps,
+            NULL::integer as collateral1_max_cf_bps,
             transaction_signature,
             slot,
             event_timestamp
@@ -1646,8 +1642,10 @@ export class DataController {
             NULL::bigint as collateral1,
             NULL::bigint as debt0_shares,
             NULL::bigint as debt1_shares,
-            NULL::integer as collateral0_applied_min_cf_bps,
-            NULL::integer as collateral1_applied_min_cf_bps,
+            NULL::integer as collateral0_liquidation_cf_bps,
+            NULL::integer as collateral1_liquidation_cf_bps,
+            NULL::integer as collateral0_max_cf_bps,
+            NULL::integer as collateral1_max_cf_bps,
             transaction_signature,
             slot,
             event_timestamp
@@ -1678,8 +1676,10 @@ export class DataController {
             collateral1::bigint,
             debt0_shares::bigint,
             debt1_shares::bigint,
-            collateral0_applied_min_cf_bps::integer,
-            collateral1_applied_min_cf_bps::integer,
+            collateral0_liquidation_cf_bps::integer,
+            collateral1_liquidation_cf_bps::integer,
+            collateral0_max_cf_bps::integer,
+            collateral1_max_cf_bps::integer,
             transaction_signature,
             slot,
             event_timestamp
@@ -1744,8 +1744,10 @@ export class DataController {
               collateral1: row.collateral1,
               debt0_shares: row.debt0_shares,
               debt1_shares: row.debt1_shares,
-              collateral0_applied_min_cf_bps: row.collateral0_applied_min_cf_bps,
-              collateral1_applied_min_cf_bps: row.collateral1_applied_min_cf_bps,
+              collateral0_liquidation_cf_bps: row.collateral0_liquidation_cf_bps,
+              collateral1_liquidation_cf_bps: row.collateral1_liquidation_cf_bps,
+              collateral0_max_cf_bps: row.collateral0_max_cf_bps,
+              collateral1_max_cf_bps: row.collateral1_max_cf_bps,
               description: 'Position updated'
             };
           

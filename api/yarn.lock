@@ -211,9 +211,9 @@
   integrity sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==
 
 "@omnipair/program-interface@^0.9.2":
-  version "0.9.3"
-  resolved "https://registry.yarnpkg.com/@omnipair/program-interface/-/program-interface-0.9.3.tgz#8b1f21205e3664680251ada67635b4dd532b66e0"
-  integrity sha512-AEi1pj+dMFK1+Zu9m9Kms/rmUG4ocs2QEwttBp4+BlYGpsxJqNjOIKAOLeEoeMrJNRAq7dJjl+vKCrAvGbDtLw==
+  version "0.9.5"
+  resolved "https://registry.yarnpkg.com/@omnipair/program-interface/-/program-interface-0.9.5.tgz#84b20bb84e71148b3711b2c7a1112a49fcdae297"
+  integrity sha512-D5yS33WcNv0+KGzP2dyN22Mggn4kUmYyi6bGXpN7df0CSEozUzVtsU1aOHuEuaO7v460DfoZKviPXr0FgX2yNQ==
   dependencies:
     "@coral-xyz/anchor" ">=0.30.0"
     "@solana/web3.js" "^1.95.0"
@@ -447,9 +447,9 @@
   integrity sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==
 
 "@types/node@*":
-  version "25.2.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-25.2.2.tgz#0ddfe326c326afcb3422d32bfe5eb2938e1cb5db"
-  integrity sha512-BkmoP5/FhRYek5izySdkOneRyXYN35I860MFAGupTdebyE66uZaR+bXLHq8k4DirE5DwQi3NuhvRU1jqTVwUrQ==
+  version "25.2.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-25.2.3.tgz#9c18245be768bdb4ce631566c7da303a5c99a7f8"
+  integrity sha512-m0jEgYlYz+mDJZ2+F4v8D1AyQb+QzsNqRuI7xg1VQX/KlKS0qT9r1Mo16yo5F/MtifXFgaofIFsdFMox2SxIbQ==
   dependencies:
     undici-types "~7.16.0"
 

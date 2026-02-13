@@ -11,26 +11,31 @@ export type GetterType =
   | { spotPrice1Nad: {} }
   | { k: {} }
   | { getRates: {} }
-  | { getMinCollateralForDebt: {} }
-  | { getBorrowLimitAndCfBpsForCollateral: {} };
+  | { getBorrowLimitAndCfBpsForCollateral: {} }
+  | { reserves: {} }
+  | { cashReserves: {} }
+  | { swapQuote: {} };
 
 export type UserPositionGetterType =
-  | { userBorrowingPower: {} }
-  | { userAppliedCollateralFactorBps: {} }
-  | { userLiquidationCollateralFactorBps: {} }
+  | { userDynamicBorrowLimit: {} }
+  | { userDynamicCollateralFactorBps: {} }
+  | { userLiquidationCfBps: {} }
   | { userDebtUtilizationBps: {} }
   | { userLiquidationPrice: {} }
-  | { userDebtWithInterest: {} };
+  | { userDebtWithInterest: {} }
+  | { userIsLiquidatable: {} }
+  | { userCollateralValueWithImpact: {} }
+  | { userLiquidationBorrowLimit: {} };
 
 export interface SimulationResult {
   label: string;
   value0: string;
   value1: string;
+  value2: string;
 }
 
 export interface EmitValueArgs {
-  debtAmount: number | null;
-  collateralAmount: number | null;
-  collateralToken: PublicKey | null;
+  amount: number | null;
+  tokenMint: PublicKey | null;
 }
 

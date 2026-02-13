@@ -291,9 +291,10 @@ pub async fn upsert_user_position_updated_event(
         r#"
         INSERT INTO user_position_updated_events (
             pair, signer, position, collateral0, collateral1, debt0_shares, debt1_shares,
-            collateral0_applied_min_cf_bps, collateral1_applied_min_cf_bps,
+            collateral0_liquidation_cf_bps, collateral1_liquidation_cf_bps,
+            collateral0_max_cf_bps, collateral1_max_cf_bps,
             transaction_signature, slot, event_timestamp
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         ON CONFLICT (transaction_signature) DO UPDATE SET
             pair = EXCLUDED.pair,
             signer = EXCLUDED.signer,
@@ -302,8 +303,10 @@ pub async fn upsert_user_position_updated_event(
             collateral1 = EXCLUDED.collateral1,
             debt0_shares = EXCLUDED.debt0_shares,
             debt1_shares = EXCLUDED.debt1_shares,
-            collateral0_applied_min_cf_bps = EXCLUDED.collateral0_applied_min_cf_bps,
-            collateral1_applied_min_cf_bps = EXCLUDED.collateral1_applied_min_cf_bps,
+            collateral0_liquidation_cf_bps = EXCLUDED.collateral0_liquidation_cf_bps,
+            collateral1_liquidation_cf_bps = EXCLUDED.collateral1_liquidation_cf_bps,
+            collateral0_max_cf_bps = EXCLUDED.collateral0_max_cf_bps,
+            collateral1_max_cf_bps = EXCLUDED.collateral1_max_cf_bps,
             slot = EXCLUDED.slot,
             event_timestamp = EXCLUDED.event_timestamp
         "#
@@ -315,8 +318,10 @@ pub async fn upsert_user_position_updated_event(
     .bind(bigdecimal::BigDecimal::from(event.collateral1))
     .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt0_shares)))
     .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt1_shares)))
-    .bind(event.collateral0_applied_min_cf_bps as i32)
-    .bind(event.collateral1_applied_min_cf_bps as i32)
+    .bind(event.collateral0_liquidation_cf_bps as i32)
+    .bind(event.collateral1_liquidation_cf_bps as i32)
+    .bind(event.collateral0_max_cf_bps as i32)
+    .bind(event.collateral1_max_cf_bps as i32)
     .bind(tx_signature)
     .bind(bigdecimal::BigDecimal::from(slot))
     .bind(event_timestamp)
@@ -334,17 +339,20 @@ pub async fn upsert_user_position_updated_event(
         r#"
         INSERT INTO user_borrow_positions (
             pair, signer, position, collateral0, collateral1, debt0_shares, debt1_shares,
-            collateral0_applied_min_cf_bps, collateral1_applied_min_cf_bps,
+            collateral0_liquidation_cf_bps, collateral1_liquidation_cf_bps,
+            collateral0_max_cf_bps, collateral1_max_cf_bps,
             slot, event_timestamp, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         ON CONFLICT (pair, signer) DO UPDATE SET
             position = EXCLUDED.position,
             collateral0 = EXCLUDED.collateral0,
             collateral1 = EXCLUDED.collateral1,
             debt0_shares = EXCLUDED.debt0_shares,
             debt1_shares = EXCLUDED.debt1_shares,
-            collateral0_applied_min_cf_bps = EXCLUDED.collateral0_applied_min_cf_bps,
-            collateral1_applied_min_cf_bps = EXCLUDED.collateral1_applied_min_cf_bps,
+            collateral0_liquidation_cf_bps = EXCLUDED.collateral0_liquidation_cf_bps,
+            collateral1_liquidation_cf_bps = EXCLUDED.collateral1_liquidation_cf_bps,
+            collateral0_max_cf_bps = EXCLUDED.collateral0_max_cf_bps,
+            collateral1_max_cf_bps = EXCLUDED.collateral1_max_cf_bps,
             slot = EXCLUDED.slot,
             event_timestamp = EXCLUDED.event_timestamp,
             updated_at = now()
@@ -357,8 +365,10 @@ pub async fn upsert_user_position_updated_event(
     .bind(bigdecimal::BigDecimal::from(event.collateral1))
     .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt0_shares)))
     .bind(bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(event.debt1_shares)))
-    .bind(event.collateral0_applied_min_cf_bps as i32)
-    .bind(event.collateral1_applied_min_cf_bps as i32)
+    .bind(event.collateral0_liquidation_cf_bps as i32)
+    .bind(event.collateral1_liquidation_cf_bps as i32)
+    .bind(event.collateral0_max_cf_bps as i32)
+    .bind(event.collateral1_max_cf_bps as i32)
     .bind(bigdecimal::BigDecimal::from(slot))
     .bind(event_timestamp)
     .bind(chrono::Utc::now())

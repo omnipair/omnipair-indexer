@@ -41,48 +41,40 @@ export function extractValue(optionalUintStr: string): string {
 }
 
 /**
- * Parse simulation logs to extract tuple values
+ * Parse simulation logs to extract 3-tuple values.
+ * On-chain format: "Label: (OptionalUint, OptionalUint, OptionalUint)"
+ * e.g. "EmaPrice0Nad: (U64(123), OptionalU64(None), OptionalU64(None))"
+ * e.g. "GetBorrowLimitAndCfBpsForCollateral: (U64(1000), U16(6650), U16(7000))"
  */
 function parseSimulationLogs(
   logs: string[],
   label: string
-): { value0: string; value1: string } {
+): { value0: string; value1: string; value2: string } {
   // Convert camelCase to PascalCase to match Rust Display format (e.g., "emaPrice0Nad" -> "EmaPrice0Nad")
   const pascalLabel = label.charAt(0).toUpperCase() + label.slice(1);
 
-  // Updated regex to match tuple format: "EmaPrice0Nad: (U64(123), OptionalU64(None))"
-  // Use a more specific pattern to capture the complete second value
+  // Match individual OptionalUint values: U64(123), U128(456), U16(789), OptionalU64(Some(123)), OptionalU64(None)
+  const valuePattern = '(?:OptionalU\\d+\\([^)]*\\)|U\\d+\\(\\d+\\))';
+
+  // Match 3-tuple: "Label: (val1, val2, val3)"
+  const tupleRegex = new RegExp(
+    `${pascalLabel}:\\s*\\(\\s*(${valuePattern})\\s*,\\s*(${valuePattern})\\s*,\\s*(${valuePattern})\\s*\\)`,
+    'i'
+  );
+
   const match = logs
-    .map((log) => log.match(new RegExp(`${pascalLabel}:\\s*\\(([^,]+),\\s*([^)]+)\\)`, 'i')))
+    .map((log) => log.match(tupleRegex))
     .find(Boolean);
 
-  // If the second value is incomplete (missing closing parenthesis), try to fix it
-  if (match && match[2] && !match[2].includes(')')) {
-    // Look for the complete U16/U64 pattern in the original log
-    const completeMatch = logs
-      .map((log) =>
-        log.match(
-          new RegExp(
-            `${pascalLabel}:\\s*\\([^,]+,\\s*(U\\d+\\(\\d+\\)|OptionalU\\d+\\([^)]+\\))\\)`,
-            'i'
-          )
-        )
-      )
-      .find(Boolean);
-    if (completeMatch && completeMatch[1]) {
-      match[2] = completeMatch[1];
-    }
-  }
-
-  if (!match || !match[1] || !match[2]) {
+  if (!match || !match[1] || !match[2] || !match[3]) {
     throw new Error(`Tuple values for ${label} not found in logs`);
   }
 
-  // Extract numeric values from OptionalUint format
-  const value0 = extractValue(match[1]);
-  const value1 = extractValue(match[2]);
-
-  return { value0, value1 };
+  return {
+    value0: extractValue(match[1]),
+    value1: extractValue(match[2]),
+    value2: extractValue(match[3]),
+  };
 }
 
 /**
@@ -121,7 +113,7 @@ export async function simulatePairGetter(
       const ix = await program.methods
         .viewPairData(
           getter,
-          args || { debtAmount: null, collateralAmount: null, collateralToken: null }
+          args || { amount: null, tokenMint: null }
         )
         .accounts({ pair: pairPda, rateModel: rateModelPda })
         .instruction();
@@ -137,9 +129,9 @@ export async function simulatePairGetter(
       const label = Object.keys(getter)[0]; // e.g. "emaPrice0Nad"
 
       // Parse logs to extract values
-      const { value0, value1 } = parseSimulationLogs(logs, label);
+      const { value0, value1, value2 } = parseSimulationLogs(logs, label);
 
-      const result: SimulationResult = { label, value0, value1 };
+      const result: SimulationResult = { label, value0, value1, value2 };
 
       // Cache the result
       simulateCache.set(cacheKey, { result, timestamp: Date.now() });
@@ -203,12 +195,12 @@ export async function simulateUserPositionGetter(
       const simResult = await connection.simulateTransaction(tx);
 
       const logs = simResult.value.logs ?? [];
-      const label = Object.keys(getter)[0]; // e.g. "userBorrowingPower"
+      const label = Object.keys(getter)[0]; // e.g. "userDynamicBorrowLimit"
 
       // Parse logs to extract values
-      const { value0, value1 } = parseSimulationLogs(logs, label);
+      const { value0, value1, value2 } = parseSimulationLogs(logs, label);
 
-      const result: SimulationResult = { label, value0, value1 };
+      const result: SimulationResult = { label, value0, value1, value2 };
 
       return result;
     } finally {

@@ -24,7 +24,9 @@ function splitPosition(position: any): Array<any> {
   //
   // On-chain simulation returns (value0, value1) mapped to { token0, token1 }:
   //   Collateral-indexed: value0 = token0 as collateral, value1 = token1 as collateral
-  //   Debt-indexed:       value0 = token0 as debt,       value1 = token1 as debt
+  //     → liquidationBorrowLimit, collateralValueWithImpact, isLiquidatable
+  //   Debt-indexed: value0 = token0 as debt, value1 = token1 as debt
+  //     → dynamicBorrowLimit, debtWithInterest, liquidationPrice
   if (position.collateral0 && position.collateral0 !== '0') {
     positions.push({
       signer: position.signer,
@@ -41,10 +43,10 @@ function splitPosition(position: any): Array<any> {
         liquidation: position.collateral0_liquidation_cf_bps,
         max: position.collateral0_max_cf_bps,
       },
-      // Borrow limits from simulation (collateral-indexed → token0 = value0)
+      // Borrow limits from simulation
       borrowLimits: {
-        liquidation: position.liquidationBorrowLimit?.token0 || null,
-        dynamic: position.dynamicBorrowLimit?.token0 || null,
+        liquidation: position.liquidationBorrowLimit?.token0 || null, // collateral-indexed → token0
+        dynamic: position.dynamicBorrowLimit?.token1 || null,         // debt-indexed → token1
       },
       // Position health from simulation
       health: {
@@ -74,10 +76,10 @@ function splitPosition(position: any): Array<any> {
         liquidation: position.collateral1_liquidation_cf_bps,
         max: position.collateral1_max_cf_bps,
       },
-      // Borrow limits from simulation (collateral-indexed → token1 = value1)
+      // Borrow limits from simulation
       borrowLimits: {
-        liquidation: position.liquidationBorrowLimit?.token1 || null,
-        dynamic: position.dynamicBorrowLimit?.token1 || null,
+        liquidation: position.liquidationBorrowLimit?.token1 || null, // collateral-indexed → token1
+        dynamic: position.dynamicBorrowLimit?.token0 || null,         // debt-indexed → token0
       },
       // Position health from simulation
       health: {

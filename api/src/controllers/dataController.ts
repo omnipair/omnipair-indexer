@@ -857,6 +857,11 @@ export class DataController {
                 token0: pairState.reserves.token0,
                 token1: pairState.reserves.token1
               },
+              // Cash reserves (available liquidity excluding borrowed)
+              cash_reserves: {
+                token0: pairState.cashReserves.token0,
+                token1: pairState.cashReserves.token1
+              },
               // Oracle prices (EMA)
               oracle_prices: {
                 token0: pairState.oraclePrices.token0,
@@ -917,6 +922,10 @@ export class DataController {
                 icon: null
               },
               reserves: {
+                token0: '0',
+                token1: '0'
+              },
+              cash_reserves: {
                 token0: '0',
                 token1: '0'
               },

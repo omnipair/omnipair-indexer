@@ -288,22 +288,24 @@ export class DataController {
     const timestamp = now - (hours * 60 * 60);
     
 
-    const result = await pool.query(`
-      SELECT 
-        SUM(CASE WHEN is_token0_in = true THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume0,
-        SUM(CASE WHEN is_token0_in = false THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume1
-      FROM swaps 
-      WHERE timestamp > to_timestamp($1) AND pair = $2
-    `, [timestamp, pairAddress]);
+      const result = await pool.query(`
+        SELECT 
+          SUM(CASE WHEN is_token0_in = true THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume0,
+          SUM(CASE WHEN is_token0_in = false THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume1,
+          SUM(COALESCE(volume_usd, 0)) as total_volume_usd
+        FROM swaps 
+        WHERE timestamp > to_timestamp($1) AND pair = $2
+      `, [timestamp, pairAddress]);
 
-    const volumeData = {
-      volume0: result.rows[0].total_volume0 || '0',
-      volume1: result.rows[0].total_volume1 || '0',
-      period: `${hours}hrs`
-    };
+      const volumeData = {
+        volume0: result.rows[0].total_volume0 || '0',
+        volume1: result.rows[0].total_volume1 || '0',
+        volumeUsd: result.rows[0].total_volume_usd || '0',
+        period: `${hours}hrs`
+      };
 
-    // Cache for 10 seconds
-    cache.set(cacheKey, volumeData, 10 * 1000);
+      // Cache for 10 seconds
+      cache.set(cacheKey, volumeData, 10 * 1000);
 
     return volumeData;
   }
@@ -429,14 +431,16 @@ export class DataController {
       const result = await pool.query(`
         SELECT 
           SUM(CASE WHEN is_token0_in = true THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume0,
-          SUM(CASE WHEN is_token0_in = false THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume1
+          SUM(CASE WHEN is_token0_in = false THEN amount_in::numeric ELSE amount_out::numeric END) as total_volume1,
+          SUM(COALESCE(volume_usd, 0)) as total_volume_usd
         FROM swaps 
         WHERE timestamp > to_timestamp($1) AND pair = $2
       `, [timestamp, pairAddress]);
 
       const volumeData = {
         volume0: result.rows[0].total_volume0 || '0',
-        volume1: result.rows[0].total_volume1 || '0'
+        volume1: result.rows[0].total_volume1 || '0',
+        volumeUsd: result.rows[0].total_volume_usd || '0'
       };
       
       const responseData = {

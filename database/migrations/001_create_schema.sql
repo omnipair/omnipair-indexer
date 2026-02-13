@@ -93,6 +93,7 @@ CREATE TABLE swaps (
     fee_paid0 NUMERIC,
     fee_paid1 NUMERIC,
     ema_price NUMERIC,
+    volume_usd NUMERIC DEFAULT NULL,
     PRIMARY KEY ("timestamp", id),
     CONSTRAINT tx_sig UNIQUE (tx_sig, "timestamp")
 );

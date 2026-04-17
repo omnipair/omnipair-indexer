@@ -8,7 +8,7 @@ export class StatsController {
   static async getStats(_req: Request, res: Response): Promise<void> {
     try {
       const [tvlData, volumeData, feesData, interestData, swapCountData] = await Promise.all([
-        StatsController.computeTvl(),
+        StatsController.computeTvlAndCollateral(),
         StatsController.computeVolume(),
         StatsController.computeFees(),
         StatsController.computeInterest(),
@@ -19,6 +19,8 @@ export class StatsController {
         success: true,
         data: {
           tvl: tvlData.tvl,
+          liquidity_tvl: tvlData.liquidityTvl,
+          total_collateral_deposited: tvlData.totalCollateralDeposited,
           total_volume: volumeData.totalVolume,
           volume_24h: volumeData.volume24h,
           pool_count: tvlData.poolCount,
@@ -39,7 +41,12 @@ export class StatsController {
     }
   }
 
-  private static async computeTvl(): Promise<{ tvl: number; poolCount: number }> {
+  private static async computeTvlAndCollateral(): Promise<{
+    tvl: number;
+    liquidityTvl: number;
+    totalCollateralDeposited: number;
+    poolCount: number;
+  }> {
     const allPools = await PoolController.fetchAllPools(false);
 
     const uniqueMints = new Set<string>();
@@ -50,7 +57,8 @@ export class StatsController {
 
     const prices = await fetchTokenPrices(Array.from(uniqueMints));
 
-    let tvl = 0;
+    let liquidityTvl = 0;
+    let totalCollateralDeposited = 0;
     for (const p of allPools) {
       const reserve0 = parseFloat(p.reserves.token0);
       const reserve1 = parseFloat(p.reserves.token1);
@@ -58,15 +66,30 @@ export class StatsController {
       const price1 = prices.get(p.token1.address)?.price;
 
       if (price0 && price1) {
-        tvl += reserve0 * price0 + reserve1 * price1;
+        liquidityTvl += reserve0 * price0 + reserve1 * price1;
       } else if (price0) {
-        tvl += reserve0 * price0 * 2;
+        liquidityTvl += reserve0 * price0 * 2;
       } else if (price1) {
-        tvl += reserve1 * price1 * 2;
+        liquidityTvl += reserve1 * price1 * 2;
+      }
+
+      const collateral0 = parseFloat(p.total_collaterals?.token0 || '0') / Math.pow(10, p.token0.decimals || 0);
+      const collateral1 = parseFloat(p.total_collaterals?.token1 || '0') / Math.pow(10, p.token1.decimals || 0);
+
+      if (price0) {
+        totalCollateralDeposited += collateral0 * price0;
+      }
+      if (price1) {
+        totalCollateralDeposited += collateral1 * price1;
       }
     }
 
-    return { tvl, poolCount: allPools.length };
+    return {
+      tvl: liquidityTvl + totalCollateralDeposited,
+      liquidityTvl,
+      totalCollateralDeposited,
+      poolCount: allPools.length,
+    };
   }
 
   static async getVolumeChart(req: Request, res: Response): Promise<void> {

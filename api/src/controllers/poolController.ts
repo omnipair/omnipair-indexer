@@ -281,6 +281,10 @@ export class PoolController {
                 token0: pairState.totalDebts.token0,
                 token1: pairState.totalDebts.token1
               },
+              total_collaterals: {
+                token0: pairState.totalCollaterals.token0,
+                token1: pairState.totalCollaterals.token1
+              },
               utilization: {
                 token0: pairState.utilization.token0,
                 token1: pairState.utilization.token1
@@ -308,6 +312,7 @@ export class PoolController {
               spot_prices: { token0: '0', token1: '0' },
               interest_rates: { token0: 1, token1: 1 },
               total_debts: { token0: '0', token1: '0' },
+              total_collaterals: { token0: '0', token1: '0' },
               utilization: { token0: 0, token1: 0 },
               lp_token: { total_supply: '0', decimals: 0 },
               swap_fee_bps: poolData.swap_fee_bps,

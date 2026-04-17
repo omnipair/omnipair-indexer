@@ -57,6 +57,10 @@ export interface PairState {
     token0: string;
     token1: string;
   };
+  totalCollaterals: {
+    token0: string;
+    token1: string;
+  };
   utilization: {
     token0: number;
     token1: number;
@@ -198,6 +202,8 @@ export class PairStateService {
         cashReserve1,
         totalDebt0,
         totalDebt1,
+        totalCollateral0,
+        totalCollateral1,
         totalSupply,
       } = pairAccount;
 
@@ -287,6 +293,10 @@ export class PairStateService {
           token0: totalDebt0.toString(),
           token1: totalDebt1.toString(),
         },
+        totalCollaterals: {
+          token0: totalCollateral0.toString(),
+          token1: totalCollateral1.toString(),
+        },
         utilization: {
           token0: utilization0,
           token1: utilization1,
@@ -314,4 +324,3 @@ export class PairStateService {
     return this.program;
   }
 }
-

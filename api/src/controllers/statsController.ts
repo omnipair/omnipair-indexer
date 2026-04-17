@@ -8,7 +8,7 @@ export class StatsController {
   static async getStats(_req: Request, res: Response): Promise<void> {
     try {
       const [tvlData, volumeData, feesData, interestData, swapCountData] = await Promise.all([
-        StatsController.computeTvlAndCollateral(),
+        StatsController.computeTvlAndDeposits(),
         StatsController.computeVolume(),
         StatsController.computeFees(),
         StatsController.computeInterest(),
@@ -18,10 +18,11 @@ export class StatsController {
       res.json({
         success: true,
         data: {
-          tvl: tvlData.liquidityTvl,
-          liquidity_tvl: tvlData.liquidityTvl,
+          tvl: tvlData.cashReserveTvl,
+          liquidity_tvl: tvlData.cashReserveTvl,
+          virtual_reserve_tvl: tvlData.virtualReserveTvl,
           total_collateral_deposited: tvlData.totalCollateralDeposited,
-          protocol_tvl: tvlData.protocolTvl,
+          total_deposited: tvlData.totalDeposited,
           total_volume: volumeData.totalVolume,
           volume_24h: volumeData.volume24h,
           pool_count: tvlData.poolCount,
@@ -42,10 +43,11 @@ export class StatsController {
     }
   }
 
-  private static async computeTvlAndCollateral(): Promise<{
-    liquidityTvl: number;
+  private static async computeTvlAndDeposits(): Promise<{
+    cashReserveTvl: number;
+    virtualReserveTvl: number;
     totalCollateralDeposited: number;
-    protocolTvl: number;
+    totalDeposited: number;
     poolCount: number;
   }> {
     const allPools = await PoolController.fetchAllPools(false);
@@ -58,20 +60,26 @@ export class StatsController {
 
     const prices = await fetchTokenPrices(Array.from(uniqueMints));
 
-    let liquidityTvl = 0;
+    let cashReserveTvl = 0;
+    let virtualReserveTvl = 0;
     let totalCollateralDeposited = 0;
     for (const p of allPools) {
       const reserve0 = parseFloat(p.reserves.token0);
       const reserve1 = parseFloat(p.reserves.token1);
+      const cashReserve0 = parseFloat(p.cash_reserves?.token0 || '0');
+      const cashReserve1 = parseFloat(p.cash_reserves?.token1 || '0');
       const price0 = prices.get(p.token0.address)?.price;
       const price1 = prices.get(p.token1.address)?.price;
 
       if (price0 && price1) {
-        liquidityTvl += reserve0 * price0 + reserve1 * price1;
+        virtualReserveTvl += reserve0 * price0 + reserve1 * price1;
+        cashReserveTvl += cashReserve0 * price0 + cashReserve1 * price1;
       } else if (price0) {
-        liquidityTvl += reserve0 * price0 * 2;
+        virtualReserveTvl += reserve0 * price0 * 2;
+        cashReserveTvl += cashReserve0 * price0 * 2;
       } else if (price1) {
-        liquidityTvl += reserve1 * price1 * 2;
+        virtualReserveTvl += reserve1 * price1 * 2;
+        cashReserveTvl += cashReserve1 * price1 * 2;
       }
 
       const collateral0 = parseFloat(p.total_collaterals?.token0 || '0') / Math.pow(10, p.token0.decimals || 0);
@@ -86,9 +94,10 @@ export class StatsController {
     }
 
     return {
-      liquidityTvl,
+      cashReserveTvl,
+      virtualReserveTvl,
       totalCollateralDeposited,
-      protocolTvl: liquidityTvl + totalCollateralDeposited,
+      totalDeposited: virtualReserveTvl + totalCollateralDeposited,
       poolCount: allPools.length,
     };
   }

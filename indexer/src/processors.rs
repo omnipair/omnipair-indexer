@@ -6,8 +6,24 @@ use carbon_core::{
     processor::Processor,
     instruction::{DecodedInstruction, InstructionMetadata, NestedInstructions},
 };
-use carbon_omnipair_decoder::instructions::OmnipairInstruction;
-use crate::database;
+use omnipair_decoder::{
+    events::{
+        swap_event::SwapEventEvent as SwapEvent,
+        adjust_collateral_event::AdjustCollateralEventEvent as AdjustCollateralEvent,
+        adjust_debt_event::AdjustDebtEventEvent as AdjustDebtEvent,
+        adjust_liquidity_event::AdjustLiquidityEventEvent as AdjustLiquidityEvent,
+        burn_event::BurnEventEvent as BurnEvent,
+        mint_event::MintEventEvent as MintEvent,
+        pair_created_event::PairCreatedEventEvent as PairCreatedEvent,
+        update_pair_event::UpdatePairEventEvent as UpdatePairEvent,
+        user_position_created_event::UserPositionCreatedEventEvent as UserPositionCreatedEvent,
+        user_position_liquidated_event::UserPositionLiquidatedEventEvent as UserPositionLiquidatedEvent,
+        user_position_updated_event::UserPositionUpdatedEventEvent as UserPositionUpdatedEvent,
+        user_liquidity_position_updated_event::UserLiquidityPositionUpdatedEventEvent as UserLiquidityPositionUpdatedEvent,
+    },
+    instructions::CpiEvent,
+};
+use crate::{database, omnipair_decoder_adapter::OmnipairInstruction};
 
 pub struct OmnipairInstructionProcessor;
 
@@ -43,47 +59,8 @@ impl Processor for OmnipairInstructionProcessor {
         log::info!("Processing instruction: {:?}", instruction.data);
         
         match instruction.data {
-            OmnipairInstruction::SwapEvent(swap_event) => {
-                self.process_swap_event(swap_event, &metadata).await?;
-            }
-            OmnipairInstruction::AdjustCollateralEvent(event) => {
-                self.process_adjust_collateral_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::AdjustDebtEvent(event) => {
-                self.process_adjust_debt_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::AdjustLiquidityEvent(event) => {
-                self.process_adjust_liquidity_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::BurnEvent(event) => {
-                self.process_burn_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::MintEvent(event) => {
-                self.process_mint_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::PairCreatedEvent(event) => {
-                self.process_pair_created_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::UpdatePairEvent(event) => {
-                self.process_update_pair_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::ClaimProtocolFeesEvent(_event) => {
-                log::debug!("ClaimProtocolFeesEvent received - not persisted");
-            }
-            OmnipairInstruction::FlashloanEvent(_event) => {
-                log::debug!("FlashloanEvent received - not persisted");
-            }
-            OmnipairInstruction::UserPositionCreatedEvent(event) => {
-                self.process_user_position_created_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::UserPositionLiquidatedEvent(event) => {
-                self.process_user_position_liquidated_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::UserPositionUpdatedEvent(event) => {
-                self.process_user_position_updated_event(event, &metadata).await?;
-            }
-            OmnipairInstruction::UserLiquidityPositionUpdatedEvent(event) => {
-                self.process_user_liquidity_position_updated_event(event, &metadata).await?;
+            OmnipairInstruction::CpiEvent(event) => {
+                self.process_cpi_event(event, &metadata).await?;
             }
             _ => {
                 log::debug!("Unhandled instruction type: {:?}", instruction.data);
@@ -95,9 +72,62 @@ impl Processor for OmnipairInstructionProcessor {
 }
 
 impl OmnipairInstructionProcessor {
+    async fn process_cpi_event(
+        &self,
+        event: CpiEvent,
+        metadata: &InstructionMetadata,
+    ) -> CarbonResult<()> {
+        match event {
+            CpiEvent::SwapEvent(event) => {
+                self.process_swap_event(event, metadata).await?;
+            }
+            CpiEvent::AdjustCollateralEvent(event) => {
+                self.process_adjust_collateral_event(event, metadata).await?;
+            }
+            CpiEvent::AdjustDebtEvent(event) => {
+                self.process_adjust_debt_event(event, metadata).await?;
+            }
+            CpiEvent::AdjustLiquidityEvent(event) => {
+                self.process_adjust_liquidity_event(event, metadata).await?;
+            }
+            CpiEvent::BurnEvent(event) => {
+                self.process_burn_event(event, metadata).await?;
+            }
+            CpiEvent::MintEvent(event) => {
+                self.process_mint_event(event, metadata).await?;
+            }
+            CpiEvent::PairCreatedEvent(event) => {
+                self.process_pair_created_event(event, metadata).await?;
+            }
+            CpiEvent::UpdatePairEvent(event) => {
+                self.process_update_pair_event(event, metadata).await?;
+            }
+            CpiEvent::ClaimProtocolFeesEvent(_event) => {
+                log::debug!("ClaimProtocolFeesEvent received - not persisted");
+            }
+            CpiEvent::FlashloanEvent(_event) => {
+                log::debug!("FlashloanEvent received - not persisted");
+            }
+            CpiEvent::UserPositionCreatedEvent(event) => {
+                self.process_user_position_created_event(event, metadata).await?;
+            }
+            CpiEvent::UserPositionLiquidatedEvent(event) => {
+                self.process_user_position_liquidated_event(event, metadata).await?;
+            }
+            CpiEvent::UserPositionUpdatedEvent(event) => {
+                self.process_user_position_updated_event(event, metadata).await?;
+            }
+            CpiEvent::UserLiquidityPositionUpdatedEvent(event) => {
+                self.process_user_liquidity_position_updated_event(event, metadata).await?;
+            }
+        }
+
+        Ok(())
+    }
+
     async fn process_swap_event(
         &self, 
-        swap_event: carbon_omnipair_decoder::instructions::swap_event::SwapEvent,
+        swap_event: SwapEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -132,7 +162,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_adjust_collateral_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::adjust_collateral_event::AdjustCollateralEvent,
+        event: AdjustCollateralEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -162,7 +192,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_adjust_debt_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::adjust_debt_event::AdjustDebtEvent,
+        event: AdjustDebtEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -192,7 +222,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_adjust_liquidity_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::adjust_liquidity_event::AdjustLiquidityEvent,
+        event: AdjustLiquidityEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -217,7 +247,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_burn_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::burn_event::BurnEvent,
+        event: BurnEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -257,7 +287,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_mint_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::mint_event::MintEvent,
+        event: MintEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -297,7 +327,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_pair_created_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::pair_created_event::PairCreatedEvent,
+        event: PairCreatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -361,7 +391,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_update_pair_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::update_pair_event::UpdatePairEvent,
+        event: UpdatePairEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         let tx_signature = metadata.transaction_metadata.signature.to_string();
@@ -395,7 +425,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_user_position_created_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::user_position_created_event::UserPositionCreatedEvent,
+        event: UserPositionCreatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -418,7 +448,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_user_position_liquidated_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::user_position_liquidated_event::UserPositionLiquidatedEvent,
+        event: UserPositionLiquidatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -452,7 +482,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_user_position_updated_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::user_position_updated_event::UserPositionUpdatedEvent,
+        event: UserPositionUpdatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(
@@ -485,7 +515,7 @@ impl OmnipairInstructionProcessor {
 
     async fn process_user_liquidity_position_updated_event(
         &self,
-        event: carbon_omnipair_decoder::instructions::user_liquidity_position_updated_event::UserLiquidityPositionUpdatedEvent,
+        event: UserLiquidityPositionUpdatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
         log::info!(

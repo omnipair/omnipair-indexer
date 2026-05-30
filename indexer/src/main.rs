@@ -1,11 +1,12 @@
 use carbon_core::error::CarbonResult;
-use carbon_omnipair_decoder::PROGRAM_ID as OMNIPAIR_PROGRAM_ID;
+use omnipair_decoder_adapter::PROGRAM_ID as OMNIPAIR_PROGRAM_ID;
 use clap::Parser;
 use std::time::Duration;
 
 mod config;
 mod database;
 mod datasources;
+mod omnipair_decoder_adapter;
 mod pipeline;
 mod processors;
 mod signals;

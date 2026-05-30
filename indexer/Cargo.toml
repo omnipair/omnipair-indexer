@@ -13,12 +13,15 @@ carbon-prometheus-metrics = { workspace = true }
 carbon-rpc-program-subscribe-datasource = { workspace = true }
 carbon-rpc-transaction-crawler-datasource = { workspace = true }
 carbon-helius-atlas-ws-datasource = { workspace = true }
-carbon-omnipair-decoder = { workspace = true }
+carbon-core-v012 = { workspace = true }
+omnipair-decoder = { workspace = true }
 solana-account-decoder.workspace = true
 solana-client.workspace = true
 solana-commitment-config.workspace = true
 solana-instruction = { workspace = true, default-features = false }
+solana-instruction-v3 = { workspace = true, default-features = false }
 solana-pubkey = { workspace = true }
+solana-pubkey-v3 = { workspace = true }
 solana-signature = { workspace = true }
 solana-transaction-status = { workspace = true }
 

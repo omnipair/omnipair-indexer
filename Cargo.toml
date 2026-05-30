@@ -6,7 +6,6 @@ members = [
     "indexer/crates/test-utils",
     "indexer/metrics/*",
     "indexer/datasources/*",
-    "indexer/decoders/*",
     "indexer",
     "grpc"
 ]
@@ -31,7 +30,8 @@ carbon-prometheus-metrics = { path = "indexer/metrics/prometheus-metrics", versi
 carbon-rpc-program-subscribe-datasource = { path = "indexer/datasources/rpc-program-subscribe-datasource", version = "0.9.1" }
 carbon-rpc-transaction-crawler-datasource = { path = "indexer/datasources/rpc-transaction-crawler-datasource", version = "0.9.1" }
 carbon-helius-atlas-ws-datasource = { path = "indexer/datasources/helius-atlas-ws-datasource", version = "0.9.1" }
-carbon-omnipair-decoder = { path = "indexer/decoders/omnipair_decoder", version = "0.9.1" }
+carbon-core-v012 = { package = "carbon-core", version = "0.12.0", default-features = false, features = ["macros"] }
+omnipair-decoder = { version = "=0.10.3" }
 
 # misc
 anyhow = "1.0.96"
@@ -70,9 +70,11 @@ solana-client = "~2.2"
 solana-clock = "~2.2"
 solana-hash = "~2.2"
 solana-instruction = { version = "~2.2", default-features = false }
+solana-instruction-v3 = { package = "solana-instruction", version = "~3.0.0", default-features = false }
 solana-message = "~2.2"
 solana-program = "~2.2"
 solana-pubkey = { version = "~2.2", features = ["serde", "borsh", "curve25519"] }
+solana-pubkey-v3 = { package = "solana-pubkey", version = "^3.0.0", features = ["borsh"] }
 solana-signature = { version = "~2.2", features = ["rand"] }
 solana-transaction = "~2.2"
 solana-transaction-context = "~2.2"

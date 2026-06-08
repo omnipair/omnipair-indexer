@@ -3,6 +3,7 @@ import { PoolController } from '../../controllers/poolController';
 import { SwapController } from '../../controllers/swapController';
 import { UserController } from '../../controllers/userController';
 import { MarketValueBaselineController } from '../../controllers/marketValueBaselineController';
+import { BorrowRateHistoryController } from '../../controllers/borrowRateHistoryController';
 
 const router = Router();
 
@@ -25,6 +26,10 @@ router.get('/paired-tokens/:tokenAddress', async (req: Request, res: Response) =
 router.get('/:poolAddress/stats', normalizeWindowHours, async (req: Request, res: Response) => {
   req.params.pairAddress = req.params.poolAddress;
   await SwapController.getAPR(req, res);
+});
+
+router.get('/:poolAddress/rate-history', async (req: Request, res: Response) => {
+  await BorrowRateHistoryController.getBorrowRateHistory(req, res);
 });
 
 router.get('/:poolAddress/volume', normalizeWindowHours, async (req: Request, res: Response) => {

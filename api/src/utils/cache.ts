@@ -160,8 +160,10 @@ class SimpleCache {
 
 export const cache = new SimpleCache();
 
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   cache.cleanup();
 }, 5 * 60 * 1000);
+
+cleanupInterval.unref();
 
 export default cache;

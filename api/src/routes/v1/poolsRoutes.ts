@@ -4,6 +4,7 @@ import { SwapController } from '../../controllers/swapController';
 import { UserController } from '../../controllers/userController';
 import { MarketValueBaselineController } from '../../controllers/marketValueBaselineController';
 import { BorrowRateHistoryController } from '../../controllers/borrowRateHistoryController';
+import { MarketActivityController } from '../../controllers/marketActivityController';
 
 const router = Router();
 
@@ -64,6 +65,10 @@ router.get('/:poolAddress/candles', async (req: Request, res: Response) => {
 router.get('/:poolAddress/swaps', async (req: Request, res: Response) => {
   req.params.pairAddress = req.params.poolAddress;
   await SwapController.getSwaps(req, res);
+});
+
+router.get('/:poolAddress/activity', async (req: Request, res: Response) => {
+  await MarketActivityController.getMarketActivity(req, res);
 });
 
 router.get('/:poolAddress/liquidity-events', async (req: Request, res: Response) => {

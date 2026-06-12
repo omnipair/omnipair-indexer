@@ -35,6 +35,7 @@ Migrations are in `./migrations/` and applied in alphabetical order:
 | `014_add_pools_categories.sql` | Adds the legacy `pools.categories` text column used by earlier pool-tag flows |
 | `015_add_token_categories.sql` | Adds normalized token category tables and invalidates pool cache when assignments change |
 | `016_add_pool_category_assignments.sql` | Adds explicit pool-level category assignments and backfills legacy token/pool tags |
+| `017_add_market_activity_indexes.sql` | Adds pair/time indexes for market-scoped activity history |
 
 ### Apply a single migration
 

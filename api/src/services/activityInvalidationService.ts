@@ -29,6 +29,17 @@ function invalidateForUser(userAddress: string, pair?: string): void {
   }
 }
 
+function invalidateForPool(pair?: string): void {
+  if (!pair) {
+    return;
+  }
+
+  const removed = cache.deleteByPrefix(`activity:pool:${pair}:`);
+  if (removed > 0) {
+    console.log(`[cache] invalidated market activity caches pair=${pair} removed=${removed}`);
+  }
+}
+
 function safeParsePayload(payload?: string): Record<string, any> | null {
   if (!payload) {
     return null;
@@ -66,6 +77,7 @@ export async function startActivityInvalidationListener(): Promise<void> {
       if (userAddress) {
         invalidateForUser(userAddress, pair);
       }
+      invalidateForPool(pair);
       return;
     }
 
@@ -75,6 +87,7 @@ export async function startActivityInvalidationListener(): Promise<void> {
       if (userAddress) {
         invalidateForUser(userAddress, pair);
       }
+      invalidateForPool(pair);
     }
   });
 

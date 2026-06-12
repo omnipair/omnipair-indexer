@@ -33,6 +33,7 @@ router.get('/', (req, res) => {
         'price-chart': 'GET /api/v1/pools/{poolAddress}/price-chart?windowHours=24',
         'borrow-rate-history': 'GET /api/v1/pools/{poolAddress}/rate-history?range=1H|2H|4H|12H|24H|7D|30D',
         'pool-swaps': 'GET /api/v1/pools/{poolAddress}/swaps?limit=100&offset=0',
+        'activity': 'GET /api/v1/pools/{poolAddress}/activity?categories=swaps,liquidity,lending&limit=100&offset=0&sort=recent',
         'liquidity-events': 'GET /api/v1/pools/{poolAddress}/liquidity-events?userAddress=ADDR',
         'paired-tokens': 'GET /api/v1/pools/paired-tokens/{tokenAddress}'
       },

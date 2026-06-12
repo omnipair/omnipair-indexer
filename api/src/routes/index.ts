@@ -26,16 +26,20 @@ router.get('/', (req, res) => {
     endpoints: {
       pools: {
         'list-pools': 'GET /api/v1/pools?token0=ADDR&token1=ADDR&limit=100&offset=0&sortBy=tvl&sortOrder=desc',
+        'pool-tvl': 'GET /api/v1/pools/tvl',
+        'market-value-baselines': 'GET /api/v1/pools/value-baselines?range=1H|2H|4H|12H|24H|7D&visibility=visible|all',
+        'paired-tokens': 'GET /api/v1/pools/paired-tokens/{tokenAddress}',
         'pool-info': 'GET /api/v1/pools/{poolAddress}',
         'pool-stats': 'GET /api/v1/pools/{poolAddress}/stats?windowHours=24',
         'pool-volume': 'GET /api/v1/pools/{poolAddress}/volume?windowHours=24',
         'pool-fees': 'GET /api/v1/pools/{poolAddress}/fees?windowHours=24',
         'price-chart': 'GET /api/v1/pools/{poolAddress}/price-chart?windowHours=24',
         'borrow-rate-history': 'GET /api/v1/pools/{poolAddress}/rate-history?range=1H|2H|4H|12H|24H|7D|30D',
+        'candles': 'GET /api/v1/pools/{poolAddress}/candles?resolution=15&from=UNIX_SECONDS&to=UNIX_SECONDS',
         'pool-swaps': 'GET /api/v1/pools/{poolAddress}/swaps?limit=100&offset=0',
         'activity': 'GET /api/v1/pools/{poolAddress}/activity?categories=swaps,liquidity,lending&limit=100&offset=0&sort=recent',
         'liquidity-events': 'GET /api/v1/pools/{poolAddress}/liquidity-events?userAddress=ADDR',
-        'paired-tokens': 'GET /api/v1/pools/paired-tokens/{tokenAddress}'
+        'og-card': 'GET /api/v1/pools/{poolAddress}/og'
       },
       users: {
         'user-swaps': 'GET /api/v1/users/{userAddress}/swaps?poolAddress=ADDR&limit=100&offset=0',
@@ -55,7 +59,8 @@ router.get('/', (req, res) => {
         'protocol-stats': 'GET /api/v1/stats',
         'volume-chart': 'GET /api/v1/stats/volume-chart?timeframe=7d',
         'fees-chart': 'GET /api/v1/stats/fees-chart?timeframe=7d',
-        'interest-chart': 'GET /api/v1/stats/interest-chart?timeframe=7d'
+        'interest-chart': 'GET /api/v1/stats/interest-chart?timeframe=7d',
+        'swap-count-chart': 'GET /api/v1/stats/swap-count-chart?timeframe=7d'
       },
       coingecko: {
         'tickers': 'GET /api/v1/coingecko/tickers'
@@ -83,6 +88,12 @@ router.get('/', (req, res) => {
       token0: 'Optional - The address of the first token (query param)',
       token1: 'Optional - The address of the second token (query param)',
       windowHours: 'Optional - Number of hours to look back (defaults to 24)',
+      range: 'Optional - Time range for endpoints that support it',
+      visibility: 'Optional - Pool visibility filter (visible, all)',
+      timeframe: 'Optional - Chart timeframe (7d, 30d, all)',
+      resolution: 'Optional - Candle resolution in minutes (1, 5, 15, 60, 240, 1440)',
+      from: 'Required for candles - Start Unix timestamp in seconds',
+      to: 'Required for candles - End Unix timestamp in seconds',
       userAddress: 'Required for user endpoints - The user address to query data for',
       categories: 'Optional - Comma-separated activity categories (swaps, liquidity, lending)',
       limit: 'Optional - Number of results to return (defaults to 100, max 100)',
@@ -91,7 +102,11 @@ router.get('/', (req, res) => {
       sortBy: 'Optional - Field to sort by (id, timestamp, amount0, amount1, liquidity, tvl, volume24h, apr)',
       sortOrder: 'Optional - Sort order (asc, desc)',
       type: 'Optional - Filter by position type (liquidity, lending, borrow, long, short, all)',
-      status: 'Optional - Filter by position status (open, closed, all)'
+      status: 'Optional - Filter by position status (open, closed, all)',
+      market_pair: 'Required for CMC trades - Market pair id as mint0_mint1',
+      id: 'Required for Gecko asset/pair endpoints - Token mint or pair address',
+      fromBlock: 'Required for Gecko events - Start slot',
+      toBlock: 'Required for Gecko events - End slot'
     },
     notes: {
       'chart-intervals': 'Chart automatically selects intervals: ≤24hrs=1min, ≤168hrs=1hr, >168hrs=1day',

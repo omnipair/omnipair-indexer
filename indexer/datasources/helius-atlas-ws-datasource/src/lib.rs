@@ -1,6 +1,6 @@
 use {
     async_trait::async_trait,
-    base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _},
+    base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD},
     carbon_core::{
         datasource::{
             AccountDeletion, AccountUpdate, Datasource, DatasourceId, TransactionUpdate, Update,
@@ -11,9 +11,9 @@ use {
     },
     futures::StreamExt,
     helius::{
+        Helius,
         types::{Cluster, RpcTransactionsConfig},
         websocket::EnhancedWebsocket,
-        Helius,
     },
     solana_account::Account,
     solana_clock::Clock,
@@ -22,8 +22,9 @@ use {
     solana_signature::Signature,
     solana_transaction_context::TransactionReturnData,
     solana_transaction_status::{
-        option_serializer::OptionSerializer, InnerInstruction, InnerInstructions, Reward,
-        TransactionStatusMeta, TransactionTokenBalance, UiInstruction, UiLoadedAddresses,
+        InnerInstruction, InnerInstructions, Reward, TransactionStatusMeta,
+        TransactionTokenBalance, UiInstruction, UiLoadedAddresses,
+        option_serializer::OptionSerializer,
     },
     std::{
         collections::HashSet,
@@ -31,7 +32,7 @@ use {
         sync::Arc,
         time::{Duration, Instant},
     },
-    tokio::sync::{mpsc::Sender, RwLock},
+    tokio::sync::{RwLock, mpsc::Sender},
     tokio_util::sync::CancellationToken,
 };
 
@@ -42,11 +43,14 @@ const MAX_RECONNECTION_ATTEMPTS: u32 = 30;
 const RECONNECTION_DELAY_MS: u64 = 3000;
 
 fn decode_compiled_instruction_data(data: &str) -> Vec<u8> {
-    BASE64_STANDARD
-        .decode(data)
-        .or_else(|_| bs58::decode(data).into_vec())
+    bs58::decode(data)
+        .into_vec()
+        .or_else(|_| BASE64_STANDARD.decode(data))
         .unwrap_or_else(|error| {
-            log::error!("Failed to decode compiled inner instruction data: {}", error);
+            log::error!(
+                "Failed to decode compiled inner instruction data: {}",
+                error
+            );
             vec![]
         })
 }

@@ -6,8 +6,14 @@ import statsRoutes from './v1/statsRoutes';
 import coingeckoRoutes from './v1/coingeckoRoutes';
 import cmcApiRoutes from './v1/cmcApiRoutes';
 import geckoTerminalRoutes from './v1/geckoTerminalRoutes';
+import v2MarketsRoutes from './v2/marketsRoutes';
+import v2UsersRoutes from './v2/usersRoutes';
 
 const router = Router();
+
+router.get('/health', (_req, res) => {
+  res.json({ success: true, service: 'omnipair-v2-api' });
+});
 
 router.use('/api/v1/cmc', cmcApiRoutes);
 router.use('/api/v1/pools', poolsRoutes);
@@ -16,6 +22,8 @@ router.use('/api/v1/positions', positionsRoutes);
 router.use('/api/v1/stats', statsRoutes);
 router.use('/api/v1/coingecko', coingeckoRoutes);
 router.use('/api/v1/gecko', geckoTerminalRoutes);
+router.use('/api/v2/markets', v2MarketsRoutes);
+router.use('/api/v2/users', v2UsersRoutes);
 
 router.get('/', (req, res) => {
   res.json({
@@ -24,6 +32,13 @@ router.get('/', (req, res) => {
     version: '1.0.0',
     baseUrl: '/api/v1',
     endpoints: {
+      v2: {
+        'list-markets': 'GET /api/v2/markets?baseMint=ADDR&quoteMint=ADDR&limit=100&offset=0',
+        'market-info': 'GET /api/v2/markets/{marketAddress}',
+        'market-swaps': 'GET /api/v2/markets/{marketAddress}/swaps?limit=100&offset=0',
+        'user-positions': 'GET /api/v2/users/{wallet}/positions',
+        'user-activity': 'GET /api/v2/users/{wallet}/activity?market=ADDR&limit=100&offset=0'
+      },
       pools: {
         'list-pools': 'GET /api/v1/pools?token0=ADDR&token1=ADDR&limit=100&offset=0&sortBy=tvl&sortOrder=desc',
         'pool-tvl': 'GET /api/v1/pools/tvl',

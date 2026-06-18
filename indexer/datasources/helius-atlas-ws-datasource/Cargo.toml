@@ -15,6 +15,7 @@ crate-type = ["rlib"]
 [dependencies]
 bincode = { workspace = true }
 bs58 = { workspace = true }
+base64 = { workspace = true }
 helius = { workspace = true }
 solana-account = { workspace = true }
 solana-clock = { workspace = true }

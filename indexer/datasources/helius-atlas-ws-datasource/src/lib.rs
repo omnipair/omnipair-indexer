@@ -1,5 +1,6 @@
 use {
     async_trait::async_trait,
+    base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _},
     carbon_core::{
         datasource::{
             AccountDeletion, AccountUpdate, Datasource, DatasourceId, TransactionUpdate, Update,
@@ -39,6 +40,16 @@ const MAINNET_WS_URL: &str = "wss://atlas-mainnet.helius-rpc.com/";
 const MAX_MISSED_BLOCKS: u64 = 10;
 const MAX_RECONNECTION_ATTEMPTS: u32 = 30;
 const RECONNECTION_DELAY_MS: u64 = 3000;
+
+fn decode_compiled_instruction_data(data: &str) -> Vec<u8> {
+    BASE64_STANDARD
+        .decode(data)
+        .or_else(|_| bs58::decode(data).into_vec())
+        .unwrap_or_else(|error| {
+            log::error!("Failed to decode compiled inner instruction data: {}", error);
+            vec![]
+        })
+}
 
 #[derive(Debug, Clone)]
 pub struct Filters {
@@ -450,11 +461,10 @@ impl Datasource for HeliusWebsocket {
                                                                 .iter()
                                                                 .map(|ui_instruction| match ui_instruction {
                                                                     UiInstruction::Compiled(compiled_ui_instruction) => {
-                                                                        let decoded_data = bs58::decode(
-                                                                            compiled_ui_instruction.data.clone(),
-                                                                        )
-                                                                        .into_vec()
-                                                                        .unwrap_or_else(|_| vec![]);
+                                                                        let decoded_data =
+                                                                            decode_compiled_instruction_data(
+                                                                                &compiled_ui_instruction.data,
+                                                                            );
                                                                         InnerInstruction {
                                                                             instruction: CompiledInstruction {
                                                                                 program_id_index: compiled_ui_instruction

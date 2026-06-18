@@ -1,7 +1,8 @@
-use carbon_core::error::CarbonResult;
-use carbon_omnipair_decoder::PROGRAM_ID as OMNIPAIR_PROGRAM_ID;
-use clap::Parser;
-use std::time::Duration;
+use {
+    carbon_core::error::CarbonResult,
+    carbon_omnipair_decoder::v2::PROGRAM_ID as OMNIPAIR_V2_PROGRAM_ID, clap::Parser,
+    std::time::Duration,
+};
 
 mod config;
 mod database;
@@ -10,8 +11,10 @@ mod pipeline;
 mod processors;
 mod signals;
 
-use config::{Args, Config};
-use pipeline::{create_pipeline, run_pipeline};
+use {
+    config::{Args, Config},
+    pipeline::{create_pipeline, run_pipeline},
+};
 
 #[tokio::main]
 pub async fn main() -> CarbonResult<()> {
@@ -23,7 +26,7 @@ pub async fn main() -> CarbonResult<()> {
     let config = Config::from_args(args);
 
     log::info!("Starting Omnipair Indexer Daemon");
-    log::info!("Program ID: {:?}", *OMNIPAIR_PROGRAM_ID);
+    log::info!("V2 Program ID: {:?}", *OMNIPAIR_V2_PROGRAM_ID);
 
     // Validate configuration
     if let Err(e) = config.validate() {

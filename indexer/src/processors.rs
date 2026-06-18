@@ -1,13 +1,15 @@
-use std::sync::Arc;
-use async_trait::async_trait;
-use carbon_core::{
-    error::CarbonResult,
-    metrics::MetricsCollection,
-    processor::Processor,
-    instruction::{DecodedInstruction, InstructionMetadata, NestedInstructions},
+use {
+    crate::database,
+    async_trait::async_trait,
+    carbon_core::{
+        error::CarbonResult,
+        instruction::{DecodedInstruction, InstructionMetadata, NestedInstructions},
+        metrics::MetricsCollection,
+        processor::Processor,
+    },
+    carbon_omnipair_decoder::v2::instructions::OmnipairV2Instruction,
+    std::sync::Arc,
 };
-use carbon_omnipair_decoder::instructions::OmnipairInstruction;
-use crate::database;
 
 pub struct OmnipairInstructionProcessor;
 
@@ -30,7 +32,7 @@ fn instruction_path(metadata: &InstructionMetadata) -> String {
 impl Processor for OmnipairInstructionProcessor {
     type InputType = (
         InstructionMetadata,
-        DecodedInstruction<OmnipairInstruction>,
+        DecodedInstruction<OmnipairV2Instruction>,
         NestedInstructions,
         solana_instruction::Instruction,
     );
@@ -40,53 +42,237 @@ impl Processor for OmnipairInstructionProcessor {
         (metadata, instruction, _nested_instructions, _raw_instruction): Self::InputType,
         _metrics: Arc<MetricsCollection>,
     ) -> CarbonResult<()> {
-        log::info!("Processing instruction: {:?}", instruction.data);
-        
+        log::info!("Processing V2 instruction: {:?}", instruction.data);
+
         match instruction.data {
-            OmnipairInstruction::SwapEvent(swap_event) => {
-                self.process_swap_event(swap_event, &metadata).await?;
+            OmnipairV2Instruction::MarketCreated(event) => {
+                database::upsert_v2_market_created_event(
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::AdjustCollateralEvent(event) => {
-                self.process_adjust_collateral_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketUpdated(event) => {
+                database::upsert_v2_market_updated_event(
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::AdjustDebtEvent(event) => {
-                self.process_adjust_debt_event(event, &metadata).await?;
+            OmnipairV2Instruction::SwapExecuted(event) => {
+                database::upsert_v2_swap_executed_event(
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::AdjustLiquidityEvent(event) => {
-                self.process_adjust_liquidity_event(event, &metadata).await?;
+            OmnipairV2Instruction::LiquidityAdded(event) => {
+                database::record_v2_event(
+                    "liquidity_added",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::BurnEvent(event) => {
-                self.process_burn_event(event, &metadata).await?;
+            OmnipairV2Instruction::LiquidityRemoved(event) => {
+                database::record_v2_event(
+                    "liquidity_removed",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::MintEvent(event) => {
-                self.process_mint_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketCollateralDeposited(event) => {
+                database::record_v2_event(
+                    "collateral_deposited",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::PairCreatedEvent(event) => {
-                self.process_pair_created_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketCollateralWithdrawn(event) => {
+                database::record_v2_event(
+                    "collateral_withdrawn",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::UpdatePairEvent(event) => {
-                self.process_update_pair_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketDebtUpdated(event) => {
+                database::record_v2_event(
+                    "debt_updated",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.debt_asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::ClaimProtocolFeesEvent(_event) => {
-                log::debug!("ClaimProtocolFeesEvent received - not persisted");
+            OmnipairV2Instruction::MarketStakeUpdated(event) => {
+                database::record_v2_event(
+                    "stake_updated",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::FlashloanEvent(_event) => {
-                log::debug!("FlashloanEvent received - not persisted");
+            OmnipairV2Instruction::MarketFeesClaimed(event) => {
+                database::record_v2_event(
+                    "fees_claimed",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::UserPositionCreatedEvent(event) => {
-                self.process_user_position_created_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketFeeLiabilityClaimed(event) => {
+                database::record_v2_event(
+                    "market_fee_liability_claimed",
+                    event.market,
+                    Some(event.authority),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::UserPositionLiquidatedEvent(event) => {
-                self.process_user_position_liquidated_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketHedgeFeesClaimed(event) => {
+                database::record_v2_event(
+                    "hedge_fees_claimed",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::UserPositionUpdatedEvent(event) => {
-                self.process_user_position_updated_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketInsuranceFunded(event) => {
+                database::record_v2_event(
+                    "insurance_funded",
+                    event.market,
+                    Some(event.sponsor),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
-            OmnipairInstruction::UserLiquidityPositionUpdatedEvent(event) => {
-                self.process_user_liquidity_position_updated_event(event, &metadata).await?;
+            OmnipairV2Instruction::MarketHedgeOpened(event) => {
+                database::record_v2_event(
+                    "hedge_opened",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+            }
+            OmnipairV2Instruction::MarketHedgeClosed(event) => {
+                database::record_v2_event(
+                    "hedge_closed",
+                    event.market,
+                    Some(event.owner),
+                    Some(event.asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+            }
+            OmnipairV2Instruction::PositionLiquidated(event) => {
+                database::record_v2_event(
+                    "position_liquidated",
+                    event.market,
+                    Some(event.borrower),
+                    Some(event.debt_asset_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+            }
+            OmnipairV2Instruction::MarketHealthUpdated(event) => {
+                database::record_v2_event(
+                    "market_health_updated",
+                    event.market,
+                    None,
+                    None,
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
             }
             _ => {
-                log::debug!("Unhandled instruction type: {:?}", instruction.data);
+                log::debug!("Unhandled V2 instruction type: {:?}", instruction.data);
             }
         }
 
@@ -96,15 +282,12 @@ impl Processor for OmnipairInstructionProcessor {
 
 impl OmnipairInstructionProcessor {
     async fn process_swap_event(
-        &self, 
+        &self,
         swap_event: carbon_omnipair_decoder::instructions::swap_event::SwapEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "SwapEvent processed - Details: {:#?}",
-            swap_event,
-        );
-        
+        log::info!("SwapEvent processed - Details: {:#?}", swap_event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
         let instruction_index = metadata.index as i32;
@@ -115,18 +298,20 @@ impl OmnipairInstructionProcessor {
             slot,
             instruction_index,
             &instruction_path,
-        ).await {
+        )
+        .await
+        {
             log::error!("Failed to insert swap event: {}", e);
             return Err(e);
         }
 
         log::info!(
-            "Successfully processed SwapEvent - Pair: {}, User: {}, TxSig: {}", 
-            swap_event.metadata.pair, 
-            swap_event.metadata.signer, 
+            "Successfully processed SwapEvent - Pair: {}, User: {}, TxSig: {}",
+            swap_event.metadata.pair,
+            swap_event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -135,28 +320,26 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::adjust_collateral_event::AdjustCollateralEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "AdjustCollateralEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("AdjustCollateralEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
-        
-        if let Err(e) = database::upsert_adjust_collateral_event(&event, &tx_signature, slot).await {
+
+        if let Err(e) = database::upsert_adjust_collateral_event(&event, &tx_signature, slot).await
+        {
             log::error!("Failed to insert adjust collateral event: {}", e);
             return Err(e);
         }
-        
+
         log::info!(
-            "Successfully processed AdjustCollateralEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed AdjustCollateralEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}",
             event.amount0,
             event.amount1,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -165,28 +348,25 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::adjust_debt_event::AdjustDebtEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "AdjustDebtEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("AdjustDebtEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
-        
+
         if let Err(e) = database::upsert_adjust_debt_event(&event, &tx_signature, slot).await {
             log::error!("Failed to insert adjust debt event: {}", e);
             return Err(e);
         }
-        
+
         log::info!(
-            "Successfully processed AdjustDebtEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed AdjustDebtEvent - Amount0: {}, Amount1: {}, Pair: {}, User: {}, TxSig: {}",
             event.amount0,
             event.amount1,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -195,23 +375,20 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::adjust_liquidity_event::AdjustLiquidityEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "AdjustLiquidityEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("AdjustLiquidityEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
-        
+
         log::info!(
-            "Successfully processed AdjustLiquidityEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed AdjustLiquidityEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}",
             event.amount0,
             event.amount1,
             event.liquidity,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -220,11 +397,8 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::burn_event::BurnEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "BurnEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("BurnEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
         let instruction_index = metadata.index as i32;
@@ -237,21 +411,23 @@ impl OmnipairInstructionProcessor {
             slot,
             instruction_index,
             &instruction_path,
-        ).await {
+        )
+        .await
+        {
             log::error!("Failed to save burn event to database: {}", e);
             return Err(e);
         }
-        
+
         log::info!(
-            "Successfully processed BurnEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed BurnEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}",
             event.amount0,
             event.amount1,
             event.liquidity,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -260,11 +436,8 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::mint_event::MintEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "MintEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("MintEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
         let instruction_index = metadata.index as i32;
@@ -277,21 +450,23 @@ impl OmnipairInstructionProcessor {
             slot,
             instruction_index,
             &instruction_path,
-        ).await {
+        )
+        .await
+        {
             log::error!("Failed to save mint event to database: {}", e);
             return Err(e);
         }
-        
+
         log::info!(
-            "Successfully processed MintEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed MintEvent - Amount0: {}, Amount1: {}, Liquidity: {}, Pair: {}, User: {}, TxSig: {}",
             event.amount0,
             event.amount1,
             event.liquidity,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -300,14 +475,11 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::pair_created_event::PairCreatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "PairCreatedEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("PairCreatedEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
-        
+
         if let Err(e) = database::upsert_pair_created_event(&event, &tx_signature, slot).await {
             log::error!("Failed to insert pair created event: {}", e);
             return Err(e);
@@ -320,7 +492,7 @@ impl OmnipairInstructionProcessor {
             "token0": event.token0.to_string(),
             "token1": event.token1.to_string()
         });
-        
+
         match reqwest::Client::new()
             .post(webhook_url)
             .header("Content-Type", "application/json")
@@ -330,21 +502,32 @@ impl OmnipairInstructionProcessor {
         {
             Ok(response) => {
                 if response.status().is_success() {
-                    log::info!("Successfully sent webhook notification for pair: {}", event.metadata.pair);
+                    log::info!(
+                        "Successfully sent webhook notification for pair: {}",
+                        event.metadata.pair
+                    );
                 } else {
-                    log::warn!("Webhook request failed with status: {} for pair: {}", response.status(), event.metadata.pair);
+                    log::warn!(
+                        "Webhook request failed with status: {} for pair: {}",
+                        response.status(),
+                        event.metadata.pair
+                    );
                 }
             }
             Err(e) => {
-                log::error!("Failed to send webhook notification for pair {}: {}", event.metadata.pair, e);
+                log::error!(
+                    "Failed to send webhook notification for pair {}: {}",
+                    event.metadata.pair,
+                    e
+                );
             }
         }
-        
+
         log::info!(
-            "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, Lp Mint: {}, Rate Model: {}, Swap Fee Bps: {}, Half Life: {}, Fixed Cf Bps: {:?}, Params Hash: {:?}, Version: {}, TxSig: {}", 
+            "Successfully processed PairCreatedEvent - Token0: {}, Token1: {}, Pair: {}, User: {}, Lp Mint: {}, Rate Model: {}, Swap Fee Bps: {}, Half Life: {}, Fixed Cf Bps: {:?}, Params Hash: {:?}, Version: {}, TxSig: {}",
             event.token0,
             event.token1,
-            event.metadata.pair, 
+            event.metadata.pair,
             event.metadata.signer,
             event.lp_mint,
             event.rate_model,
@@ -355,7 +538,7 @@ impl OmnipairInstructionProcessor {
             event.version,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -375,7 +558,9 @@ impl OmnipairInstructionProcessor {
             slot,
             instruction_index,
             &instruction_path,
-        ).await {
+        )
+        .await
+        {
             log::error!("Failed to insert update pair event: {}", e);
             return Err(e);
         }
@@ -398,21 +583,18 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::user_position_created_event::UserPositionCreatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "UserPositionCreatedEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("UserPositionCreatedEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
-        
+
         log::info!(
-            "Successfully processed UserPositionCreatedEvent - Position: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed UserPositionCreatedEvent - Position: {}, Pair: {}, User: {}, TxSig: {}",
             event.position,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -425,28 +607,30 @@ impl OmnipairInstructionProcessor {
             "UserPositionLiquidatedEvent processed - Details: {:#?}",
             event,
         );
-        
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
-        
-        if let Err(e) = database::upsert_user_position_liquidated_event(&event, &tx_signature, slot).await {
+
+        if let Err(e) =
+            database::upsert_user_position_liquidated_event(&event, &tx_signature, slot).await
+        {
             log::error!("Failed to insert user position liquidated event: {}", e);
             return Err(e);
         }
-        
+
         log::info!(
-            "Successfully processed UserPositionLiquidatedEvent - Position: {}, Liquidator: {}, Collateral0 Liquidated: {}, Collateral1 Liquidated: {}, Debt0 Liquidated: {}, Debt1 Liquidated: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed UserPositionLiquidatedEvent - Position: {}, Liquidator: {}, Collateral0 Liquidated: {}, Collateral1 Liquidated: {}, Debt0 Liquidated: {}, Debt1 Liquidated: {}, Pair: {}, User: {}, TxSig: {}",
             event.position,
             event.liquidator,
             event.collateral0_liquidated,
             event.collateral1_liquidated,
             event.debt0_liquidated,
             event.debt1_liquidated,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -455,31 +639,30 @@ impl OmnipairInstructionProcessor {
         event: carbon_omnipair_decoder::instructions::user_position_updated_event::UserPositionUpdatedEvent,
         metadata: &InstructionMetadata,
     ) -> CarbonResult<()> {
-        log::info!(
-            "UserPositionUpdatedEvent processed - Details: {:#?}",
-            event,
-        );
-        
+        log::info!("UserPositionUpdatedEvent processed - Details: {:#?}", event,);
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
-        
-        if let Err(e) = database::upsert_user_position_updated_event(&event, &tx_signature, slot).await {
+
+        if let Err(e) =
+            database::upsert_user_position_updated_event(&event, &tx_signature, slot).await
+        {
             log::error!("Failed to insert user position updated event: {}", e);
             return Err(e);
         }
-        
+
         log::info!(
-            "Successfully processed UserPositionUpdatedEvent - Position: {}, Collateral0: {}, Collateral1: {}, Debt0 Shares: {}, Debt1 Shares: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed UserPositionUpdatedEvent - Position: {}, Collateral0: {}, Collateral1: {}, Debt0 Shares: {}, Debt1 Shares: {}, Pair: {}, User: {}, TxSig: {}",
             event.position,
             event.collateral0,
             event.collateral1,
             event.debt0_shares,
             event.debt1_shares,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
 
@@ -492,7 +675,7 @@ impl OmnipairInstructionProcessor {
             "UserLiquidityPositionUpdatedEvent processed - Details: {:#?}",
             event,
         );
-        
+
         let tx_signature = metadata.transaction_metadata.signature.to_string();
         let slot = metadata.transaction_metadata.slot as i64;
         let instruction_index = metadata.index as i32;
@@ -503,25 +686,29 @@ impl OmnipairInstructionProcessor {
             slot,
             instruction_index,
             &instruction_path,
-        ).await {
-            log::error!("Failed to insert user liquidity position updated event: {}", e);
+        )
+        .await
+        {
+            log::error!(
+                "Failed to insert user liquidity position updated event: {}",
+                e
+            );
             return Err(e);
         }
-        
+
         log::info!(
-            "Successfully processed UserLiquidityPositionUpdatedEvent - Token0 Amount: {}, Token1 Amount: {}, LP Amount: {}, Token0 Mint: {}, Token1 Mint: {}, LP Mint: {}, Pair: {}, User: {}, TxSig: {}", 
+            "Successfully processed UserLiquidityPositionUpdatedEvent - Token0 Amount: {}, Token1 Amount: {}, LP Amount: {}, Token0 Mint: {}, Token1 Mint: {}, LP Mint: {}, Pair: {}, User: {}, TxSig: {}",
             event.token0_amount,
             event.token1_amount,
             event.lp_amount,
             event.token0_mint,
             event.token1_mint,
             event.lp_mint,
-            event.metadata.pair, 
-            event.metadata.signer, 
+            event.metadata.pair,
+            event.metadata.signer,
             tx_signature
         );
-        
+
         Ok(())
     }
-
 }

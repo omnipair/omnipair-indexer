@@ -326,11 +326,11 @@ impl Datasource for HeliusWebsocket {
                                                         metrics.increment_counter("helius_atlas_ws_account_deletions_received", 1).await.unwrap_or_else(|value| log::error!("Error recording metric: {}", value));
 
 
-                                                        if let Err(err) = sender_clone.try_send((
+                                                        if sender_clone.send((
                                                             Update::AccountDeletion(account_deletion),
                                                             id_for_account.clone(),
-                                                        )) {
-                                                            log::error!("Error sending account update: {:?}", err);
+                                                        )).await.is_err() {
+                                                            log::error!("Pipeline channel closed while sending account deletion update");
                                                             break;
                                                         }
                                                     }
@@ -347,11 +347,11 @@ impl Datasource for HeliusWebsocket {
                                                     metrics.increment_counter("helius_atlas_ws_account_updates_received", 1).await.unwrap_or_else(|value| log::error!("Error recording metric: {}", value));
 
 
-                                                    if let Err(err) = sender_clone.try_send((
+                                                    if sender_clone.send((
                                                         update,
                                                         id_for_account.clone(),
-                                                    )) {
-                                                        log::error!("Error sending account update: {:?}", err);
+                                                    )).await.is_err() {
+                                                        log::error!("Pipeline channel closed while sending account update");
                                                         break;
                                                     }
                                                 }
@@ -610,11 +610,11 @@ impl Datasource for HeliusWebsocket {
                                             metrics.increment_counter("helius_atlas_ws_transaction_updates_received", 1).await.unwrap_or_else(|value| log::error!("Error recording metric: {}", value));
 
 
-                                            if let Err(err) = sender_clone.try_send((
+                                            if sender_clone.send((
                                                 update,
                                                 id_for_transaction.clone(),
-                                            )) {
-                                                log::error!("Error sending transaction update: {:?}", err);
+                                            )).await.is_err() {
+                                                log::error!("Pipeline channel closed while sending transaction update");
                                                 break;
                                             }
                                         },

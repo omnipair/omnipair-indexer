@@ -11,7 +11,7 @@ mod processors;
 mod signals;
 
 use config::{Args, Config};
-use pipeline::{create_pipeline, run_pipeline};
+use pipeline::{create_pipeline, run_pipeline, PipelineExit};
 
 #[tokio::main]
 pub async fn main() -> CarbonResult<()> {
@@ -53,10 +53,14 @@ async fn run_daemon_loop(config: &Config) -> CarbonResult<()> {
         log::info!("Starting indexer pipeline...");
 
         match run_indexer_instance(config).await {
-            Ok(_) => {
+            PipelineExit::Shutdown => {
+                log::info!("Shutdown complete, exiting");
+                return Ok(());
+            }
+            PipelineExit::Completed => {
                 log::warn!("Pipeline finished unexpectedly, restarting...");
             }
-            Err(e) => {
+            PipelineExit::Error(e) => {
                 log::error!("Pipeline error: {:?}", e);
                 log::info!("Retrying in {}s...", retry_delay.as_secs());
                 tokio::time::sleep(retry_delay).await;
@@ -75,7 +79,11 @@ async fn run_daemon_loop(config: &Config) -> CarbonResult<()> {
     }
 }
 
-async fn run_indexer_instance(config: &Config) -> CarbonResult<()> {
-    let pipeline = create_pipeline(config).await?;
+async fn run_indexer_instance(config: &Config) -> PipelineExit {
+    let pipeline = match create_pipeline(config).await {
+        Ok(pipeline) => pipeline,
+        Err(e) => return PipelineExit::Error(e),
+    };
+
     run_pipeline(pipeline).await
 }

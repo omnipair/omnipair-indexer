@@ -382,6 +382,7 @@ pub async fn upsert_user_position_updated_event(
             slot = EXCLUDED.slot,
             event_timestamp = EXCLUDED.event_timestamp,
             updated_at = now()
+        WHERE EXCLUDED.slot >= user_borrow_positions.slot
         "#
     )
     .bind(event.metadata.pair.to_string())
@@ -582,6 +583,7 @@ pub async fn upsert_user_liquidity_position_updated_event(
             lp_amount = EXCLUDED.lp_amount,
             updated_at = now(),
             slot = EXCLUDED.slot
+        WHERE EXCLUDED.slot >= user_liquidity_positions.slot
         "#
     )
     .bind(event.metadata.pair.to_string())

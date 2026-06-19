@@ -10,6 +10,13 @@ use crate::{
     processors::OmnipairInstructionProcessor,
 };
 
+#[derive(Debug)]
+pub enum PipelineExit {
+    Shutdown,
+    Completed,
+    Error(carbon_core::error::Error),
+}
+
 /// Creates and configures the indexer pipeline based on the provided configuration
 pub async fn create_pipeline(config: &Config) -> CarbonResult<Pipeline> {
     // Require Helius API key for transaction monitoring
@@ -50,32 +57,31 @@ pub async fn create_pipeline(config: &Config) -> CarbonResult<Pipeline> {
 }
 
 /// Runs the indexer pipeline with graceful shutdown handling
-pub async fn run_pipeline(mut pipeline: Pipeline) -> CarbonResult<()> {
+pub async fn run_pipeline(mut pipeline: Pipeline) -> PipelineExit {
     log::info!("Pipeline configured, starting execution...");
 
-    // Run pipeline with graceful shutdown handling
     tokio::select! {
         result = pipeline.run() => {
             match result {
                 Ok(_) => {
                     log::info!("Pipeline completed successfully");
-                    Ok(())
+                    PipelineExit::Completed
                 }
                 Err(e) => {
                     log::error!("Pipeline execution failed: {:?}", e);
-                    Err(e)
+                    PipelineExit::Error(e)
                 }
             }
         }
         _ = tokio::signal::ctrl_c() => {
             log::info!("Received shutdown signal (Ctrl+C)");
             log::info!("Shutting down gracefully...");
-            Ok(())
+            PipelineExit::Shutdown
         }
         _ = crate::signals::shutdown_signal() => {
             log::info!("Received system shutdown signal");
             log::info!("Shutting down gracefully...");
-            Ok(())
+            PipelineExit::Shutdown
         }
     }
 }

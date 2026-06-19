@@ -25,7 +25,8 @@ indexer/
 ├── Cargo.toml                 # Package configuration
 ├── railway.toml               # Railway deployment config
 ├── src/
-│   └── main.rs               # Main indexer daemon
+│   ├── main.rs               # Main indexer daemon
+│   └── omnipair_decoder_adapter.rs # Bridge to the published omnipair-decoder crate
 ├── crates/                   # Carbon framework crates
 │   ├── core/                 # Core pipeline functionality
 │   ├── macros/               # Helper macros
@@ -33,8 +34,6 @@ indexer/
 │   └── test-utils/           # Testing utilities
 ├── datasources/              # Data source implementations
 │   └── rpc-program-subscribe-datasource/
-├── decoders/                 # Protocol decoders
-│   └── omnipair_decoder/     # Omnipair protocol decoder
 └── metrics/                  # Metrics implementations
     ├── log-metrics/          # Structured logging metrics
     └── prometheus-metrics/   # Prometheus metrics (planned)

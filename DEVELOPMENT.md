@@ -93,8 +93,7 @@ omnipair-indexer/
 │   │   └── test-utils/          # Testing utilities
 │   ├── datasources/             # Data source implementations
 │   │   └── rpc-program-subscribe-datasource/
-│   ├── decoders/                # Protocol decoders
-│   │   └── omnipair_decoder/    # Omnipair-specific decoder
+│   ├── src/omnipair_decoder_adapter.rs # Bridge to the published omnipair-decoder crate
 │   ├── metrics/                 # Metrics implementations
 │   │   ├── log-metrics/         # Structured logging
 │   │   └── prometheus-metrics/  # Prometheus integration (planned)
@@ -262,22 +261,17 @@ bun run migrate
 
 ### Adding New Event Types
 
-#### 1. Update Rust Decoder
+#### 1. Bump The Published Rust Decoder
 
 ```rust
-// indexer/decoders/omnipair_decoder/src/instructions/mod.rs
-pub mod new_event;
-
-// indexer/decoders/omnipair_decoder/src/instructions/new_event.rs
-use carbon_core::deserialize::CarbonDeserialize;
-
-#[derive(Debug, Clone, CarbonDeserialize)]
-pub struct NewEvent {
-    pub user: Pubkey,
-    pub amount: u64,
-    pub timestamp: i64,
-}
+// Cargo.toml
+omnipair-decoder = { version = "=<new-version>" }
 ```
+
+The indexer consumes Omnipair layouts from the published `omnipair-decoder`
+crate. Do not hand-edit the legacy generated decoder; bump the crate version,
+then update `indexer/src/omnipair_decoder_adapter.rs`, processors, and database
+handlers if the new IDL adds or renames events.
 
 #### 2. Add Event Processing
 

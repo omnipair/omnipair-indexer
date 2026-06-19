@@ -1,15 +1,15 @@
 use carbon_core::error::CarbonResult;
-use carbon_omnipair_decoder::instructions::{
-    swap_event::SwapEvent,
-    mint_event::MintEvent,
-    burn_event::BurnEvent,
-    adjust_collateral_event::AdjustCollateralEvent,
-    adjust_debt_event::AdjustDebtEvent,
-    user_position_updated_event::UserPositionUpdatedEvent,
-    user_position_liquidated_event::UserPositionLiquidatedEvent,
-    user_liquidity_position_updated_event::UserLiquidityPositionUpdatedEvent,
-    pair_created_event::PairCreatedEvent,
-    update_pair_event::UpdatePairEvent,
+use omnipair_decoder::events::{
+    swap_event::SwapEventEvent as SwapEvent,
+    mint_event::MintEventEvent as MintEvent,
+    burn_event::BurnEventEvent as BurnEvent,
+    adjust_collateral_event::AdjustCollateralEventEvent as AdjustCollateralEvent,
+    adjust_debt_event::AdjustDebtEventEvent as AdjustDebtEvent,
+    user_position_updated_event::UserPositionUpdatedEventEvent as UserPositionUpdatedEvent,
+    user_position_liquidated_event::UserPositionLiquidatedEventEvent as UserPositionLiquidatedEvent,
+    user_liquidity_position_updated_event::UserLiquidityPositionUpdatedEventEvent as UserLiquidityPositionUpdatedEvent,
+    pair_created_event::PairCreatedEventEvent as PairCreatedEvent,
+    update_pair_event::UpdatePairEventEvent as UpdatePairEvent,
 };
 use sqlx::PgPool;
 use tokio::sync::OnceCell;

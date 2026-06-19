@@ -6,6 +6,7 @@
 pub mod config;
 pub mod database;
 pub mod datasources;
+pub mod omnipair_decoder_adapter;
 pub mod pipeline;
 pub mod processors;
 pub mod signals;

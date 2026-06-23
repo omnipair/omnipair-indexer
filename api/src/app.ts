@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import dotenv from 'dotenv';
 import routes from './routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -31,8 +31,8 @@ const limiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     const cfIp = req.headers['cf-connecting-ip'];
-    if (typeof cfIp === 'string') return cfIp;
-    return req.ip || req.socket.remoteAddress || 'unknown';
+    if (typeof cfIp === 'string') return ipKeyGenerator(cfIp);
+    return ipKeyGenerator(req.ip || req.socket.remoteAddress || 'unknown');
   },
   message: { success: false, error: 'Too many requests, please try again later.' },
 });

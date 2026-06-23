@@ -13,21 +13,17 @@ function marketRow(row: any) {
     marketAddress: row.market_address,
     baseMint: row.base_mint,
     quoteMint: row.quote_mint,
-    baseClaimTokenMint: row.base_claim_token_mint,
-    quoteClaimTokenMint: row.quote_claim_token_mint,
-    baseHedgeTokenMint: row.base_hedge_token_mint,
-    quoteHedgeTokenMint: row.quote_hedge_token_mint,
-    baseStakeVault: row.base_stake_vault,
-    quoteStakeVault: row.quote_stake_vault,
+    baseYlpMint: row.base_ylp_mint,
+    quoteYlpMint: row.quote_ylp_mint,
+    baseHlpMint: row.base_hlp_mint,
+    quoteHlpMint: row.quote_hlp_mint,
     baseCollateralVault: row.base_collateral_vault,
     quoteCollateralVault: row.quote_collateral_vault,
     baseInsuranceVault: row.base_insurance_vault,
     quoteInsuranceVault: row.quote_insurance_vault,
-    baseHedgeVault: row.base_hedge_vault,
-    quoteHedgeVault: row.quote_hedge_vault,
     operator: row.operator,
     manager: row.manager,
-    bufferRatioBps: row.buffer_ratio_bps,
+    targetHlpLeverageBps: row.target_hlp_leverage_bps,
     swapFeeBps: row.swap_fee_bps,
     operatorFeeBps: row.operator_fee_bps,
     protocolFeeBps: row.protocol_fee_bps,
@@ -40,6 +36,27 @@ function marketRow(row: any) {
     updatedAt: row.updated_at,
     swapCount: Number(row.swap_count ?? 0),
     lastSwapAt: row.last_swap_at ?? null,
+    state: row.snapshot_updated_at
+      ? {
+          baseReserve: row.snapshot_base_reserve,
+          quoteReserve: row.snapshot_quote_reserve,
+          baseYlpSupply: row.snapshot_base_ylp_supply,
+          quoteYlpSupply: row.snapshot_quote_ylp_supply,
+          fixedBaseDebt: row.snapshot_fixed_base_debt,
+          fixedQuoteDebt: row.snapshot_fixed_quote_debt,
+          recognizedBaseCollateralForQuoteDebt:
+            row.snapshot_recognized_base_collateral_for_quote_debt,
+          recognizedQuoteCollateralForBaseDebt:
+            row.snapshot_recognized_quote_collateral_for_base_debt,
+          effectiveBaseDebtNad: row.snapshot_effective_base_debt_nad,
+          effectiveQuoteDebtNad: row.snapshot_effective_quote_debt_nad,
+          baseDebtHealthBps: row.snapshot_base_debt_health_bps,
+          quoteDebtHealthBps: row.snapshot_quote_debt_health_bps,
+          sourceTxSig: row.snapshot_source_tx_sig,
+          sourceSlot: row.snapshot_source_slot,
+          updatedAt: row.snapshot_updated_at,
+        }
+      : null,
   };
 }
 
@@ -90,12 +107,31 @@ export class V2MarketController {
       const result = await pool.query(`
         SELECT
           m.*,
-          COUNT(s.id) AS swap_count,
-          MAX(s.timestamp) AS last_swap_at
+          COALESCE(s.swap_count, 0) AS swap_count,
+          s.last_swap_at,
+          snapshot.base_reserve AS snapshot_base_reserve,
+          snapshot.quote_reserve AS snapshot_quote_reserve,
+          snapshot.base_ylp_supply AS snapshot_base_ylp_supply,
+          snapshot.quote_ylp_supply AS snapshot_quote_ylp_supply,
+          snapshot.fixed_base_debt AS snapshot_fixed_base_debt,
+          snapshot.fixed_quote_debt AS snapshot_fixed_quote_debt,
+          snapshot.recognized_base_collateral_for_quote_debt AS snapshot_recognized_base_collateral_for_quote_debt,
+          snapshot.recognized_quote_collateral_for_base_debt AS snapshot_recognized_quote_collateral_for_base_debt,
+          snapshot.effective_base_debt_nad AS snapshot_effective_base_debt_nad,
+          snapshot.effective_quote_debt_nad AS snapshot_effective_quote_debt_nad,
+          snapshot.base_debt_health_bps AS snapshot_base_debt_health_bps,
+          snapshot.quote_debt_health_bps AS snapshot_quote_debt_health_bps,
+          snapshot.source_tx_sig AS snapshot_source_tx_sig,
+          snapshot.source_slot AS snapshot_source_slot,
+          snapshot.updated_at AS snapshot_updated_at
         FROM v2_markets m
-        LEFT JOIN v2_swaps s ON s.market = m.market_address
+        LEFT JOIN (
+          SELECT market, COUNT(*) AS swap_count, MAX(timestamp) AS last_swap_at
+          FROM v2_swaps
+          GROUP BY market
+        ) s ON s.market = m.market_address
+        LEFT JOIN v2_market_snapshots snapshot ON snapshot.market = m.market_address
         ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
-        GROUP BY m.market_address
         ORDER BY m.updated_at DESC
         LIMIT $${values.length - 1} OFFSET $${values.length}
       `, values);
@@ -124,12 +160,31 @@ export class V2MarketController {
       const result = await pool.query(`
         SELECT
           m.*,
-          COUNT(s.id) AS swap_count,
-          MAX(s.timestamp) AS last_swap_at
+          COALESCE(s.swap_count, 0) AS swap_count,
+          s.last_swap_at,
+          snapshot.base_reserve AS snapshot_base_reserve,
+          snapshot.quote_reserve AS snapshot_quote_reserve,
+          snapshot.base_ylp_supply AS snapshot_base_ylp_supply,
+          snapshot.quote_ylp_supply AS snapshot_quote_ylp_supply,
+          snapshot.fixed_base_debt AS snapshot_fixed_base_debt,
+          snapshot.fixed_quote_debt AS snapshot_fixed_quote_debt,
+          snapshot.recognized_base_collateral_for_quote_debt AS snapshot_recognized_base_collateral_for_quote_debt,
+          snapshot.recognized_quote_collateral_for_base_debt AS snapshot_recognized_quote_collateral_for_base_debt,
+          snapshot.effective_base_debt_nad AS snapshot_effective_base_debt_nad,
+          snapshot.effective_quote_debt_nad AS snapshot_effective_quote_debt_nad,
+          snapshot.base_debt_health_bps AS snapshot_base_debt_health_bps,
+          snapshot.quote_debt_health_bps AS snapshot_quote_debt_health_bps,
+          snapshot.source_tx_sig AS snapshot_source_tx_sig,
+          snapshot.source_slot AS snapshot_source_slot,
+          snapshot.updated_at AS snapshot_updated_at
         FROM v2_markets m
-        LEFT JOIN v2_swaps s ON s.market = m.market_address
+        LEFT JOIN (
+          SELECT market, COUNT(*) AS swap_count, MAX(timestamp) AS last_swap_at
+          FROM v2_swaps
+          GROUP BY market
+        ) s ON s.market = m.market_address
+        LEFT JOIN v2_market_snapshots snapshot ON snapshot.market = m.market_address
         WHERE m.market_address = $1
-        GROUP BY m.market_address
       `, [marketAddress]);
 
       if (!result.rows.length) {
@@ -144,7 +199,7 @@ export class V2MarketController {
     }
   }
 
-  static async getMarketSwaps(req: Request, res: Response): Promise<void> {
+  static async getSwaps(req: Request, res: Response): Promise<void> {
     try {
       const marketAddress = req.params.marketAddress;
       if (!marketAddress || !isValidAddress(marketAddress)) {
@@ -253,8 +308,9 @@ export class V2MarketController {
         WHERE owner = $1
           AND event_type IN (
             'liquidity_added', 'liquidity_removed', 'collateral_deposited',
-            'collateral_withdrawn', 'debt_updated', 'stake_updated',
-            'hedge_opened', 'hedge_closed', 'position_liquidated'
+            'collateral_withdrawn', 'debt_updated', 'yield_claimed',
+            'yield_recipient_updated', 'hlp_opened', 'hlp_closed',
+            'hlp_rebalanced', 'position_liquidated'
           )
         ORDER BY market, owner, COALESCE(asset_mint, ''), timestamp DESC
       `, [wallet]);

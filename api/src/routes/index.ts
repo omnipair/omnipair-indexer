@@ -35,7 +35,7 @@ router.get('/', (req, res) => {
       v2: {
         'list-markets': 'GET /api/v2/markets?baseMint=ADDR&quoteMint=ADDR&limit=100&offset=0',
         'market-info': 'GET /api/v2/markets/{marketAddress}',
-        'market-swaps': 'GET /api/v2/markets/{marketAddress}/swaps?limit=100&offset=0',
+        swaps: 'GET /api/v2/markets/{marketAddress}/swaps?limit=100&offset=0',
         'user-positions': 'GET /api/v2/users/{wallet}/positions',
         'user-activity': 'GET /api/v2/users/{wallet}/activity?market=ADDR&limit=100&offset=0'
       },

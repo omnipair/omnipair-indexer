@@ -36,8 +36,12 @@ echo "Applying All Migrations"
 echo "============================================"
 echo ""
 
-# Count migrations
-MIGRATION_COUNT=$(ls -1 migrations/*.sql 2>/dev/null | wc -l)
+MIGRATIONS=()
+while IFS= read -r migration; do
+    MIGRATIONS+=("$migration")
+done < <(find migrations -maxdepth 1 -type f -name '*.sql' ! -name 'truncate_all_data.sql' | sort)
+
+MIGRATION_COUNT=${#MIGRATIONS[@]}
 if [ "$MIGRATION_COUNT" -eq 0 ]; then
     echo "No migrations found in migrations/"
     exit 0
@@ -50,16 +54,16 @@ echo ""
 APPLIED=0
 FAILED=0
 
-for migration in migrations/*.sql; do
+for migration in "${MIGRATIONS[@]}"; do
     MIGRATION_NAME=$(basename "$migration")
     echo -n "  -> $MIGRATION_NAME ... "
     
-    if psql "$DATABASE_URL" -f "$migration" -q 2>/dev/null; then
+    if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration" -q; then
         echo "OK"
-        ((APPLIED++))
+        APPLIED=$((APPLIED + 1))
     else
         echo "FAILED"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 done
 

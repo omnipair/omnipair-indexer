@@ -55,6 +55,24 @@ cd database
 ./scripts/apply_all_migrations.sh
 ```
 
+### Apply V2-only migrations (devnet Railway)
+
+The V2 devnet stack uses market-native `v2_*` tables and does not require the
+legacy V1 TimescaleDB schema. To initialize or repair only the V2 schema:
+
+```bash
+cd database
+DATABASE_URL="postgresql://..." ./scripts/apply_v2_migrations.sh
+```
+
+For the dedicated V2 devnet Railway database, stale experimental V2 tables can
+be reset without touching V1 tables:
+
+```bash
+railway run --service Postgres -- bash -lc \
+  'cd database && DATABASE_URL="$DATABASE_PUBLIC_URL" OMNIPAIR_V2_RESET_SCHEMA=1 ./scripts/apply_v2_migrations.sh'
+```
+
 ## Scripts
 
 | Script | Description |
@@ -62,6 +80,7 @@ cd database
 | `init_db.sh` | Initialize fresh local database (creates DB + applies migrations) |
 | `apply_migration.sh` | Apply a single migration file |
 | `apply_all_migrations.sh` | Apply all migrations to existing DB (for Railway/prod) |
+| `apply_v2_migrations.sh` | Apply only final V2 market schema migrations; optional V2-only reset |
 | `apply_015_migration.sh` | Apply the normalized token category migration to an existing DB |
 | `clone_from_prod.sh` | Clone schema + data from production (requires `PUBLIC_DB_URL` in `.env`) |
 | `imitate_swaps_stream.sh` | Test utility - generates fake swaps to test NOTIFY trigger |

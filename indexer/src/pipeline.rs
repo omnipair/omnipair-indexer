@@ -22,12 +22,12 @@ pub async fn create_pipeline(config: &Config) -> CarbonResult<Pipeline> {
     log::info!("Using Helius Atlas WebSocket for realtime transaction monitoring");
 
     // Create Atlas WebSocket datasource
-    let atlas_datasource = create_helius_datasource(api_key, *OMNIPAIR_V2_PROGRAM_ID);
+    let atlas_datasource = create_helius_datasource(api_key, OMNIPAIR_V2_PROGRAM_ID);
 
     // Create transaction crawler datasource (more efficient than block crawler)
     let _transaction_crawler_datasource = create_transaction_crawler_datasource(
         config.http_rpc_url.clone(),
-        *OMNIPAIR_V2_PROGRAM_ID,
+        OMNIPAIR_V2_PROGRAM_ID,
         Some(config.start_block),
     )
     .await?;

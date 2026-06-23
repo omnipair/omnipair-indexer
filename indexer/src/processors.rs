@@ -76,11 +76,7 @@ impl Processor for OmnipairInstructionProcessor {
                 .await?;
             }
             OmnipairV2Instruction::LiquidityAdded(event) => {
-                database::record_v2_event(
-                    "liquidity_added",
-                    event.market,
-                    Some(event.owner),
-                    Some(event.asset_mint),
+                database::upsert_v2_liquidity_added_event(
                     &event,
                     &metadata.transaction_metadata.signature.to_string(),
                     metadata.transaction_metadata.slot as i64,
@@ -90,11 +86,7 @@ impl Processor for OmnipairInstructionProcessor {
                 .await?;
             }
             OmnipairV2Instruction::LiquidityRemoved(event) => {
-                database::record_v2_event(
-                    "liquidity_removed",
-                    event.market,
-                    Some(event.owner),
-                    Some(event.asset_mint),
+                database::upsert_v2_liquidity_removed_event(
                     &event,
                     &metadata.transaction_metadata.signature.to_string(),
                     metadata.transaction_metadata.slot as i64,
@@ -132,11 +124,7 @@ impl Processor for OmnipairInstructionProcessor {
                 .await?;
             }
             OmnipairV2Instruction::MarketDebtUpdated(event) => {
-                database::record_v2_event(
-                    "debt_updated",
-                    event.market,
-                    Some(event.owner),
-                    Some(event.debt_asset_mint),
+                database::upsert_v2_market_debt_updated_event(
                     &event,
                     &metadata.transaction_metadata.signature.to_string(),
                     metadata.transaction_metadata.slot as i64,
@@ -145,9 +133,9 @@ impl Processor for OmnipairInstructionProcessor {
                 )
                 .await?;
             }
-            OmnipairV2Instruction::MarketStakeUpdated(event) => {
+            OmnipairV2Instruction::YieldRecipientUpdated(event) => {
                 database::record_v2_event(
-                    "stake_updated",
+                    "yield_recipient_updated",
                     event.market,
                     Some(event.owner),
                     Some(event.asset_mint),
@@ -159,9 +147,9 @@ impl Processor for OmnipairInstructionProcessor {
                 )
                 .await?;
             }
-            OmnipairV2Instruction::MarketFeesClaimed(event) => {
+            OmnipairV2Instruction::YieldClaimed(event) => {
                 database::record_v2_event(
-                    "fees_claimed",
+                    "yield_claimed",
                     event.market,
                     Some(event.owner),
                     Some(event.asset_mint),
@@ -187,9 +175,23 @@ impl Processor for OmnipairInstructionProcessor {
                 )
                 .await?;
             }
-            OmnipairV2Instruction::MarketHedgeFeesClaimed(event) => {
+            OmnipairV2Instruction::ProtocolFeesClaimed(event) => {
                 database::record_v2_event(
-                    "hedge_fees_claimed",
+                    "protocol_fees_claimed",
+                    event.market,
+                    Some(event.metadata.signer),
+                    None,
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+            }
+            OmnipairV2Instruction::HlpOpened(event) => {
+                database::record_v2_event(
+                    "hlp_opened",
                     event.market,
                     Some(event.owner),
                     Some(event.asset_mint),
@@ -201,23 +203,9 @@ impl Processor for OmnipairInstructionProcessor {
                 )
                 .await?;
             }
-            OmnipairV2Instruction::MarketInsuranceFunded(event) => {
+            OmnipairV2Instruction::HlpClosed(event) => {
                 database::record_v2_event(
-                    "insurance_funded",
-                    event.market,
-                    Some(event.sponsor),
-                    Some(event.asset_mint),
-                    &event,
-                    &metadata.transaction_metadata.signature.to_string(),
-                    metadata.transaction_metadata.slot as i64,
-                    metadata.index as i32,
-                    &instruction_path(&metadata),
-                )
-                .await?;
-            }
-            OmnipairV2Instruction::MarketHedgeOpened(event) => {
-                database::record_v2_event(
-                    "hedge_opened",
+                    "hlp_closed",
                     event.market,
                     Some(event.owner),
                     Some(event.asset_mint),
@@ -229,12 +217,12 @@ impl Processor for OmnipairInstructionProcessor {
                 )
                 .await?;
             }
-            OmnipairV2Instruction::MarketHedgeClosed(event) => {
+            OmnipairV2Instruction::HlpRebalanced(event) => {
                 database::record_v2_event(
-                    "hedge_closed",
+                    "hlp_rebalanced",
                     event.market,
-                    Some(event.owner),
-                    Some(event.asset_mint),
+                    Some(event.metadata.signer),
+                    None,
                     &event,
                     &metadata.transaction_metadata.signature.to_string(),
                     metadata.transaction_metadata.slot as i64,
@@ -258,11 +246,7 @@ impl Processor for OmnipairInstructionProcessor {
                 .await?;
             }
             OmnipairV2Instruction::MarketHealthUpdated(event) => {
-                database::record_v2_event(
-                    "market_health_updated",
-                    event.market,
-                    None,
-                    None,
+                database::upsert_v2_market_health_updated_event(
                     &event,
                     &metadata.transaction_metadata.signature.to_string(),
                     metadata.transaction_metadata.slot as i64,

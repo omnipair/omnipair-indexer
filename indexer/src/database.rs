@@ -51,6 +51,72 @@ pub fn get_db_pool() -> CarbonResult<&'static PgPool> {
     })
 }
 
+fn decimal_from_u128(value: u128) -> bigdecimal::BigDecimal {
+    bigdecimal::BigDecimal::from(bigdecimal::num_bigint::BigInt::from(value))
+}
+
+async fn mark_v2_snapshot_event_once(
+    event_type: &str,
+    tx_signature: &str,
+    instruction_path: &str,
+) -> CarbonResult<bool> {
+    let pool = get_db_pool()?;
+    let result = sqlx::query(
+        r#"
+        INSERT INTO v2_market_snapshot_applied_events (event_type, tx_sig, instruction_path)
+        VALUES ($1, $2, $3)
+        ON CONFLICT DO NOTHING
+        "#,
+    )
+    .bind(event_type)
+    .bind(tx_signature)
+    .bind(instruction_path)
+    .execute(pool)
+    .await;
+
+    match result {
+        Ok(result) => Ok(result.rows_affected() == 1),
+        Err(e) => {
+            log::error!("Failed to mark V2 snapshot event {}: {}", event_type, e);
+            Err(carbon_core::error::Error::Custom(format!(
+                "Failed to mark V2 snapshot event: {}",
+                e
+            )))
+        }
+    }
+}
+
+async fn ensure_v2_market_snapshot(
+    market: Pubkey,
+    tx_signature: &str,
+    slot: i64,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    let result = sqlx::query(
+        r#"
+        INSERT INTO v2_market_snapshots (market, source_tx_sig, source_slot, updated_at)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (market) DO NOTHING
+        "#,
+    )
+    .bind(market.to_string())
+    .bind(tx_signature)
+    .bind(slot)
+    .bind(chrono::Utc::now())
+    .execute(pool)
+    .await;
+
+    if let Err(e) = result {
+        log::error!("Failed to ensure V2 market snapshot: {}", e);
+        return Err(carbon_core::error::Error::Custom(format!(
+            "Failed to ensure V2 market snapshot: {}",
+            e
+        )));
+    }
+
+    Ok(())
+}
+
 /// Record any V2 market event into the append-only event ledger.
 pub async fn record_v2_event<T: Serialize>(
     event_type: &str,
@@ -108,6 +174,250 @@ pub async fn record_v2_event<T: Serialize>(
     Ok(())
 }
 
+pub async fn upsert_v2_liquidity_added_event(
+    event: &carbon_omnipair_decoder::v2::instructions::liquidity_added::LiquidityAdded,
+    tx_signature: &str,
+    slot: i64,
+    instruction_index: i32,
+    instruction_path: &str,
+) -> CarbonResult<()> {
+    if mark_v2_snapshot_event_once("liquidity_added", tx_signature, instruction_path).await? {
+        ensure_v2_market_snapshot(event.market, tx_signature, slot).await?;
+        let pool = get_db_pool()?;
+        let result = sqlx::query(
+            r#"
+            UPDATE v2_market_snapshots snapshot
+            SET
+                base_reserve = snapshot.base_reserve + $2,
+                quote_reserve = snapshot.quote_reserve + $3,
+                base_ylp_supply = $4,
+                quote_ylp_supply = $5,
+                source_tx_sig = $6,
+                source_slot = $7,
+                updated_at = $8
+            FROM v2_markets market
+            WHERE snapshot.market = market.market_address
+              AND snapshot.market = $1
+            "#,
+        )
+        .bind(event.market.to_string())
+        .bind(bigdecimal::BigDecimal::from(event.base_reserve_credit))
+        .bind(bigdecimal::BigDecimal::from(event.quote_reserve_credit))
+        .bind(bigdecimal::BigDecimal::from(event.base_ylp_supply))
+        .bind(bigdecimal::BigDecimal::from(event.quote_ylp_supply))
+        .bind(tx_signature)
+        .bind(slot)
+        .bind(chrono::Utc::now())
+        .execute(pool)
+        .await;
+
+        if let Err(e) = result {
+            log::error!("Failed to update V2 liquidity snapshot: {}", e);
+            return Err(carbon_core::error::Error::Custom(format!(
+                "Failed to update V2 liquidity snapshot: {}",
+                e
+            )));
+        }
+    }
+
+    record_v2_event(
+        "liquidity_added",
+        event.market,
+        Some(event.owner),
+        None,
+        event,
+        tx_signature,
+        slot,
+        instruction_index,
+        instruction_path,
+    )
+    .await
+}
+
+pub async fn upsert_v2_liquidity_removed_event(
+    event: &carbon_omnipair_decoder::v2::instructions::liquidity_removed::LiquidityRemoved,
+    tx_signature: &str,
+    slot: i64,
+    instruction_index: i32,
+    instruction_path: &str,
+) -> CarbonResult<()> {
+    if mark_v2_snapshot_event_once("liquidity_removed", tx_signature, instruction_path).await? {
+        ensure_v2_market_snapshot(event.market, tx_signature, slot).await?;
+        let pool = get_db_pool()?;
+        let result = sqlx::query(
+            r#"
+            UPDATE v2_market_snapshots snapshot
+            SET
+                base_reserve = GREATEST(snapshot.base_reserve - $2, 0),
+                quote_reserve = GREATEST(snapshot.quote_reserve - $3, 0),
+                base_ylp_supply = $4,
+                quote_ylp_supply = $5,
+                source_tx_sig = $6,
+                source_slot = $7,
+                updated_at = $8
+            FROM v2_markets market
+            WHERE snapshot.market = market.market_address
+              AND snapshot.market = $1
+            "#,
+        )
+        .bind(event.market.to_string())
+        .bind(bigdecimal::BigDecimal::from(event.base_amount_out))
+        .bind(bigdecimal::BigDecimal::from(event.quote_amount_out))
+        .bind(bigdecimal::BigDecimal::from(event.base_ylp_supply))
+        .bind(bigdecimal::BigDecimal::from(event.quote_ylp_supply))
+        .bind(tx_signature)
+        .bind(slot)
+        .bind(chrono::Utc::now())
+        .execute(pool)
+        .await;
+
+        if let Err(e) = result {
+            log::error!("Failed to update V2 liquidity snapshot: {}", e);
+            return Err(carbon_core::error::Error::Custom(format!(
+                "Failed to update V2 liquidity snapshot: {}",
+                e
+            )));
+        }
+    }
+
+    record_v2_event(
+        "liquidity_removed",
+        event.market,
+        Some(event.owner),
+        None,
+        event,
+        tx_signature,
+        slot,
+        instruction_index,
+        instruction_path,
+    )
+    .await
+}
+
+pub async fn upsert_v2_market_debt_updated_event(
+    event: &carbon_omnipair_decoder::v2::instructions::market_debt_updated::MarketDebtUpdated,
+    tx_signature: &str,
+    slot: i64,
+    instruction_index: i32,
+    instruction_path: &str,
+) -> CarbonResult<()> {
+    if mark_v2_snapshot_event_once("debt_updated", tx_signature, instruction_path).await? {
+        ensure_v2_market_snapshot(event.market, tx_signature, slot).await?;
+        let pool = get_db_pool()?;
+        let result = sqlx::query(
+            r#"
+            UPDATE v2_market_snapshots
+            SET
+                fixed_base_debt = $2,
+                fixed_quote_debt = $3,
+                base_debt_health_bps = $4,
+                quote_debt_health_bps = $5,
+                source_tx_sig = $6,
+                source_slot = $7,
+                updated_at = $8
+            WHERE market = $1
+            "#,
+        )
+        .bind(event.market.to_string())
+        .bind(decimal_from_u128(event.fixed_base_debt))
+        .bind(decimal_from_u128(event.fixed_quote_debt))
+        .bind(bigdecimal::BigDecimal::from(event.base_debt_health_bps))
+        .bind(bigdecimal::BigDecimal::from(event.quote_debt_health_bps))
+        .bind(tx_signature)
+        .bind(slot)
+        .bind(chrono::Utc::now())
+        .execute(pool)
+        .await;
+
+        if let Err(e) = result {
+            log::error!("Failed to update V2 debt snapshot: {}", e);
+            return Err(carbon_core::error::Error::Custom(format!(
+                "Failed to update V2 debt snapshot: {}",
+                e
+            )));
+        }
+    }
+
+    record_v2_event(
+        "debt_updated",
+        event.market,
+        Some(event.owner),
+        Some(event.debt_asset_mint),
+        event,
+        tx_signature,
+        slot,
+        instruction_index,
+        instruction_path,
+    )
+    .await
+}
+
+pub async fn upsert_v2_market_health_updated_event(
+    event: &carbon_omnipair_decoder::v2::instructions::market_health_updated::MarketHealthUpdated,
+    tx_signature: &str,
+    slot: i64,
+    instruction_index: i32,
+    instruction_path: &str,
+) -> CarbonResult<()> {
+    if mark_v2_snapshot_event_once("market_health_updated", tx_signature, instruction_path).await? {
+        ensure_v2_market_snapshot(event.market, tx_signature, slot).await?;
+        let pool = get_db_pool()?;
+        let result = sqlx::query(
+            r#"
+            UPDATE v2_market_snapshots
+            SET
+                recognized_base_collateral_for_quote_debt = $2,
+                recognized_quote_collateral_for_base_debt = $3,
+                effective_base_debt_nad = $4,
+                effective_quote_debt_nad = $5,
+                base_debt_health_bps = $6,
+                quote_debt_health_bps = $7,
+                source_tx_sig = $8,
+                source_slot = $9,
+                updated_at = $10
+            WHERE market = $1
+            "#,
+        )
+        .bind(event.market.to_string())
+        .bind(bigdecimal::BigDecimal::from(
+            event.recognized_base_collateral_for_quote_debt,
+        ))
+        .bind(bigdecimal::BigDecimal::from(
+            event.recognized_quote_collateral_for_base_debt,
+        ))
+        .bind(decimal_from_u128(event.effective_base_debt_nad))
+        .bind(decimal_from_u128(event.effective_quote_debt_nad))
+        .bind(bigdecimal::BigDecimal::from(event.base_debt_health_bps))
+        .bind(bigdecimal::BigDecimal::from(event.quote_debt_health_bps))
+        .bind(tx_signature)
+        .bind(slot)
+        .bind(chrono::Utc::now())
+        .execute(pool)
+        .await;
+
+        if let Err(e) = result {
+            log::error!("Failed to update V2 health snapshot: {}", e);
+            return Err(carbon_core::error::Error::Custom(format!(
+                "Failed to update V2 health snapshot: {}",
+                e
+            )));
+        }
+    }
+
+    record_v2_event(
+        "market_health_updated",
+        event.market,
+        None,
+        None,
+        event,
+        tx_signature,
+        slot,
+        instruction_index,
+        instruction_path,
+    )
+    .await
+}
+
 pub async fn upsert_v2_market_created_event(
     event: &carbon_omnipair_decoder::v2::instructions::market_created::MarketCreated,
     tx_signature: &str,
@@ -119,35 +429,31 @@ pub async fn upsert_v2_market_created_event(
     let result = sqlx::query(
         r#"
         INSERT INTO v2_markets (
-            market_address, base_mint, quote_mint, base_claim_token_mint, quote_claim_token_mint,
-            base_hedge_token_mint, quote_hedge_token_mint, base_stake_vault, quote_stake_vault,
+            market_address, base_mint, quote_mint, base_ylp_mint, quote_ylp_mint,
+            base_hlp_mint, quote_hlp_mint,
             base_collateral_vault, quote_collateral_vault, base_insurance_vault, quote_insurance_vault,
-            base_hedge_vault, quote_hedge_vault, operator, manager, buffer_ratio_bps,
+            operator, manager, target_hlp_leverage_bps,
             swap_fee_bps, protocol_fee_bps, params_hash, version, reduce_only,
             created_tx_sig, created_slot, updated_at
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-            $11, $12, $13, $14, $15, $16, $17, $18, $19,
-            $20, $21, $22, FALSE, $23, $24, $25
+            $11, $12, $13, $14, $15, $16, $17, $18,
+            FALSE, $19, $20, $21
         )
         ON CONFLICT (market_address) DO UPDATE SET
             base_mint = EXCLUDED.base_mint,
             quote_mint = EXCLUDED.quote_mint,
-            base_claim_token_mint = EXCLUDED.base_claim_token_mint,
-            quote_claim_token_mint = EXCLUDED.quote_claim_token_mint,
-            base_hedge_token_mint = EXCLUDED.base_hedge_token_mint,
-            quote_hedge_token_mint = EXCLUDED.quote_hedge_token_mint,
-            base_stake_vault = EXCLUDED.base_stake_vault,
-            quote_stake_vault = EXCLUDED.quote_stake_vault,
+            base_ylp_mint = EXCLUDED.base_ylp_mint,
+            quote_ylp_mint = EXCLUDED.quote_ylp_mint,
+            base_hlp_mint = EXCLUDED.base_hlp_mint,
+            quote_hlp_mint = EXCLUDED.quote_hlp_mint,
             base_collateral_vault = EXCLUDED.base_collateral_vault,
             quote_collateral_vault = EXCLUDED.quote_collateral_vault,
             base_insurance_vault = EXCLUDED.base_insurance_vault,
             quote_insurance_vault = EXCLUDED.quote_insurance_vault,
-            base_hedge_vault = EXCLUDED.base_hedge_vault,
-            quote_hedge_vault = EXCLUDED.quote_hedge_vault,
             operator = EXCLUDED.operator,
             manager = EXCLUDED.manager,
-            buffer_ratio_bps = EXCLUDED.buffer_ratio_bps,
+            target_hlp_leverage_bps = EXCLUDED.target_hlp_leverage_bps,
             swap_fee_bps = EXCLUDED.swap_fee_bps,
             protocol_fee_bps = EXCLUDED.protocol_fee_bps,
             params_hash = EXCLUDED.params_hash,
@@ -160,21 +466,17 @@ pub async fn upsert_v2_market_created_event(
     .bind(event.market.to_string())
     .bind(event.base_mint.to_string())
     .bind(event.quote_mint.to_string())
-    .bind(event.base_claim_token_mint.to_string())
-    .bind(event.quote_claim_token_mint.to_string())
-    .bind(event.base_hedge_token_mint.to_string())
-    .bind(event.quote_hedge_token_mint.to_string())
-    .bind(event.base_stake_vault.to_string())
-    .bind(event.quote_stake_vault.to_string())
+    .bind(event.base_ylp_mint.to_string())
+    .bind(event.quote_ylp_mint.to_string())
+    .bind(event.base_hlp_mint.to_string())
+    .bind(event.quote_hlp_mint.to_string())
     .bind(event.base_collateral_vault.to_string())
     .bind(event.quote_collateral_vault.to_string())
     .bind(event.base_insurance_vault.to_string())
     .bind(event.quote_insurance_vault.to_string())
-    .bind(event.base_hedge_vault.to_string())
-    .bind(event.quote_hedge_vault.to_string())
     .bind(event.operator.to_string())
     .bind(event.manager.to_string())
-    .bind(event.buffer_ratio_bps as i32)
+    .bind(event.target_hlp_leverage_bps as i32)
     .bind(event.swap_fee_bps as i32)
     .bind(event.protocol_fee_bps as i32)
     .bind(event.params_hash.to_vec())
@@ -192,6 +494,8 @@ pub async fn upsert_v2_market_created_event(
             e
         )));
     }
+
+    ensure_v2_market_snapshot(event.market, tx_signature, slot).await?;
 
     record_v2_event(
         "market_created",
@@ -219,7 +523,7 @@ pub async fn upsert_v2_market_updated_event(
         r#"
         UPDATE v2_markets
         SET reduce_only = $2,
-            buffer_ratio_bps = $3,
+            target_hlp_leverage_bps = $3,
             swap_fee_bps = $4,
             operator_fee_bps = $5,
             protocol_fee_bps = $6,
@@ -229,7 +533,7 @@ pub async fn upsert_v2_market_updated_event(
     )
     .bind(event.market.to_string())
     .bind(event.reduce_only)
-    .bind(event.buffer_ratio_bps as i32)
+    .bind(event.target_hlp_leverage_bps as i32)
     .bind(event.swap_fee_bps as i32)
     .bind(event.operator_fee_bps as i32)
     .bind(event.protocol_fee_bps as i32)
@@ -310,6 +614,50 @@ pub async fn upsert_v2_swap_executed_event(
             "Failed to upsert V2 swap: {}",
             e
         )));
+    }
+
+    if mark_v2_snapshot_event_once("swap_executed", tx_signature, instruction_path).await? {
+        ensure_v2_market_snapshot(event.market, tx_signature, slot).await?;
+        let result = sqlx::query(
+            r#"
+            UPDATE v2_market_snapshots snapshot
+            SET
+                base_reserve = CASE
+                    WHEN market.base_mint = $2 THEN snapshot.base_reserve + $4
+                    WHEN market.base_mint = $3 THEN GREATEST(snapshot.base_reserve - $5, 0)
+                    ELSE snapshot.base_reserve
+                END,
+                quote_reserve = CASE
+                    WHEN market.quote_mint = $2 THEN snapshot.quote_reserve + $4
+                    WHEN market.quote_mint = $3 THEN GREATEST(snapshot.quote_reserve - $5, 0)
+                    ELSE snapshot.quote_reserve
+                END,
+                source_tx_sig = $6,
+                source_slot = $7,
+                updated_at = $8
+            FROM v2_markets market
+            WHERE snapshot.market = market.market_address
+              AND snapshot.market = $1
+            "#,
+        )
+        .bind(event.market.to_string())
+        .bind(event.asset_in_mint.to_string())
+        .bind(event.asset_out_mint.to_string())
+        .bind(bigdecimal::BigDecimal::from(event.reserve_credit))
+        .bind(bigdecimal::BigDecimal::from(event.amount_out))
+        .bind(tx_signature)
+        .bind(slot)
+        .bind(chrono::Utc::now())
+        .execute(pool)
+        .await;
+
+        if let Err(e) = result {
+            log::error!("Failed to update V2 swap snapshot: {}", e);
+            return Err(carbon_core::error::Error::Custom(format!(
+                "Failed to update V2 swap snapshot: {}",
+                e
+            )));
+        }
     }
 
     record_v2_event(

@@ -1,9 +1,7 @@
-// This V2 decoder code is generated from
-// packages/program-interface/src/idl_v2.json.
-use {
-    super::super::types::*,
-    carbon_core::{CarbonDeserialize, account_utils::next_account, borsh},
-};
+// This V2 decoder code is generated from packages/program-interface/src/idl_v2.json.
+use super::super::types::*;
+
+use carbon_core::{account_utils::next_account, borsh, CarbonDeserialize};
 
 #[derive(
     CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
@@ -22,6 +20,7 @@ pub struct LiquidateInstructionAccounts {
     pub reserve_vault: solana_pubkey::Pubkey,
     pub collateral_vault: solana_pubkey::Pubkey,
     pub insurance_vault: solana_pubkey::Pubkey,
+    pub collateral_insurance_vault: solana_pubkey::Pubkey,
     pub liquidator_debt_account: solana_pubkey::Pubkey,
     pub liquidator_collateral_account: solana_pubkey::Pubkey,
     pub margin_position: solana_pubkey::Pubkey,
@@ -45,6 +44,7 @@ impl carbon_core::deserialize::ArrangeAccounts for Liquidate {
         let reserve_vault = next_account(&mut iter)?;
         let collateral_vault = next_account(&mut iter)?;
         let insurance_vault = next_account(&mut iter)?;
+        let collateral_insurance_vault = next_account(&mut iter)?;
         let liquidator_debt_account = next_account(&mut iter)?;
         let liquidator_collateral_account = next_account(&mut iter)?;
         let margin_position = next_account(&mut iter)?;
@@ -61,6 +61,7 @@ impl carbon_core::deserialize::ArrangeAccounts for Liquidate {
             reserve_vault,
             collateral_vault,
             insurance_vault,
+            collateral_insurance_vault,
             liquidator_debt_account,
             liquidator_collateral_account,
             margin_position,

@@ -1,9 +1,7 @@
-// This V2 decoder code is generated from
-// packages/program-interface/src/idl_v2.json.
-use {
-    super::super::types::*,
-    carbon_core::{CarbonDeserialize, account_utils::next_account, borsh},
-};
+// This V2 decoder code is generated from packages/program-interface/src/idl_v2.json.
+use super::super::types::*;
+
+use carbon_core::{account_utils::next_account, borsh, CarbonDeserialize};
 
 #[derive(
     CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
@@ -16,6 +14,7 @@ pub struct Borrow {
 #[derive(Debug, PartialEq, Eq, Clone, Hash, serde::Serialize, serde::Deserialize)]
 pub struct BorrowInstructionAccounts {
     pub market: solana_pubkey::Pubkey,
+    pub futarchy_authority: solana_pubkey::Pubkey,
     pub owner: solana_pubkey::Pubkey,
     pub debt_asset_mint: solana_pubkey::Pubkey,
     pub collateral_asset_mint: solana_pubkey::Pubkey,
@@ -36,6 +35,7 @@ impl carbon_core::deserialize::ArrangeAccounts for Borrow {
     ) -> Option<Self::ArrangedAccounts> {
         let mut iter = accounts.iter();
         let market = next_account(&mut iter)?;
+        let futarchy_authority = next_account(&mut iter)?;
         let owner = next_account(&mut iter)?;
         let debt_asset_mint = next_account(&mut iter)?;
         let collateral_asset_mint = next_account(&mut iter)?;
@@ -49,6 +49,7 @@ impl carbon_core::deserialize::ArrangeAccounts for Borrow {
 
         Some(BorrowInstructionAccounts {
             market,
+            futarchy_authority,
             owner,
             debt_asset_mint,
             collateral_asset_mint,

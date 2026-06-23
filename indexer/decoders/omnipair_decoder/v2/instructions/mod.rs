@@ -1,25 +1,18 @@
-// This V2 decoder code is generated from
-// packages/program-interface/src/idl_v2.json.
-use {
-    super::{OmnipairV2Decoder, PROGRAM_ID},
-    carbon_core::deserialize::CarbonDeserialize,
-};
+// This V2 decoder code is generated from packages/program-interface/src/idl_v2.json.
+use carbon_core::deserialize::CarbonDeserialize;
 
-const ANCHOR_EVENT_CPI_DISCRIMINATOR: [u8; 8] = [0xe4, 0x45, 0xa5, 0x2e, 0x51, 0xcb, 0x9a, 0x1d];
-
-fn unwrap_anchor_event_cpi_data(data: &[u8]) -> &[u8] {
-    data.strip_prefix(&ANCHOR_EVENT_CPI_DISCRIMINATOR)
-        .unwrap_or(data)
-}
+use super::{OmnipairV2Decoder, PROGRAM_ID};
 
 pub mod add_liquidity;
 pub mod borrow;
-pub mod claim_fees;
-pub mod claim_hedge_fees;
-pub mod claim_market_fees;
+pub mod claim_protocol_fees;
+pub mod claim_yield;
 pub mod close_hedge;
 pub mod deposit_collateral;
-pub mod deposit_insurance;
+pub mod hlp_closed;
+pub mod hlp_opened;
+pub mod hlp_rebalanced;
+pub mod init_futarchy_authority;
 pub mod initialize;
 pub mod liquidate;
 pub mod liquidity_added;
@@ -29,25 +22,26 @@ pub mod market_collateral_withdrawn;
 pub mod market_created;
 pub mod market_debt_updated;
 pub mod market_fee_liability_claimed;
-pub mod market_fees_claimed;
 pub mod market_health_updated;
-pub mod market_hedge_closed;
-pub mod market_hedge_fees_claimed;
-pub mod market_hedge_opened;
-pub mod market_insurance_funded;
-pub mod market_stake_updated;
 pub mod market_updated;
 pub mod open_hedge;
 pub mod position_liquidated;
+pub mod protocol_fees_claimed;
 pub mod remove_liquidity;
 pub mod repay;
+pub mod set_global_reduce_only;
 pub mod set_reduce_only;
-pub mod stake;
+pub mod set_yield_recipient;
 pub mod swap;
 pub mod swap_executed;
-pub mod unstake;
+pub mod swap_settled;
 pub mod update_config;
+pub mod update_futarchy_authority;
+pub mod update_protocol_revenue;
+pub mod update_revenue_recipients;
 pub mod withdraw_collateral;
+pub mod yield_claimed;
+pub mod yield_recipient_updated;
 
 #[derive(
     carbon_core::InstructionType,
@@ -62,23 +56,28 @@ pub mod withdraw_collateral;
 pub enum OmnipairV2Instruction {
     AddLiquidity(add_liquidity::AddLiquidity),
     Borrow(borrow::Borrow),
-    ClaimFees(claim_fees::ClaimFees),
-    ClaimHedgeFees(claim_hedge_fees::ClaimHedgeFees),
-    ClaimMarketFees(claim_market_fees::ClaimMarketFees),
+    ClaimProtocolFees(claim_protocol_fees::ClaimProtocolFees),
+    ClaimYield(claim_yield::ClaimYield),
     CloseHedge(close_hedge::CloseHedge),
     DepositCollateral(deposit_collateral::DepositCollateral),
-    DepositInsurance(deposit_insurance::DepositInsurance),
+    InitFutarchyAuthority(init_futarchy_authority::InitFutarchyAuthority),
     Initialize(initialize::Initialize),
     Liquidate(liquidate::Liquidate),
     OpenHedge(open_hedge::OpenHedge),
     RemoveLiquidity(remove_liquidity::RemoveLiquidity),
     Repay(repay::Repay),
+    SetGlobalReduceOnly(set_global_reduce_only::SetGlobalReduceOnly),
     SetReduceOnly(set_reduce_only::SetReduceOnly),
-    Stake(stake::Stake),
+    SetYieldRecipient(set_yield_recipient::SetYieldRecipient),
     Swap(swap::Swap),
-    Unstake(unstake::Unstake),
     UpdateConfig(update_config::UpdateConfig),
+    UpdateFutarchyAuthority(update_futarchy_authority::UpdateFutarchyAuthority),
+    UpdateProtocolRevenue(update_protocol_revenue::UpdateProtocolRevenue),
+    UpdateRevenueRecipients(update_revenue_recipients::UpdateRevenueRecipients),
     WithdrawCollateral(withdraw_collateral::WithdrawCollateral),
+    HlpClosed(hlp_closed::HlpClosed),
+    HlpOpened(hlp_opened::HlpOpened),
+    HlpRebalanced(hlp_rebalanced::HlpRebalanced),
     LiquidityAdded(liquidity_added::LiquidityAdded),
     LiquidityRemoved(liquidity_removed::LiquidityRemoved),
     MarketCollateralDeposited(market_collateral_deposited::MarketCollateralDeposited),
@@ -86,16 +85,14 @@ pub enum OmnipairV2Instruction {
     MarketCreated(market_created::MarketCreated),
     MarketDebtUpdated(market_debt_updated::MarketDebtUpdated),
     MarketFeeLiabilityClaimed(market_fee_liability_claimed::MarketFeeLiabilityClaimed),
-    MarketFeesClaimed(market_fees_claimed::MarketFeesClaimed),
     MarketHealthUpdated(market_health_updated::MarketHealthUpdated),
-    MarketHedgeClosed(market_hedge_closed::MarketHedgeClosed),
-    MarketHedgeFeesClaimed(market_hedge_fees_claimed::MarketHedgeFeesClaimed),
-    MarketHedgeOpened(market_hedge_opened::MarketHedgeOpened),
-    MarketInsuranceFunded(market_insurance_funded::MarketInsuranceFunded),
-    MarketStakeUpdated(market_stake_updated::MarketStakeUpdated),
     MarketUpdated(market_updated::MarketUpdated),
     PositionLiquidated(position_liquidated::PositionLiquidated),
+    ProtocolFeesClaimed(protocol_fees_claimed::ProtocolFeesClaimed),
     SwapExecuted(swap_executed::SwapExecuted),
+    SwapSettled(swap_settled::SwapSettled),
+    YieldClaimed(yield_claimed::YieldClaimed),
+    YieldRecipientUpdated(yield_recipient_updated::YieldRecipientUpdated),
 }
 
 impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder {
@@ -105,12 +102,12 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
         &self,
         instruction: &solana_instruction::Instruction,
     ) -> Option<carbon_core::instruction::DecodedInstruction<Self::InstructionType>> {
-        if instruction.program_id != *PROGRAM_ID {
+        if instruction.program_id != PROGRAM_ID {
             return None;
         }
-        let instruction_data = unwrap_anchor_event_cpi_data(instruction.data.as_slice());
 
-        if let Some(decoded) = add_liquidity::AddLiquidity::deserialize(instruction_data) {
+        if let Some(decoded) = add_liquidity::AddLiquidity::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -118,7 +115,7 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = borrow::Borrow::deserialize(instruction_data) {
+        if let Some(decoded) = borrow::Borrow::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -126,31 +123,25 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = claim_fees::ClaimFees::deserialize(instruction_data) {
+        if let Some(decoded) =
+            claim_protocol_fees::ClaimProtocolFees::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::ClaimFees(decoded),
+                data: OmnipairV2Instruction::ClaimProtocolFees(decoded),
             });
         }
 
-        if let Some(decoded) = claim_hedge_fees::ClaimHedgeFees::deserialize(instruction_data) {
+        if let Some(decoded) = claim_yield::ClaimYield::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::ClaimHedgeFees(decoded),
+                data: OmnipairV2Instruction::ClaimYield(decoded),
             });
         }
 
-        if let Some(decoded) = claim_market_fees::ClaimMarketFees::deserialize(instruction_data) {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::ClaimMarketFees(decoded),
-            });
-        }
-
-        if let Some(decoded) = close_hedge::CloseHedge::deserialize(instruction_data) {
+        if let Some(decoded) = close_hedge::CloseHedge::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -158,7 +149,8 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = deposit_collateral::DepositCollateral::deserialize(instruction_data)
+        if let Some(decoded) =
+            deposit_collateral::DepositCollateral::deserialize(instruction.data.as_slice())
         {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
@@ -167,15 +159,17 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = deposit_insurance::DepositInsurance::deserialize(instruction_data) {
+        if let Some(decoded) =
+            init_futarchy_authority::InitFutarchyAuthority::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::DepositInsurance(decoded),
+                data: OmnipairV2Instruction::InitFutarchyAuthority(decoded),
             });
         }
 
-        if let Some(decoded) = initialize::Initialize::deserialize(instruction_data) {
+        if let Some(decoded) = initialize::Initialize::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -183,7 +177,7 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = liquidate::Liquidate::deserialize(instruction_data) {
+        if let Some(decoded) = liquidate::Liquidate::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -191,7 +185,7 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = open_hedge::OpenHedge::deserialize(instruction_data) {
+        if let Some(decoded) = open_hedge::OpenHedge::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -199,7 +193,9 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = remove_liquidity::RemoveLiquidity::deserialize(instruction_data) {
+        if let Some(decoded) =
+            remove_liquidity::RemoveLiquidity::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -207,7 +203,7 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = repay::Repay::deserialize(instruction_data) {
+        if let Some(decoded) = repay::Repay::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -215,7 +211,19 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = set_reduce_only::SetReduceOnly::deserialize(instruction_data) {
+        if let Some(decoded) =
+            set_global_reduce_only::SetGlobalReduceOnly::deserialize(instruction.data.as_slice())
+        {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::SetGlobalReduceOnly(decoded),
+            });
+        }
+
+        if let Some(decoded) =
+            set_reduce_only::SetReduceOnly::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -223,15 +231,17 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = stake::Stake::deserialize(instruction_data) {
+        if let Some(decoded) =
+            set_yield_recipient::SetYieldRecipient::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::Stake(decoded),
+                data: OmnipairV2Instruction::SetYieldRecipient(decoded),
             });
         }
 
-        if let Some(decoded) = swap::Swap::deserialize(instruction_data) {
+        if let Some(decoded) = swap::Swap::deserialize(instruction.data.as_slice()) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -239,15 +249,8 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = unstake::Unstake::deserialize(instruction_data) {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::Unstake(decoded),
-            });
-        }
-
-        if let Some(decoded) = update_config::UpdateConfig::deserialize(instruction_data) {
+        if let Some(decoded) = update_config::UpdateConfig::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -255,8 +258,38 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
+        if let Some(decoded) = update_futarchy_authority::UpdateFutarchyAuthority::deserialize(
+            instruction.data.as_slice(),
+        ) {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::UpdateFutarchyAuthority(decoded),
+            });
+        }
+
         if let Some(decoded) =
-            withdraw_collateral::WithdrawCollateral::deserialize(instruction_data)
+            update_protocol_revenue::UpdateProtocolRevenue::deserialize(instruction.data.as_slice())
+        {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::UpdateProtocolRevenue(decoded),
+            });
+        }
+
+        if let Some(decoded) = update_revenue_recipients::UpdateRevenueRecipients::deserialize(
+            instruction.data.as_slice(),
+        ) {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::UpdateRevenueRecipients(decoded),
+            });
+        }
+
+        if let Some(decoded) =
+            withdraw_collateral::WithdrawCollateral::deserialize(instruction.data.as_slice())
         {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
@@ -265,7 +298,35 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = liquidity_added::LiquidityAdded::deserialize(instruction_data) {
+        if let Some(decoded) = hlp_closed::HlpClosed::deserialize(instruction.data.as_slice()) {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::HlpClosed(decoded),
+            });
+        }
+
+        if let Some(decoded) = hlp_opened::HlpOpened::deserialize(instruction.data.as_slice()) {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::HlpOpened(decoded),
+            });
+        }
+
+        if let Some(decoded) =
+            hlp_rebalanced::HlpRebalanced::deserialize(instruction.data.as_slice())
+        {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::HlpRebalanced(decoded),
+            });
+        }
+
+        if let Some(decoded) =
+            liquidity_added::LiquidityAdded::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -273,7 +334,9 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = liquidity_removed::LiquidityRemoved::deserialize(instruction_data) {
+        if let Some(decoded) =
+            liquidity_removed::LiquidityRemoved::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -281,9 +344,9 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) =
-            market_collateral_deposited::MarketCollateralDeposited::deserialize(instruction_data)
-        {
+        if let Some(decoded) = market_collateral_deposited::MarketCollateralDeposited::deserialize(
+            instruction.data.as_slice(),
+        ) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -291,9 +354,9 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) =
-            market_collateral_withdrawn::MarketCollateralWithdrawn::deserialize(instruction_data)
-        {
+        if let Some(decoded) = market_collateral_withdrawn::MarketCollateralWithdrawn::deserialize(
+            instruction.data.as_slice(),
+        ) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -301,7 +364,9 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = market_created::MarketCreated::deserialize(instruction_data) {
+        if let Some(decoded) =
+            market_created::MarketCreated::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -309,7 +374,8 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = market_debt_updated::MarketDebtUpdated::deserialize(instruction_data)
+        if let Some(decoded) =
+            market_debt_updated::MarketDebtUpdated::deserialize(instruction.data.as_slice())
         {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
@@ -318,9 +384,9 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) =
-            market_fee_liability_claimed::MarketFeeLiabilityClaimed::deserialize(instruction_data)
-        {
+        if let Some(decoded) = market_fee_liability_claimed::MarketFeeLiabilityClaimed::deserialize(
+            instruction.data.as_slice(),
+        ) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -328,17 +394,8 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = market_fees_claimed::MarketFeesClaimed::deserialize(instruction_data)
-        {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::MarketFeesClaimed(decoded),
-            });
-        }
-
         if let Some(decoded) =
-            market_health_updated::MarketHealthUpdated::deserialize(instruction_data)
+            market_health_updated::MarketHealthUpdated::deserialize(instruction.data.as_slice())
         {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
@@ -347,55 +404,9 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = market_hedge_closed::MarketHedgeClosed::deserialize(instruction_data)
-        {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::MarketHedgeClosed(decoded),
-            });
-        }
-
         if let Some(decoded) =
-            market_hedge_fees_claimed::MarketHedgeFeesClaimed::deserialize(instruction_data)
+            market_updated::MarketUpdated::deserialize(instruction.data.as_slice())
         {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::MarketHedgeFeesClaimed(decoded),
-            });
-        }
-
-        if let Some(decoded) = market_hedge_opened::MarketHedgeOpened::deserialize(instruction_data)
-        {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::MarketHedgeOpened(decoded),
-            });
-        }
-
-        if let Some(decoded) =
-            market_insurance_funded::MarketInsuranceFunded::deserialize(instruction_data)
-        {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::MarketInsuranceFunded(decoded),
-            });
-        }
-
-        if let Some(decoded) =
-            market_stake_updated::MarketStakeUpdated::deserialize(instruction_data)
-        {
-            return Some(carbon_core::instruction::DecodedInstruction {
-                program_id: instruction.program_id,
-                accounts: instruction.accounts.clone(),
-                data: OmnipairV2Instruction::MarketStakeUpdated(decoded),
-            });
-        }
-
-        if let Some(decoded) = market_updated::MarketUpdated::deserialize(instruction_data) {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
@@ -404,7 +415,7 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
         }
 
         if let Some(decoded) =
-            position_liquidated::PositionLiquidated::deserialize(instruction_data)
+            position_liquidated::PositionLiquidated::deserialize(instruction.data.as_slice())
         {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
@@ -413,11 +424,49 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
             });
         }
 
-        if let Some(decoded) = swap_executed::SwapExecuted::deserialize(instruction_data) {
+        if let Some(decoded) =
+            protocol_fees_claimed::ProtocolFeesClaimed::deserialize(instruction.data.as_slice())
+        {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::ProtocolFeesClaimed(decoded),
+            });
+        }
+
+        if let Some(decoded) = swap_executed::SwapExecuted::deserialize(instruction.data.as_slice())
+        {
             return Some(carbon_core::instruction::DecodedInstruction {
                 program_id: instruction.program_id,
                 accounts: instruction.accounts.clone(),
                 data: OmnipairV2Instruction::SwapExecuted(decoded),
+            });
+        }
+
+        if let Some(decoded) = swap_settled::SwapSettled::deserialize(instruction.data.as_slice()) {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::SwapSettled(decoded),
+            });
+        }
+
+        if let Some(decoded) = yield_claimed::YieldClaimed::deserialize(instruction.data.as_slice())
+        {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::YieldClaimed(decoded),
+            });
+        }
+
+        if let Some(decoded) =
+            yield_recipient_updated::YieldRecipientUpdated::deserialize(instruction.data.as_slice())
+        {
+            return Some(carbon_core::instruction::DecodedInstruction {
+                program_id: instruction.program_id,
+                accounts: instruction.accounts.clone(),
+                data: OmnipairV2Instruction::YieldRecipientUpdated(decoded),
             });
         }
 
@@ -427,22 +476,11 @@ impl<'a> carbon_core::instruction::InstructionDecoder<'a> for OmnipairV2Decoder 
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*,
-        carbon_core::{deserialize::ArrangeAccounts, instruction::InstructionDecoder},
-        solana_instruction::{AccountMeta, Instruction},
-        solana_pubkey::Pubkey,
-    };
-
-    #[test]
-    fn unwraps_anchor_event_cpi_discriminator() {
-        let event_payload = [0x58, 0xb8, 0x82, 0xe7, 0xe2, 0x54, 0x06, 0x3a, 1, 2, 3];
-        let mut cpi_payload = ANCHOR_EVENT_CPI_DISCRIMINATOR.to_vec();
-        cpi_payload.extend_from_slice(&event_payload);
-
-        assert_eq!(unwrap_anchor_event_cpi_data(&cpi_payload), event_payload);
-        assert_eq!(unwrap_anchor_event_cpi_data(&event_payload), event_payload);
-    }
+    use super::*;
+    use carbon_core::deserialize::ArrangeAccounts;
+    use carbon_core::instruction::InstructionDecoder;
+    use solana_instruction::{AccountMeta, Instruction};
+    use solana_pubkey::Pubkey;
 
     #[test]
     fn decodes_and_arranges_v2_swap_instruction() {
@@ -450,11 +488,11 @@ mod tests {
         data.push(0);
         data.extend_from_slice(&123_u64.to_le_bytes());
         data.extend_from_slice(&45_u64.to_le_bytes());
-        let accounts = (0..13)
+        let accounts = (0..14)
             .map(|_| AccountMeta::new(Pubkey::new_unique(), false))
             .collect::<Vec<_>>();
         let instruction = Instruction {
-            program_id: *PROGRAM_ID,
+            program_id: PROGRAM_ID,
             accounts: accounts.clone(),
             data,
         };
@@ -477,6 +515,6 @@ mod tests {
 
         let arranged = swap::Swap::arrange_accounts(&accounts).expect("swap accounts arrange");
         assert_eq!(arranged.market, accounts[0].pubkey);
-        assert_eq!(arranged.program, accounts[12].pubkey);
+        assert_eq!(arranged.program, accounts[13].pubkey);
     }
 }

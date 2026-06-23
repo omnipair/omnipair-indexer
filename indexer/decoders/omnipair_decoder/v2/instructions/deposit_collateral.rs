@@ -1,9 +1,7 @@
-// This V2 decoder code is generated from
-// packages/program-interface/src/idl_v2.json.
-use {
-    super::super::types::*,
-    carbon_core::{CarbonDeserialize, account_utils::next_account, borsh},
-};
+// This V2 decoder code is generated from packages/program-interface/src/idl_v2.json.
+use super::super::types::*;
+
+use carbon_core::{account_utils::next_account, borsh, CarbonDeserialize};
 
 #[derive(
     CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,

@@ -1,9 +1,7 @@
-// This V2 decoder code is generated from
-// packages/program-interface/src/idl_v2.json.
-use {
-    super::super::types::*,
-    carbon_core::{CarbonDeserialize, account_utils::next_account, borsh},
-};
+// This V2 decoder code is generated from packages/program-interface/src/idl_v2.json.
+use super::super::types::*;
+
+use carbon_core::{account_utils::next_account, borsh, CarbonDeserialize};
 
 #[derive(
     CarbonDeserialize, Debug, serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Hash,
@@ -16,6 +14,7 @@ pub struct Swap {
 #[derive(Debug, PartialEq, Eq, Clone, Hash, serde::Serialize, serde::Deserialize)]
 pub struct SwapInstructionAccounts {
     pub market: solana_pubkey::Pubkey,
+    pub futarchy_authority: solana_pubkey::Pubkey,
     pub trader: solana_pubkey::Pubkey,
     pub asset_in_mint: solana_pubkey::Pubkey,
     pub asset_out_mint: solana_pubkey::Pubkey,
@@ -38,6 +37,7 @@ impl carbon_core::deserialize::ArrangeAccounts for Swap {
     ) -> Option<Self::ArrangedAccounts> {
         let mut iter = accounts.iter();
         let market = next_account(&mut iter)?;
+        let futarchy_authority = next_account(&mut iter)?;
         let trader = next_account(&mut iter)?;
         let asset_in_mint = next_account(&mut iter)?;
         let asset_out_mint = next_account(&mut iter)?;
@@ -53,6 +53,7 @@ impl carbon_core::deserialize::ArrangeAccounts for Swap {
 
         Some(SwapInstructionAccounts {
             market,
+            futarchy_authority,
             trader,
             asset_in_mint,
             asset_out_mint,

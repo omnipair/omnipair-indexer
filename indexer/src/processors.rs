@@ -175,11 +175,65 @@ impl Processor for OmnipairInstructionProcessor {
                 )
                 .await?;
             }
-            OmnipairV2Instruction::ProtocolFeesClaimed(event) => {
+            OmnipairV2Instruction::ProtocolAuctionSettled(event) => {
                 database::record_v2_event(
-                    "protocol_fees_claimed",
+                    "protocol_auction_settled",
                     event.market,
-                    Some(event.metadata.signer),
+                    Some(event.bidder),
+                    Some(event.sold_mint),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+                database::record_v2_protocol_auction_event(
+                    "protocol_auction_settled",
+                    Some(event.market),
+                    None,
+                    Some(event.lane),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+            }
+            OmnipairV2Instruction::ProtocolAuctionConfigUpdated(event) => {
+                database::record_v2_protocol_auction_event(
+                    "protocol_auction_config_updated",
+                    None,
+                    Some(event.authority),
+                    Some(event.lane),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+            }
+            OmnipairV2Instruction::ProtocolAuctionRecipientsUpdated(event) => {
+                database::record_v2_protocol_auction_event(
+                    "protocol_auction_recipients_updated",
+                    None,
+                    Some(event.authority),
+                    Some(event.lane),
+                    &event,
+                    &metadata.transaction_metadata.signature.to_string(),
+                    metadata.transaction_metadata.slot as i64,
+                    metadata.index as i32,
+                    &instruction_path(&metadata),
+                )
+                .await?;
+            }
+            OmnipairV2Instruction::ProtocolAuctionSplitUpdated(event) => {
+                database::record_v2_protocol_auction_event(
+                    "protocol_auction_split_updated",
+                    None,
+                    Some(event.authority),
                     None,
                     &event,
                     &metadata.transaction_metadata.signature.to_string(),

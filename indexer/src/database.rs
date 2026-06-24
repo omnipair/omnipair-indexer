@@ -174,6 +174,71 @@ pub async fn record_v2_event<T: Serialize>(
     Ok(())
 }
 
+/// Record V2 protocol auction events, including global config changes and
+/// market settlements.
+pub async fn record_v2_protocol_auction_event<T: Serialize>(
+    event_type: &str,
+    market: Option<Pubkey>,
+    authority: Option<Pubkey>,
+    lane: Option<u8>,
+    event: &T,
+    tx_signature: &str,
+    slot: i64,
+    instruction_index: i32,
+    instruction_path: &str,
+) -> CarbonResult<()> {
+    let pool = get_db_pool()?;
+    let payload = serde_json::to_string(event).map_err(|e| {
+        carbon_core::error::Error::Custom(format!(
+            "Failed to serialize V2 auction event payload: {}",
+            e
+        ))
+    })?;
+
+    let result = sqlx::query(
+        r#"
+        INSERT INTO v2_protocol_auction_events (
+            event_type, market, authority, lane, tx_sig, slot, instruction_index,
+            instruction_path, payload, timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10)
+        ON CONFLICT (tx_sig, instruction_path, event_type) DO UPDATE SET
+            market = EXCLUDED.market,
+            authority = EXCLUDED.authority,
+            lane = EXCLUDED.lane,
+            slot = EXCLUDED.slot,
+            instruction_index = EXCLUDED.instruction_index,
+            payload = EXCLUDED.payload,
+            timestamp = EXCLUDED.timestamp
+        "#,
+    )
+    .bind(event_type)
+    .bind(market.map(|key| key.to_string()))
+    .bind(authority.map(|key| key.to_string()))
+    .bind(lane.map(i32::from))
+    .bind(tx_signature)
+    .bind(slot)
+    .bind(instruction_index)
+    .bind(instruction_path)
+    .bind(payload)
+    .bind(chrono::Utc::now())
+    .execute(pool)
+    .await;
+
+    if let Err(e) = result {
+        log::error!(
+            "Failed to record V2 protocol auction event {}: {}",
+            event_type,
+            e
+        );
+        return Err(carbon_core::error::Error::Custom(format!(
+            "Failed to record V2 protocol auction event: {}",
+            e
+        )));
+    }
+
+    Ok(())
+}
+
 pub async fn upsert_v2_liquidity_added_event(
     event: &carbon_omnipair_decoder::v2::instructions::liquidity_added::LiquidityAdded,
     tx_signature: &str,

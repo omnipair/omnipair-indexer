@@ -76,6 +76,22 @@ function eventRow(row: any) {
   };
 }
 
+function auctionEventRow(row: any) {
+  return {
+    id: Number(row.id),
+    eventType: row.event_type,
+    market: row.market,
+    authority: row.authority,
+    lane: row.lane === null || row.lane === undefined ? null : Number(row.lane),
+    txSig: row.tx_sig,
+    slot: row.slot,
+    instructionIndex: row.instruction_index,
+    instructionPath: row.instruction_path,
+    timestamp: row.timestamp,
+    payload: row.payload,
+  };
+}
+
 export class V2MarketController {
   static async getMarkets(req: Request, res: Response): Promise<void> {
     try {
@@ -240,6 +256,69 @@ export class V2MarketController {
     } catch (error) {
       console.error('Error fetching V2 swaps:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch V2 swaps' });
+    }
+  }
+
+  static async getAuctions(req: Request, res: Response): Promise<void> {
+    try {
+      const marketAddress = req.params.marketAddress;
+      if (!marketAddress || !isValidAddress(marketAddress)) {
+        res.status(400).json({ success: false, error: 'Valid market address is required' });
+        return;
+      }
+
+      const { limit, offset } = parseLimitOffset(req);
+      const result = await pool.query(`
+        SELECT *
+        FROM v2_protocol_auction_events
+        WHERE market = $1 OR market IS NULL
+        ORDER BY timestamp DESC
+        LIMIT $2 OFFSET $3
+      `, [marketAddress, limit, offset]);
+
+      res.json({
+        success: true,
+        data: {
+          auctions: result.rows.map(auctionEventRow),
+          pagination: { limit, offset, count: result.rows.length },
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching V2 protocol auctions:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch V2 protocol auctions' });
+    }
+  }
+
+  static async getAuctionSettlements(req: Request, res: Response): Promise<void> {
+    try {
+      const marketAddress = req.params.marketAddress;
+      if (!marketAddress || !isValidAddress(marketAddress)) {
+        res.status(400).json({ success: false, error: 'Valid market address is required' });
+        return;
+      }
+
+      const { limit, offset } = parseLimitOffset(req);
+      const result = await pool.query(`
+        SELECT *
+        FROM v2_protocol_auction_events
+        WHERE market = $1 AND event_type = 'protocol_auction_settled'
+        ORDER BY timestamp DESC
+        LIMIT $2 OFFSET $3
+      `, [marketAddress, limit, offset]);
+
+      res.json({
+        success: true,
+        data: {
+          settlements: result.rows.map(auctionEventRow),
+          pagination: { limit, offset, count: result.rows.length },
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching V2 protocol auction settlements:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch V2 protocol auction settlements',
+      });
     }
   }
 

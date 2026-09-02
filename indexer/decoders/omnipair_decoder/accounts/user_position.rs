@@ -9,8 +9,8 @@ use carbon_core::{borsh, CarbonDeserialize};
 
 #[carbon(discriminator = "0xfbf8d1f553ea111b")] 
 pub struct UserPosition {
-        pub owner: solana_pubkey::Pubkey,
-        pub pair: solana_pubkey::Pubkey,
+        pub owner: carbon_core::deserialize::CarbonPubkey,
+        pub pair: carbon_core::deserialize::CarbonPubkey,
         pub collateral0_liquidation_cf_bps: u16,
         pub collateral1_liquidation_cf_bps: u16,
         pub collateral0: u64,

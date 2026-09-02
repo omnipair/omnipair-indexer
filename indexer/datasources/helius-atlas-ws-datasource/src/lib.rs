@@ -12,14 +12,13 @@ use {
     helius::{
         types::{Cluster, RpcTransactionsConfig},
         websocket::EnhancedWebsocket,
-        Helius,
     },
     solana_account::Account,
     solana_clock::Clock,
-    solana_program::{instruction::CompiledInstruction, message::v0::LoadedAddresses},
+    solana_message::{compiled_instruction::CompiledInstruction, v0::LoadedAddresses},
     solana_pubkey::Pubkey,
     solana_signature::Signature,
-    solana_transaction_context::TransactionReturnData,
+    solana_transaction_context::transaction::TransactionReturnData,
     solana_transaction_status::{
         option_serializer::OptionSerializer, InnerInstruction, InnerInstructions, Reward,
         TransactionStatusMeta, TransactionTokenBalance, UiInstruction, UiLoadedAddresses,
@@ -114,22 +113,6 @@ impl Datasource for HeliusWebsocket {
                 break;
             }
 
-            let mut helius = match Helius::new(&self.api_key, self.cluster.clone()) {
-                Ok(client) => client,
-                Err(err) => {
-                    log::error!("Failed to create Helius client: {}", err);
-                    reconnection_attempts += 1;
-                    if reconnection_attempts >= MAX_RECONNECTION_ATTEMPTS {
-                        return Err(carbon_core::error::Error::Custom(format!(
-                            "Failed to create Helius client after {} attempts: {}",
-                            MAX_RECONNECTION_ATTEMPTS, err
-                        )));
-                    }
-                    tokio::time::sleep(Duration::from_millis(RECONNECTION_DELAY_MS)).await;
-                    continue;
-                }
-            };
-
             let ws_url = format!(
                 "{}/?api-key={}",
                 Self::get_ws_url(&self.cluster),
@@ -152,12 +135,10 @@ impl Datasource for HeliusWebsocket {
                 }
             };
 
-            helius.ws_client = Some(Arc::new(ws));
-
             let account_deletions_tracked = Arc::clone(&self.account_deletions_tracked);
             let filters = self.filters.clone();
             let sender = sender.clone();
-            let helius = Arc::new(helius);
+            let helius = Arc::new(ws);
             let metrics = Arc::clone(&metrics);
 
             let iteration_cancellation = CancellationToken::new();
@@ -176,17 +157,8 @@ impl Datasource for HeliusWebsocket {
                 let metrics_clone = Arc::clone(&metrics);
 
                 let handle = tokio::spawn(async move {
-                    let ws = match helius_clone.ws() {
-                        Some(ws) => ws,
-                        None => {
-                            log::error!("Helius Websocket not available for Clock subscription");
-                            iteration_cancellation_clock.cancel();
-                            return;
-                        }
-                    };
-
-                    let (mut stream, _unsub) = match ws
-                        .account_subscribe(&solana_program::sysvar::clock::ID, None)
+                    let (mut stream, _unsub) = match helius_clone
+                        .account_subscribe(&solana_sdk::sysvar::clock::ID, None)
                         .await
                     {
                         Ok(subscription) => subscription,
@@ -219,7 +191,7 @@ impl Datasource for HeliusWebsocket {
                                 match event_result {
                                     Some(clock_event) => {
                                         last_clock_update = Instant::now();
-                                        if let Some(clock_data) = clock_event.value.decode::<Account>() {
+                                        if let Some(clock_data) = clock_event.value.to_account() {
                                             if let Ok(clock) = bincode::deserialize::<Clock>(&clock_data.data) {
                                                 let current_slot = clock.slot;
 
@@ -268,16 +240,8 @@ impl Datasource for HeliusWebsocket {
                         let id_for_account = id_for_loop.clone();
 
                         let handle = tokio::spawn(async move {
-                            let ws = match helius_clone.ws() {
-                                Some(ws) => ws,
-                                None => {
-                                    log::error!("Helius Websocket not available");
-                                    return;
-                                }
-                            };
-
                             let (mut stream, _unsub) =
-                                match ws.account_subscribe(&account, None).await {
+                                match helius_clone.account_subscribe(&account, None).await {
                                     Ok(subscription) => subscription,
                                     Err(err) => {
                                         log::error!(
@@ -303,15 +267,21 @@ impl Datasource for HeliusWebsocket {
                                         match event_result {
                                             Some(acc_event) => {
                                                 let start_time = std::time::Instant::now();
-                                                let decoded_account: Account = match acc_event.value.decode() {
-                                                    Some(account_data) => account_data,
+                                                let decoded_account: Account = match acc_event.value.to_account() {
+                                                    Some(account_data) => Account {
+                                                        lamports: account_data.lamports,
+                                                        data: account_data.data,
+                                                        owner: Pubkey::new_from_array(account_data.owner.to_bytes()),
+                                                        executable: account_data.executable,
+                                                        rent_epoch: account_data.rent_epoch,
+                                                    },
                                                     None => {
                                                         log::error!("Error decoding Helius WS Account event");
                                                         continue;
                                                     }
                                                 };
 
-                                                if decoded_account.lamports == 0 && decoded_account.data.is_empty() && decoded_account.owner == solana_program::system_program::ID {
+                                                if decoded_account.lamports == 0 && decoded_account.data.is_empty() && decoded_account.owner == solana_system_interface::program::ID {
                                                     let accounts_tracked =
                                                         account_deletions_tracked.read().await;
                                                     if !accounts_tracked.is_empty() && accounts_tracked.contains(&account) {
@@ -379,16 +349,8 @@ impl Datasource for HeliusWebsocket {
                     let id_for_transaction = id_for_loop.clone();
 
                     let handle = tokio::spawn(async move {
-                        let ws = match helius_clone.ws() {
-                            Some(ws) => ws,
-                            None => {
-                                log::error!("Helius Websocket not available");
-                                return;
-                            }
-                        };
-
                         let (mut stream, _unsub) =
-                            match ws.transaction_subscribe(config.clone()).await {
+                            match helius_clone.transaction_subscribe(config.clone()).await {
                                 Ok(subscription) => subscription,
                                 Err(err) => {
                                     log::error!("Failed to subscribe to transactions: {:?}", err);
@@ -410,8 +372,12 @@ impl Datasource for HeliusWebsocket {
                                     match event_result {
                                         Some(tx_event) => {
                                             let start_time = std::time::Instant::now();
+                                            let helius::types::TransactionNotification::Full(tx_event) = tx_event else {
+                                                log::debug!("Skipping non-full transaction notification");
+                                                continue;
+                                            };
                                             let encoded_transaction_with_status_meta = tx_event.transaction;
-                                            let signature_str = tx_event.signature;
+                                            let signature_str = tx_event.signature.clone();
                                             let Ok(signature) = Signature::from_str(&signature_str) else {
                                                 log::error!("Error getting Signature from string");
                                                 continue;
@@ -434,7 +400,7 @@ impl Datasource for HeliusWebsocket {
                                             };
 
                                             let meta_needed = TransactionStatusMeta {
-                                                status: meta_original.status,
+                                                status: meta_original.status.map_err(Into::into),
                                                 fee: meta_original.fee,
                                                 pre_balances: meta_original.pre_balances,
                                                 post_balances: meta_original.post_balances,
@@ -548,12 +514,13 @@ impl Datasource for HeliusWebsocket {
                                                         .rewards
                                                         .unwrap_or_else(std::vec::Vec::new)
                                                         .iter()
-                                                        .map(|rewards| Reward {
+                                                        .map(|rewards|                                                         Reward {
                                                             pubkey: rewards.pubkey.clone(),
                                                             lamports: rewards.lamports,
                                                             post_balance: rewards.post_balance,
                                                             reward_type: rewards.reward_type,
                                                             commission: rewards.commission,
+                                                            commission_bps: rewards.commission_bps,
                                                         })
                                                         .collect::<Vec<Reward>>(),
                                                 ),
@@ -587,6 +554,7 @@ impl Datasource for HeliusWebsocket {
                                                     .compute_units_consumed
                                                     .map(|compute_unit_consumed| compute_unit_consumed)
                                                     .or(None),
+                                                cost_units: meta_original.cost_units.into(),
                                             };
 
                                             let update = Update::Transaction(Box::new(TransactionUpdate {

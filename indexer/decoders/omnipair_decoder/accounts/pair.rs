@@ -10,10 +10,10 @@ use carbon_core::{borsh, CarbonDeserialize};
 
 #[carbon(discriminator = "0x554831b0b6e48d52")] 
 pub struct Pair {
-        pub token0: solana_pubkey::Pubkey,
-        pub token1: solana_pubkey::Pubkey,
-        pub lp_mint: solana_pubkey::Pubkey,
-        pub rate_model: solana_pubkey::Pubkey,
+        pub token0: carbon_core::deserialize::CarbonPubkey,
+        pub token1: carbon_core::deserialize::CarbonPubkey,
+        pub lp_mint: carbon_core::deserialize::CarbonPubkey,
+        pub rate_model: carbon_core::deserialize::CarbonPubkey,
         pub swap_fee_bps: u16,
         pub half_life: u64,
         pub fixed_cf_bps: Option<u16>,

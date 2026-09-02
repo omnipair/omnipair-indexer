@@ -30,7 +30,7 @@
 //!   conforms to the schema.
 
 use crate::filter::Filter;
-use solana_program::hash::Hash;
+use solana_hash::Hash;
 
 use {
     crate::{
@@ -71,7 +71,7 @@ pub struct TransactionMetadata {
     pub signature: Signature,
     pub fee_payer: Pubkey,
     pub meta: solana_transaction_status::TransactionStatusMeta,
-    pub message: solana_program::message::VersionedMessage,
+    pub message: solana_message::VersionedMessage,
     pub block_time: Option<i64>,
     pub block_hash: Option<Hash>,
 }

@@ -11,6 +11,6 @@ pub struct FlashloanEvent{
     pub amount1: u64,
     pub fee0: u64,
     pub fee1: u64,
-    pub receiver: solana_pubkey::Pubkey,
+    pub receiver: carbon_core::deserialize::CarbonPubkey,
     pub metadata: EventMetadata,
 }

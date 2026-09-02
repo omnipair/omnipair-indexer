@@ -11,8 +11,8 @@ pub struct UserLiquidityPositionUpdatedEvent {
     pub lp_amount: u64,
     pub cash_reserve0: u64,
     pub cash_reserve1: u64,
-    pub token0_mint: solana_pubkey::Pubkey,
-    pub token1_mint: solana_pubkey::Pubkey,
-    pub lp_mint: solana_pubkey::Pubkey,
+    pub token0_mint: carbon_core::deserialize::CarbonPubkey,
+    pub token1_mint: carbon_core::deserialize::CarbonPubkey,
+    pub lp_mint: carbon_core::deserialize::CarbonPubkey,
     pub metadata: EventMetadata,
 }

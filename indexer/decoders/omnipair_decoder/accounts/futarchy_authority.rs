@@ -11,7 +11,7 @@ use carbon_core::{borsh, CarbonDeserialize};
 #[carbon(discriminator = "0xaff7a0b68c80d3e2")] 
 pub struct FutarchyAuthority {
         pub version: u8,
-        pub authority: solana_pubkey::Pubkey,
+        pub authority: carbon_core::deserialize::CarbonPubkey,
         pub recipients: RevenueRecipients,
         pub revenue_share: RevenueShare,
         pub revenue_distribution: RevenueDistribution,

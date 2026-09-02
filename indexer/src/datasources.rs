@@ -12,14 +12,16 @@ use futures::StreamExt;
 use helius::types::{
     Cluster, RpcTransactionsConfig, TransactionSubscribeFilter, 
     TransactionSubscribeOptions, TransactionCommitment, 
-    UiEnhancedTransactionEncoding, TransactionDetails as HeliusTransactionDetails
+    UiEnhancedTransactionEncoding,
 };
+use helius::types::enhanced_websocket::TransactionDetails as HeliusTransactionDetails;
 use solana_client::{
     nonblocking::rpc_client::RpcClient,
     rpc_client::GetConfirmedSignaturesForAddress2Config,
     rpc_config::{RpcProgramAccountsConfig, RpcBlockConfig, RpcTransactionConfig},
 };
 use solana_transaction_status::{EncodedConfirmedTransactionWithStatusMeta, UiTransactionEncoding, TransactionDetails};
+use solana_account::Account;
 use solana_commitment_config::CommitmentConfig;
 use solana_pubkey::Pubkey;
 use solana_signature::Signature;
@@ -44,7 +46,7 @@ pub fn create_helius_datasource(api_key: &str, program_id: Pubkey) -> HeliusWebs
                 encoding: Some(UiEnhancedTransactionEncoding::Base64),
                 transaction_details: Some(HeliusTransactionDetails::Full),
                 show_rewards: None,
-                max_supported_transaction_version: Some(0),
+                max_supported_transaction_version: Some(1),
             },
         }),
     };
@@ -76,7 +78,7 @@ async fn get_slot_for_block(rpc_url: &str, block_number: u64) -> Option<u64> {
             transaction_details: Some(TransactionDetails::Full),
             rewards: Some(false),
             commitment: Some(CommitmentConfig::confirmed()),
-            max_supported_transaction_version: Some(0),
+            max_supported_transaction_version: Some(1),
         }
     ).await {
         Ok(_block) => {
@@ -259,10 +261,45 @@ impl Datasource for GpaBackfillDatasource {
         let program_accounts = match &self.config {
             Some(config) => {
                 rpc_client
-                    .get_program_accounts_with_config(&self.program_id, config.clone())
+                    .get_program_ui_accounts_with_config(&self.program_id, config.clone())
                     .await
+                    .map(|response| {
+                        response
+                            .into_iter()
+                            .filter_map(|(pubkey, ui_account)| {
+                                ui_account.to_account().map(|account| {
+                                    (
+                                        pubkey,
+                                        Account {
+                                            lamports: account.lamports,
+                                            data: account.data,
+                                            owner: Pubkey::new_from_array(account.owner.to_bytes()),
+                                            executable: account.executable,
+                                            rent_epoch: account.rent_epoch,
+                                        },
+                                    )
+                                })
+                            })
+                            .collect::<Vec<_>>()
+                    })
             }
-            None => rpc_client.get_program_accounts(&self.program_id).await,
+            None => rpc_client.get_program_accounts(&self.program_id).await.map(|accounts| {
+                accounts
+                    .into_iter()
+                    .map(|(pubkey, account)| {
+                        (
+                            pubkey,
+                            Account {
+                                lamports: account.lamports,
+                                data: account.data,
+                                owner: Pubkey::new_from_array(account.owner.to_bytes()),
+                                executable: account.executable,
+                                rent_epoch: account.rent_epoch,
+                            },
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            }),
         }
         .map_err(|_| carbon_core::error::Error::FailedToConsumeDatasource(
             "Failed to fetch program accounts".to_string(),
@@ -275,7 +312,7 @@ impl Datasource for GpaBackfillDatasource {
         for (pubkey, account) in program_accounts {
             if let Err(e) = sender.try_send((
                 Update::Account(AccountUpdate {
-                    pubkey,
+                    pubkey: Pubkey::new_from_array(pubkey.to_bytes()),
                     account,
                     slot,
                     transaction_signature: None,
@@ -484,7 +521,7 @@ impl Datasource for OrderedBackfillDatasource {
                         RpcTransactionConfig {
                             encoding: Some(UiTransactionEncoding::Base64),
                             commitment: Some(commitment),
-                            max_supported_transaction_version: Some(0),
+                            max_supported_transaction_version: Some(1),
                         },
                     )
                     .await;

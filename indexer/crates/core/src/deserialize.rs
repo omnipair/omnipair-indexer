@@ -110,6 +110,41 @@ pub trait ArrangeAccounts {
     ) -> Option<Self::ArrangedAccounts>;
 }
 
+/// Pubkey wrapper that implements borsh 0.10, which `CarbonDeserialize` still
+/// generates against. Solana 4.x pubkeys only implement borsh 1.x.
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
+)]
+pub struct CarbonPubkey(pub solana_pubkey::Pubkey);
+
+impl crate::borsh::BorshDeserialize for CarbonPubkey {
+    fn deserialize_reader<R: Read>(reader: &mut R) -> Result<Self> {
+        let mut buf = [0u8; 32];
+        reader.read_exact(&mut buf)?;
+        Ok(Self(solana_pubkey::Pubkey::new_from_array(buf)))
+    }
+}
+
+impl Deref for CarbonPubkey {
+    type Target = solana_pubkey::Pubkey;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<CarbonPubkey> for solana_pubkey::Pubkey {
+    fn from(value: CarbonPubkey) -> Self {
+        value.0
+    }
+}
+
+impl std::fmt::Display for CarbonPubkey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 /// A wrapper type for strings that are prefixed with their length.
 
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Eq, Clone)]

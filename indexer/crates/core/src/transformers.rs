@@ -17,8 +17,8 @@
 //!
 //! ## Notes
 //!
-//! - The module supports both legacy and v0 transactions, including handling of
-//!   loaded addresses and inner instructions.
+//! - The module supports legacy, v0, and v1 transactions, including handling of
+//!   loaded addresses (v0) and inner instructions.
 
 use {
     crate::{
@@ -30,12 +30,11 @@ use {
         transaction::TransactionMetadata,
     },
     solana_instruction::AccountMeta,
-    solana_program::{
-        instruction::CompiledInstruction,
-        message::{v0::LoadedAddresses, VersionedMessage},
+    solana_message::{
+        compiled_instruction::CompiledInstruction, v0::LoadedAddresses, VersionedMessage,
     },
     solana_pubkey::Pubkey,
-    solana_transaction_context::TransactionReturnData,
+    solana_transaction_context::transaction::TransactionReturnData,
     solana_transaction_status::{
         option_serializer::OptionSerializer, InnerInstruction, InnerInstructions, Reward,
         TransactionStatusMeta, TransactionTokenBalance, UiInstruction, UiLoadedAddresses,
@@ -112,6 +111,18 @@ pub fn extract_instructions_with_metadata(
                 &mut instructions_with_metadata,
                 |key, _| meta.loaded_addresses.writable.contains(key),
                 |_, idx| idx < v0.header.num_required_signatures as usize,
+            );
+        }
+        VersionedMessage::V1(v1) => {
+            // v1 carries the full account list inline (no address lookup tables).
+            process_instructions(
+                message.static_account_keys(),
+                message.instructions(),
+                &meta.inner_instructions,
+                transaction_metadata,
+                &mut instructions_with_metadata,
+                |_, idx| v1.is_maybe_writable(idx, None),
+                |_, idx| v1.is_signer(idx),
             );
         }
     }
@@ -349,7 +360,7 @@ pub fn transaction_metadata_from_original_meta(
         meta_original
     );
     Ok(TransactionStatusMeta {
-        status: meta_original.status,
+        status: meta_original.status.map_err(Into::into),
         fee: meta_original.fee,
         pre_balances: meta_original.pre_balances,
         post_balances: meta_original.post_balances,
@@ -456,6 +467,7 @@ pub fn transaction_metadata_from_original_meta(
                     post_balance: rewards.post_balance,
                     reward_type: rewards.reward_type,
                     commission: rewards.commission,
+                    commission_bps: rewards.commission_bps,
                 })
                 .collect::<Vec<Reward>>(),
         ),
@@ -489,6 +501,7 @@ pub fn transaction_metadata_from_original_meta(
             .compute_units_consumed
             .map(|compute_unit_consumed| compute_unit_consumed)
             .or(None),
+        cost_units: meta_original.cost_units.into(),
     })
 }
 
@@ -682,6 +695,7 @@ mod tests {
             },
             return_data: None,
             compute_units_consumed: Some(44850),
+            cost_units: None,
         };
         // Act
         let tx_meta_status =
@@ -1084,6 +1098,7 @@ mod tests {
             },
             return_data: None,
             compute_units_consumed: Some(123511),
+            cost_units: None,
         };
 
         // Act

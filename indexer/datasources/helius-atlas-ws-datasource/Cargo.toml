@@ -18,9 +18,12 @@ bs58 = { workspace = true }
 helius = { workspace = true }
 solana-account = { workspace = true }
 solana-clock = { workspace = true }
-solana-program = { workspace = true }
+solana-instruction = { workspace = true }
+solana-message = { workspace = true }
 solana-pubkey = { workspace = true }
+solana-sdk = { workspace = true }
 solana-signature = { workspace = true }
+solana-system-interface = { workspace = true }
 solana-transaction-context = { workspace = true }
 solana-transaction-status = { workspace = true }
 

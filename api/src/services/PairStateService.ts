@@ -12,15 +12,13 @@ import {
 } from '../config/program';
 import { simulatePairGetter } from '../utils/pairSimulation';
 import { cache } from '../utils/cache';
+import { safeFetch } from '../utils/safeFetch';
 import type { Omnipair } from '@omnipair/program-interface';
 
 const PLACEHOLDER_ICON = 'https://placehold.net/400x400.png';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours
 const FETCH_TIMEOUT_MS = 3_000;
-
-function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
-  return fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-}
+const MAX_METADATA_BYTES = 256 * 1024;
 
 export interface TokenMetadata {
   symbol: string;
@@ -137,9 +135,12 @@ export class PairStateService {
         let iconUrl: string | undefined;
         if (asset.metadata?.uri && asset.metadata.uri.trim() !== '') {
           try {
-            const metadataResponse = await fetchWithTimeout(asset.metadata.uri, FETCH_TIMEOUT_MS);
+            const metadataResponse = await safeFetch(asset.metadata.uri, {
+              timeoutMs: FETCH_TIMEOUT_MS,
+              maxBytes: MAX_METADATA_BYTES,
+            });
             if (metadataResponse.ok) {
-              const metadataJson = await metadataResponse.json() as any;
+              const metadataJson = JSON.parse(metadataResponse.body.toString('utf8')) as any;
               if (metadataJson.image && typeof metadataJson.image === 'string' && metadataJson.image.trim() !== '') {
                 iconUrl = metadataJson.image;
               }

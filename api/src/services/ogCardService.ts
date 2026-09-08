@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { safeFetch } from '../utils/safeFetch';
 
 export interface OgCardParams {
   token0Symbol: string;
@@ -31,19 +32,22 @@ export function formatLargeNumber(num: number): { value: string; suffix: string 
   }
 }
 
+const IMAGE_TIMEOUT_MS = 5_000;
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
 /**
  * Fetch an image URL and return it as a base64 data URI.
  * Returns undefined if the fetch fails.
  */
 export async function fetchImageAsBase64(url: string): Promise<string | undefined> {
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!response.ok) return undefined;
+    const response = await safeFetch(url, {
+      timeoutMs: IMAGE_TIMEOUT_MS,
+      maxBytes: MAX_IMAGE_BYTES,
+      requireImage: true,
+    });
 
-    const contentType = response.headers.get('content-type') || 'image/png';
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    return `data:${contentType};base64,${base64}`;
+    return `data:${response.contentType};base64,${response.body.toString('base64')}`;
   } catch (error) {
     console.warn(`Failed to fetch image for OG card: ${url}`, error);
     return undefined;

@@ -28,8 +28,8 @@ export class PositionController {
 
       const cacheKey = `positions:${userAddress || 'all'}:${limit}:${offset}`;
       // Rebuilding a page costs five simulations per position, so the unfiltered
-      // page every client shares is held longer than a single wallet's view.
-      const ttlMs = userAddress ? 10 * 1000 : 60 * 1000;
+      // page every client shares is held for the webapp's 30-second refresh.
+      const ttlMs = userAddress ? 10 * 1000 : 30 * 1000;
       const data = await cache.getOrSet(cacheKey, ttlMs, async () => {
         let countQuery: string;
         let dataQuery: string;

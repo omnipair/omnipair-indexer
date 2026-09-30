@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { PublicKey } from '@solana/web3.js';
+import type { Program } from '@coral-xyz/anchor';
+import type { Omnipair } from '@omnipair/program-interface';
 import pool from '../config/database';
 import { ApiResponse } from '../types';
 import { cache } from '../utils/cache';
-import { simulateUserPositionGetter } from '../utils/pairSimulation';
+import { fetchPairAccounts, PairAccount, simulateUserPositionGetter } from '../utils/pairSimulation';
 import { SimulationResult } from '../types/pairTypes';
 import { isValidAddress, initializePairStateService, splitPosition } from './helpers/controllerBase';
 import {
@@ -25,7 +27,10 @@ export class PositionController {
       }
 
       const cacheKey = `positions:${userAddress || 'all'}:${limit}:${offset}`;
-      const data = await cache.getOrSet(cacheKey, 10 * 1000, async () => {
+      // Rebuilding a page costs five simulations per position, so the unfiltered
+      // page every client shares is held longer than a single wallet's view.
+      const ttlMs = userAddress ? 10 * 1000 : 60 * 1000;
+      const data = await cache.getOrSet(cacheKey, ttlMs, async () => {
         let countQuery: string;
         let dataQuery: string;
         let countParams: any[];
@@ -70,6 +75,7 @@ export class PositionController {
         const pairStateService = await initializePairStateService();
         const program = pairStateService.getProgram();
         const connection = pairStateService.getConnection();
+        const pairAccounts = program ? await readPairAccounts(program, result.rows) : new Map<string, PairAccount | null>();
 
         const enrichedPositions = await Promise.all(
           result.rows.map(async (row) => {
@@ -88,15 +94,15 @@ export class PositionController {
               event_timestamp: row.event_timestamp,
             };
 
-            if (!program) {
+            const pairAccount = pairAccounts.get(row.pair);
+            if (!program || !pairAccount) {
               return splitPosition(basePosition);
             }
 
             try {
               const pairPda = new PublicKey(row.pair);
               const userPositionPda = new PublicKey(row.position);
-
-              const pairAccount = await program.account.pair.fetch(pairPda);
+              const { rateModel } = pairAccount;
               const token0Address = pairAccount.token0.toString();
               const token1Address = pairAccount.token1.toString();
 
@@ -107,11 +113,11 @@ export class PositionController {
                 collateralValueResult,
                 liquidationBorrowLimitResult,
               ] = await Promise.allSettled([
-                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userDynamicBorrowLimit: {} }),
-                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userLiquidationPrice: {} }),
-                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userDebtWithInterest: {} }),
-                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userCollateralValueWithImpact: {} }),
-                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userLiquidationBorrowLimit: {} }),
+                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userDynamicBorrowLimit: {} }, rateModel),
+                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userLiquidationPrice: {} }, rateModel),
+                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userDebtWithInterest: {} }, rateModel),
+                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userCollateralValueWithImpact: {} }, rateModel),
+                simulateUserPositionGetter(program, connection, pairPda, userPositionPda, { userLiquidationBorrowLimit: {} }, rateModel),
               ]);
 
               const extract = (label: string, settled: PromiseSettledResult<SimulationResult>) => {
@@ -222,39 +228,33 @@ export class PositionController {
 
         const pairStateService = await initializePairStateService();
         const program = pairStateService.getProgram();
+        const pairAccounts = program ? await readPairAccounts(program, result.rows) : new Map<string, PairAccount | null>();
 
-        const enrichedPositions = await Promise.all(
-          result.rows.map(async (row) => {
-            const basePosition = {
-              signer: row.signer,
-              pair: row.pair,
-              token0Mint: row.token0_mint,
-              token1Mint: row.token1_mint,
-              amount0: row.amount0,
-              amount1: row.amount1,
-              lpMint: row.lp_mint,
-              lpAmount: row.lp_amount,
-              timestamp: row.updated_at,
-              token0Address: row.token0_mint,
-              token1Address: row.token1_mint,
-              earnings: metricsByPosition.get(getLpPositionMetricKey(row.signer, row.pair))?.earnings,
-              valueDelta: metricsByPosition.get(getLpPositionMetricKey(row.signer, row.pair))?.valueDelta,
-            };
+        const enrichedPositions = result.rows.map((row) => {
+          const basePosition = {
+            signer: row.signer,
+            pair: row.pair,
+            token0Mint: row.token0_mint,
+            token1Mint: row.token1_mint,
+            amount0: row.amount0,
+            amount1: row.amount1,
+            lpMint: row.lp_mint,
+            lpAmount: row.lp_amount,
+            timestamp: row.updated_at,
+            token0Address: row.token0_mint,
+            token1Address: row.token1_mint,
+            earnings: metricsByPosition.get(getLpPositionMetricKey(row.signer, row.pair))?.earnings,
+            valueDelta: metricsByPosition.get(getLpPositionMetricKey(row.signer, row.pair))?.valueDelta,
+          };
 
-            if (program) {
-              try {
-                const pairPda = new PublicKey(row.pair);
-                const pairAccount = await program.account.pair.fetch(pairPda);
-                basePosition.token0Address = pairAccount.token0.toString();
-                basePosition.token1Address = pairAccount.token1.toString();
-              } catch (error) {
-                console.error(`Error fetching pair account for ${row.pair}:`, error);
-              }
-            }
+          const pairAccount = pairAccounts.get(row.pair);
+          if (pairAccount) {
+            basePosition.token0Address = pairAccount.token0.toString();
+            basePosition.token1Address = pairAccount.token1.toString();
+          }
 
-            return basePosition;
-          })
-        );
+          return basePosition;
+        });
 
         return {
           positions: enrichedPositions,
@@ -276,5 +276,18 @@ export class PositionController {
       };
       res.status(500).json(response);
     }
+  }
+}
+
+/** One read for every pair on the page; rows keep their indexed values when it fails. */
+async function readPairAccounts(
+  program: Program<Omnipair>,
+  rows: Array<{ pair: string }>
+): Promise<Map<string, PairAccount | null>> {
+  try {
+    return await fetchPairAccounts(program, rows.map((row) => row.pair));
+  } catch (error) {
+    console.error('Error fetching pair accounts for positions page:', error);
+    return new Map();
   }
 }

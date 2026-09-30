@@ -159,16 +159,38 @@ export async function simulatePairGetter(
   return requestPromise;
 }
 
+export type PairAccount = Awaited<ReturnType<Program<Omnipair>['account']['pair']['fetch']>>;
+
+/**
+ * Read every distinct pair in one getMultipleAccounts call, keyed by address.
+ * A pair that does not exist maps to null.
+ */
+export async function fetchPairAccounts(
+  program: Program<Omnipair>,
+  pairs: string[]
+): Promise<Map<string, PairAccount | null>> {
+  const distinct = [...new Set(pairs)];
+  if (distinct.length === 0) {
+    return new Map();
+  }
+
+  const accounts = await program.account.pair.fetchMultiple(distinct.map((pair) => new PublicKey(pair)));
+  return new Map(distinct.map((pair, index) => [pair, accounts[index] ?? null]));
+}
+
 /**
  * Simulate a user position getter function using view_user_position_data instruction
  * This calls the view_user_position_data instruction which returns data through logs after updating the pair
+ *
+ * Callers that already hold the pair account pass its rate model, which skips re-reading the pair.
  */
 export async function simulateUserPositionGetter(
   program: Program<Omnipair>,
   connection: Connection,
   pairPda: PublicKey,
   userPositionPda: PublicKey,
-  getter: UserPositionGetterType
+  getter: UserPositionGetterType,
+  rateModelPda?: PublicKey
 ): Promise<SimulationResult> {
   // Create key based on parameters for in-flight request deduplication only
   const getterKey = Object.keys(getter)[0];
@@ -184,8 +206,7 @@ export async function simulateUserPositionGetter(
   const requestPromise = (async () => {
     try {
       // Get the pair account to access the rate model
-      const pairAccount = await program.account.pair.fetch(pairPda);
-      const rateModelPda = pairAccount.rateModel;
+      const rateModel = rateModelPda ?? (await program.account.pair.fetch(pairPda)).rateModel;
 
       // Create the instruction
       const ix = await program.methods
@@ -193,7 +214,7 @@ export async function simulateUserPositionGetter(
         .accounts({
           userPosition: userPositionPda,
           pair: pairPda,
-          rateModel: rateModelPda
+          rateModel
         })
         .instruction();
 

@@ -27,9 +27,11 @@ export class PositionController {
       }
 
       const cacheKey = `positions:${userAddress || 'all'}:${limit}:${offset}`;
-      // Rebuilding a page costs five simulations per position, so the unfiltered
-      // page every client shares is held for the webapp's 30-second refresh.
-      const ttlMs = userAddress ? 10 * 1000 : 30 * 1000;
+      // A wallet refetches its own positions right after a transaction, so its
+      // view is never stored, only shared by concurrent identical requests. The
+      // unfiltered page costs five simulations per position to rebuild and is
+      // held for the webapp's 30-second refresh.
+      const ttlMs = userAddress ? 0 : 30 * 1000;
       const data = await cache.getOrSet(cacheKey, ttlMs, async () => {
         let countQuery: string;
         let dataQuery: string;
@@ -181,7 +183,9 @@ export class PositionController {
       }
 
       const cacheKey = `liq_positions:${userAddress || 'all'}:${limit}:${offset}`;
-      const data = await cache.getOrSet(cacheKey, 10 * 1000, async () => {
+      // As above, a wallet's own view is never stored so it shows a transaction
+      // as soon as the indexer has recorded it.
+      const data = await cache.getOrSet(cacheKey, userAddress ? 0 : 10 * 1000, async () => {
         let countQuery: string;
         let dataQuery: string;
         let countParams: any[];

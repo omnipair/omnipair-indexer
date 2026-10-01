@@ -91,6 +91,30 @@ curl -X POST http://localhost:3000/gap-fill
 
 ## 📈 Data Query Endpoints
 
+### GET /api/v1/pools — USD valuations
+
+Each entry in `data.pools` includes `tvl_usd` and `total_debt_usd` as JSON
+numbers or `null`. These match the webapp's pool-list formulas: TVL sums
+each reserve (already in token units) times its USD price; debt sums each
+raw debt divided by `10 ** token.decimals` times its USD price.
+A nonzero unpriced balance makes that total `null`; a zero balance needs
+no price. No one-sided doubling is used. If pool state cannot be loaded,
+both fields are `null`.
+
+`valuation_updated_at` is an ISO timestamp for the valuation assembly, or
+`null` when pool state could not be loaded. It is not the upstream quote time:
+the proxy may serve retained prices while refreshing. Values use the same
+60-second pool-list cache and event invalidation as the existing pool fields.
+Cache hits do not fetch prices. Cache misses batch unique mints in groups of
+up to 50, using the existing 30-second local price cache.
+
+The price service defaults to `https://jup-proxy-production-eff9.up.railway.app`;
+`JUPITER_API_URL` overrides it (set it to this proxy on deployments that
+already specify a different URL). `JUPITER_TIMEOUT_MS` defaults to 3000 and
+`PRICE_CACHE_TTL_MS` to 30000. Price failures leave unavailable totals `null`
+without failing the pool response. Clients must consume the new fields to
+avoid waiting for their own price lookup for these totals.
+
 ### GET /pairs
 Returns all Omnipair pairs.
 
@@ -435,4 +459,3 @@ curl "http://localhost:3000/pairs?limit=5"
 ---
 
 **Note**: This API documentation is for the current version. Check the repository for the latest updates and changes.
-

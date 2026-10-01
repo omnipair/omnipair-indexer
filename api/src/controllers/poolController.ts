@@ -5,6 +5,7 @@ import { cache } from '../utils/cache';
 import { calculateEmaFromPoolData, fromNad } from '../utils/emaCalculator';
 import { generateOgCardSvg, formatLargeNumber, fetchImageAsBase64 } from '../services/ogCardService';
 import { fetchTokenPrices } from '../services/jupiterPriceService';
+import { calculatePoolValuation } from '../services/poolValuation';
 import {
   isValidAddress,
   KNOWN_TOKEN_ICONS,
@@ -380,8 +381,11 @@ export class PoolController {
         ORDER BY id ASC
       `);
 
-      const pairService = await initializePairStateService();
-      const categoriesByPair = await loadPoolCategories(result.rows.map((poolData: PoolRow) => poolData.pair_address));
+      const [pairService, categoriesByPair, prices] = await Promise.all([
+        initializePairStateService(),
+        loadPoolCategories(result.rows.map((poolData: PoolRow) => poolData.pair_address)),
+        fetchTokenPrices(result.rows.flatMap((poolData: PoolRow) => [poolData.token0, poolData.token1])),
+      ]);
 
       return Promise.all(
         result.rows.map(async (poolData: PoolRow) => {
@@ -439,6 +443,8 @@ export class PoolController {
                 token0: pairState.totalDebts.token0,
                 token1: pairState.totalDebts.token1
               },
+              ...calculatePoolValuation({ ...pairState, total_debts: pairState.totalDebts }, prices),
+              valuation_updated_at: new Date().toISOString(),
               total_collaterals: {
                 token0: pairState.totalCollaterals.token0,
                 token1: pairState.totalCollaterals.token1
@@ -472,6 +478,9 @@ export class PoolController {
               spot_prices: { token0: '0', token1: '0' },
               interest_rates: { token0: 0, token1: 0 },
               total_debts: { token0: '0', token1: '0' },
+              tvl_usd: null,
+              total_debt_usd: null,
+              valuation_updated_at: null,
               total_collaterals: { token0: '0', token1: '0' },
               utilization: { token0: 0, token1: 0 },
               lp_token: { total_supply: '0', decimals: 0 },

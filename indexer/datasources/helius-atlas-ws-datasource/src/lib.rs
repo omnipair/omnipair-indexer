@@ -89,6 +89,20 @@ impl HeliusWebsocket {
             _ => DEVNET_WS_URL,
         }
     }
+
+    /// The endpoint with the key as its only query parameter, on the root
+    /// path. The base URLs end in a slash, and joining one with `/?api-key=`
+    /// gave `//?api-key=`, which Helius devnet began refusing with 404 Not
+    /// Found on 2026-10-10. The base's trailing slashes and the key's
+    /// surrounding whitespace are trimmed, so the URL has exactly one slash
+    /// before the query whatever either holds.
+    fn ws_url(cluster: &Cluster, api_key: &str) -> String {
+        format!(
+            "{}/?api-key={}",
+            Self::get_ws_url(cluster).trim_end_matches('/'),
+            api_key.trim()
+        )
+    }
 }
 #[async_trait]
 impl Datasource for HeliusWebsocket {
@@ -113,11 +127,7 @@ impl Datasource for HeliusWebsocket {
                 break;
             }
 
-            let ws_url = format!(
-                "{}/?api-key={}",
-                Self::get_ws_url(&self.cluster),
-                self.api_key
-            );
+            let ws_url = Self::ws_url(&self.cluster, &self.api_key);
 
             let ws = match EnhancedWebsocket::new(&ws_url, None, None).await {
                 Ok(ws) => ws,
@@ -636,5 +646,32 @@ impl Datasource for HeliusWebsocket {
             UpdateType::AccountUpdate,
             UpdateType::AccountDeletion,
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn puts_the_key_on_the_root_path() {
+        assert_eq!(
+            HeliusWebsocket::ws_url(&Cluster::Devnet, "abc123"),
+            "wss://devnet.helius-rpc.com/?api-key=abc123"
+        );
+        assert_eq!(
+            HeliusWebsocket::ws_url(&Cluster::MainnetBeta, "abc123"),
+            "wss://mainnet.helius-rpc.com/?api-key=abc123"
+        );
+    }
+
+    #[test]
+    fn never_doubles_the_slash_or_keeps_key_whitespace() {
+        for cluster in [Cluster::Devnet, Cluster::MainnetBeta] {
+            let url = HeliusWebsocket::ws_url(&cluster, " abc123\n");
+            assert!(!url.contains("//?"), "{url}");
+            assert!(url.ends_with(".helius-rpc.com/?api-key=abc123"), "{url}");
+            assert_eq!(url.matches("?api-key=").count(), 1, "{url}");
+        }
     }
 }

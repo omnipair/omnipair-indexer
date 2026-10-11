@@ -6,6 +6,7 @@ use std::time::Duration;
 mod config;
 mod database;
 mod datasources;
+mod logging;
 mod pipeline;
 mod processors;
 mod signals;
@@ -17,7 +18,7 @@ use pipeline::{create_backfill_pipeline, create_pipeline, run_pipeline};
 pub async fn main() -> CarbonResult<()> {
     // Initialize environment and logging
     dotenv::dotenv().ok();
-    env_logger::init();
+    logging::init();
 
     let args = Args::parse();
     let config = Config::from_args(args);

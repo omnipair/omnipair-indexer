@@ -23,6 +23,12 @@ const holding = (lpAmount: string): balances.WalletLpBalance => ({
   pair, lpAmount, lpMint: key(4), token0Mint: key(5), token1Mint: key(6),
 });
 
+function snapshot(holdings: balances.WalletLpBalance[]): balances.WalletLpBalanceSnapshot {
+  return { holdings, observation: {
+    commitment: 'confirmed', observedAt: '2026-10-12T18:00:00.000Z', slotsByTokenProgram: { token: 123 },
+  } };
+}
+
 function setup(t: TestContext, mockMetrics = true) {
   cache.clear();
   t.after(() => cache.clear());
@@ -40,17 +46,19 @@ function setup(t: TestContext, mockMetrics = true) {
 async function request(query: Record<string, string>) {
   let body: any;
   let status = 200;
+  const headers: Record<string, unknown> = {};
   const response = {
+    setHeader: (key: string, value: unknown) => { headers[key] = value; },
     json: (value: unknown) => { body = value; },
     status: (value: number) => { status = value; return response; },
   };
   await PositionController.getAllLiquidityPositions({ query } as any, response as any);
-  return { body, status };
+  return { body, status, headers };
 }
 
 test('a full transfer removes the sender and discovers a recipient with no indexed position', async (t) => {
   setup(t);
-  t.mock.method(balances, 'fetchWalletLpBalances', async (wallet: string) => wallet === alice ? [] : [holding('100')]);
+  t.mock.method(balances, 'fetchWalletLpBalances', async (wallet: string) => snapshot(wallet === alice ? [] : [holding('100')]));
   t.mock.method(pool, 'query', async (_sql: string, params: unknown[]) => {
     assert.equal(params[0], bob);
     return { rows: [] };
@@ -60,6 +68,7 @@ test('a full transfer removes the sender and discovers a recipient with no index
   assert.equal(sender.status, 200);
   assert.deepEqual(sender.body.data.positions, []);
   assert.equal(sender.body.data.pagination.total, 0);
+  assert.deepEqual(sender.body.data.balanceObservation, snapshot([]).observation);
   const recipient = await request({ userAddress: bob });
   assert.equal(recipient.status, 200);
   assert.equal(recipient.body.data.positions[0].signer, bob);
@@ -70,7 +79,7 @@ test('a full transfer removes the sender and discovers a recipient with no index
 
 test('a partial transfer uses actual balances even when indexed amounts are stale', async (t) => {
   setup(t);
-  t.mock.method(balances, 'fetchWalletLpBalances', async (wallet: string) => [holding(wallet === alice ? '60' : '40')]);
+  t.mock.method(balances, 'fetchWalletLpBalances', async (wallet: string) => snapshot([holding(wallet === alice ? '60' : '40')]));
   t.mock.method(pool, 'query', async () => ({ rows: [{
     pair, amount0: '1000', amount1: '2000', updated_at: new Date('2026-01-01'),
   }] }));
@@ -93,7 +102,7 @@ test('the global listing continues to use indexed positions', async (t) => {
 
 test('raw amounts and current USD value share one batch of live pool states', async (t) => {
   const { pairFetch } = setup(t, false);
-  t.mock.method(balances, 'fetchWalletLpBalances', async () => [holding('60')]);
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding('60')]));
   t.mock.method(pool, 'query', async () => ({ rows: [] }));
   t.mock.method(prices, 'getCurrentTokenPrices', async () => new Map([
     [key(5), { priceUsd: 2, decimals: 0, quality: 'current' }],
@@ -113,7 +122,7 @@ test('raw amounts and current USD value share one batch of live pool states', as
 test('wallet filtering and deterministic sorting precede totals and pagination', async (t) => {
   setup(t);
   const holdings = [7, 3, 8].map((value) => ({ ...holding('10'), pair: key(value) }));
-  t.mock.method(balances, 'fetchWalletLpBalances', async () => holdings);
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot(holdings));
   t.mock.method(pool, 'query', async () => ({ rows: [] }));
   const sortedPairs = holdings.map((value) => value.pair).sort();
   const page = (await request({ userAddress: alice, limit: '1', offset: '1' })).body.data;
@@ -131,7 +140,7 @@ test('wallet filtering and deterministic sorting precede totals and pagination',
 
 test('invalid public keys and unsupported wallet status fail before any RPC lookup', async (t) => {
   setup(t);
-  const lookup = t.mock.method(balances, 'fetchWalletLpBalances', async () => []);
+  const lookup = t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([]));
   const queries: Record<string, string>[] = [
     { userAddress: '0'.repeat(44) },
     { userAddress: alice, poolAddress: 'not-a-public-key' },
@@ -147,7 +156,7 @@ test('all wallet liquidity route aliases use the same holdings implementation', 
   setup(t);
   t.mock.method(balances, 'fetchWalletLpBalances', async (wallet: string) => {
     assert.equal(wallet, alice);
-    return [holding('60')];
+    return snapshot([holding('60')]);
   });
   t.mock.method(pool, 'query', async () => ({ rows: [] }));
   const app = express();
@@ -164,8 +173,90 @@ test('all wallet liquidity route aliases use the same holdings implementation', 
   ]) {
     const response = await fetch(base + route);
     assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
     const body = await response.json() as any;
     assert.equal(body.data.positions[0].lpAmount, '60');
     assert.equal(body.data.positions[0].signer, alice);
   }
+});
+
+test('completed wallet responses are refreshed, including same-millisecond requests', async (t) => {
+  setup(t);
+  t.mock.method(Date, 'now', () => 1000);
+  let amount = '100';
+  const lookup = t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding(amount)]));
+  t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  const before = await request({ userAddress: alice });
+  assert.equal(before.body.data.positions[0].lpAmount, '100');
+  amount = '60';
+  const after = await request({ userAddress: alice });
+  assert.equal(after.body.data.positions[0].lpAmount, '60');
+  assert.equal(lookup.mock.callCount(), 2);
+  assert.equal(after.headers['Cache-Control'], 'no-store');
+  assert.deepEqual(after.body.data.balanceObservation, snapshot([]).observation);
+});
+
+test('concurrent identical requests share work and are not retained afterward', async (t) => {
+  setup(t);
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const lookup = t.mock.method(balances, 'fetchWalletLpBalances', async () => {
+    await pending;
+    return snapshot([holding('60')]);
+  });
+  t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  const first = request({ userAddress: alice });
+  const second = request({ userAddress: alice });
+  assert.equal(lookup.mock.callCount(), 1);
+  release();
+  const responses = await Promise.all([first, second]);
+  assert.deepEqual(responses[0].body, responses[1].body);
+  await request({ userAddress: alice });
+  assert.equal(lookup.mock.callCount(), 2);
+});
+
+test('balance failures return a retryable 503 without querying stale positions', async (t) => {
+  setup(t);
+  t.mock.method(console, 'error', () => {});
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => {
+    throw new balances.LiveLpDataUnavailableError('RPC unavailable');
+  });
+  const dbQuery = t.mock.method(pool, 'query', async () => { throw new Error('Unexpected stale fallback'); });
+  const result = await request({ userAddress: alice });
+  assert.equal(result.status, 503);
+  assert.equal(result.body.code, 'LIVE_LP_DATA_UNAVAILABLE');
+  assert.equal(result.body.retryable, true);
+  assert.equal(result.headers['Retry-After'], '1');
+  assert.equal(result.body.data, undefined);
+  assert.equal(dbQuery.mock.callCount(), 0);
+});
+
+test('missing live pool state cannot return indexed token amounts as current valuation', async (t) => {
+  const { pairFetch } = setup(t);
+  pairFetch.mock.mockImplementation(async () => new Map());
+  t.mock.method(console, 'error', () => {});
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding('60')]));
+  t.mock.method(pool, 'query', async () => ({ rows: [{ pair, amount0: '9999', amount1: '9999' }] }));
+  const result = await request({ userAddress: alice });
+  assert.equal(result.status, 503);
+  assert.equal(result.body.retryable, true);
+  assert.equal(result.body.data, undefined);
+});
+
+test('large underlying balances remain exact in both raw and current-value response fields', async (t) => {
+  const { pairFetch } = setup(t, false);
+  pairFetch.mock.mockImplementation(async () => new Map([[pair, {
+    totalSupply: 100n, reserve0: 9007199254740997n, reserve1: 18446744073709551615n,
+    token0: new PublicKey(key(5)), token1: new PublicKey(key(6)),
+  }]]));
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding('100')]));
+  t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  t.mock.method(prices, 'getCurrentTokenPrices', async () => new Map());
+  const result = await request({ userAddress: alice });
+  assert.equal(result.status, 200);
+  const position = result.body.data.positions[0];
+  assert.equal(position.amount0, '9007199254740997');
+  assert.equal(position.amount1, '18446744073709551615');
+  assert.equal(position.valueDelta.currentValue.token0Amount, position.amount0);
+  assert.equal(position.valueDelta.currentValue.token1Amount, position.amount1);
 });

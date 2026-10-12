@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PublicKey, Connection } from '@solana/web3.js';
 import { AccountLayout, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import { fetchWalletLpBalances } from '../services/walletLpBalanceService';
+import { fetchWalletLpBalances, LiveLpDataUnavailableError } from '../services/walletLpBalanceService';
 
 const key = (value: number) => new PublicKey(new Uint8Array(32).fill(value));
 const owner = key(1);
@@ -50,18 +50,81 @@ test('discovers both token programs, sums every account exactly, and matches onl
   };
   const result = await fetchWalletLpBalances(owner.toBase58(), db as any, connection);
   assert.deepEqual(requests, [TOKEN_PROGRAM_ID.toBase58(), TOKEN_2022_PROGRAM_ID.toBase58()]);
-  assert.deepEqual(result.map((position) => position.lpAmount), ['9007199254741000', '42']);
-  assert.equal(result[0].token0Mint, 'token0');
+  assert.deepEqual(result.holdings.map((position) => position.lpAmount), ['9007199254741000', '42']);
+  assert.equal(result.holdings[0].token0Mint, 'token0');
+  assert.equal(result.observation.commitment, 'confirmed');
+  assert.deepEqual(result.observation.slotsByTokenProgram, {
+    [TOKEN_PROGRAM_ID.toBase58()]: 123, [TOKEN_2022_PROGRAM_ID.toBase58()]: 123,
+  });
+  assert.ok(Number.isFinite(Date.parse(result.observation.observedAt)));
   assert.doesNotThrow(() => JSON.stringify(result));
 });
 
 test('zero balances produce no holdings and need no database query', async () => {
   const connection = { getTokenAccountsByOwner: async () => ({ context: { slot: 1 }, value: [] }) };
   const db = { query: async () => { throw new Error('Unexpected query'); } };
-  assert.deepEqual(await fetchWalletLpBalances(owner.toBase58(), db as any, connection), []);
+  const result = await fetchWalletLpBalances(owner.toBase58(), db as any, connection);
+  assert.deepEqual(result.holdings, []);
+  assert.equal(result.observation.slotsByTokenProgram[TOKEN_PROGRAM_ID.toBase58()], 1);
 });
 
 test('a failed token-program lookup cannot produce a partial wallet balance', async () => {
   const connection = { getTokenAccountsByOwner: async () => { throw new Error('RPC unavailable'); } };
-  await assert.rejects(fetchWalletLpBalances(owner.toBase58(), {} as any, connection), /RPC unavailable/);
+  await assert.rejects(fetchWalletLpBalances(owner.toBase58(), {} as any, connection), LiveLpDataUnavailableError);
+});
+
+test('concurrent wallet lookups share requests, while the next lookup reads new balances', async () => {
+  let release!: () => void;
+  const wait = new Promise<void>((resolve) => { release = resolve; });
+  let calls = 0;
+  let amount = 100n;
+  const connection: Pick<Connection, 'getTokenAccountsByOwner'> = {
+    async getTokenAccountsByOwner(_owner, filter) {
+      calls++;
+      await wait;
+      assert.ok('programId' in filter);
+      return {
+        context: { slot: calls },
+        value: filter.programId.equals(TOKEN_PROGRAM_ID) ? [tokenAccount(10, lpMint, amount)] : [],
+      };
+    },
+  };
+  const db = { query: async () => ({ rows: [{ pair_address: 'pair', lp_mint: lpMint.toBase58(), token0: 'a', token1: 'b' }] }) };
+  const first = fetchWalletLpBalances(owner.toBase58(), db as any, connection);
+  const concurrent = fetchWalletLpBalances(owner.toBase58(), db as any, connection);
+  assert.equal(calls, 2);
+  release();
+  const results = await Promise.all([first, concurrent]);
+  assert.equal(results[0], results[1]);
+  assert.equal(results[0].holdings[0].lpAmount, '100');
+  amount = 60n;
+  assert.equal((await fetchWalletLpBalances(owner.toBase58(), db as any, connection)).holdings[0].lpAmount, '60');
+  assert.equal(calls, 4);
+});
+
+test('a failed lookup is released so a subsequent request can recover', async () => {
+  let failing = true;
+  const connection = { getTokenAccountsByOwner: async () => {
+    if (failing) throw new Error('RPC unavailable');
+    return { context: { slot: 2 }, value: [] };
+  } };
+  await assert.rejects(fetchWalletLpBalances(owner.toBase58(), {} as any, connection), LiveLpDataUnavailableError);
+  failing = false;
+  assert.deepEqual((await fetchWalletLpBalances(owner.toBase58(), {} as any, connection)).holdings, []);
+});
+
+test('moving tokens between accounts owned by the same wallet preserves total holdings', async () => {
+  let split = false;
+  const connection: Pick<Connection, 'getTokenAccountsByOwner'> = {
+    async getTokenAccountsByOwner(_owner, filter) {
+      assert.ok('programId' in filter);
+      return { context: { slot: 2 }, value: filter.programId.equals(TOKEN_PROGRAM_ID)
+        ? [tokenAccount(10, lpMint, split ? 60n : 100n), tokenAccount(11, lpMint, split ? 40n : 0n)] : [] };
+    },
+  };
+  const db = { query: async () => ({ rows: [{ pair_address: 'pair', lp_mint: lpMint.toBase58(), token0: 'a', token1: 'b' }] }) };
+  const before = await fetchWalletLpBalances(owner.toBase58(), db as any, connection);
+  split = true;
+  const after = await fetchWalletLpBalances(owner.toBase58(), db as any, connection);
+  assert.deepEqual(before.holdings, after.holdings);
 });

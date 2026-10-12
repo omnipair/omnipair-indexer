@@ -242,6 +242,15 @@ max 10000). `pagination.total` counts the matching holdings before pagination.
 `status=open` and `status=all` both return current positive holdings; historical
 closed positions are not supported by this wallet view (other statuses return 400).
 
+Wallet responses include `data.balanceObservation` with `commitment: "confirmed"`,
+`observedAt` (the API observation time), and `slotsByTokenProgram` (the RPC context
+slot for each token program). These separate reads are not an atomic snapshot of
+both programs. Wallet responses send `Cache-Control: no-store`; concurrent reads
+share in-flight work, but completed balances are not cached. If a token-program
+lookup or required pool-state read fails, the API returns HTTP 503 with
+`code: "LIVE_LP_DATA_UNAVAILABLE"`, `retryable: true`, and `Retry-After: 1`.
+It does not substitute indexed ownership or an empty wallet on RPC failure.
+
 Without a wallet filter, liquidity listings continue to use indexed positions.
 Historical earnings, contribution-based deltas, and portfolio snapshots remain
 based on indexed Omnipair events and do not account for LP transfers.

@@ -81,7 +81,7 @@ class SimpleCache {
     ttlMs: number,
     fetcher: () => Promise<T>
   ): Promise<{ data: T; cacheStatus: CacheLookupStatus }> {
-    const cached = this.get(key);
+    const cached = ttlMs > 0 ? this.get(key) : null;
     if (cached !== null) {
       this.trackLookup(key, 'hit');
       return { data: cached as T, cacheStatus: 'hit' };
@@ -97,7 +97,7 @@ class SimpleCache {
     this.trackLookup(key, 'miss');
     const promise = fetcher()
       .then((data) => {
-        if (data != null) {
+        if (data != null && ttlMs > 0) {
           this.set(key, data, ttlMs);
         }
         return data;

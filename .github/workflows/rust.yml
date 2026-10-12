@@ -1,0 +1,69 @@
+name: Rust
+
+on:
+  pull_request:
+    paths:
+      - "indexer/**"
+      - "grpc/**"
+      - "Cargo.toml"
+      - "rust-toolchain.toml"
+      - "Dockerfile.indexer"
+      - "Dockerfile.grpc"
+      - ".dockerignore"
+      - ".github/workflows/rust.yml"
+  push:
+    branches: [main]
+    paths:
+      - "indexer/**"
+      - "grpc/**"
+      - "Cargo.toml"
+      - "rust-toolchain.toml"
+      - "Dockerfile.indexer"
+      - "Dockerfile.grpc"
+      - ".dockerignore"
+      - ".github/workflows/rust.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Railway builds with today's nightly (rust-toolchain.toml and the
+      # rustlang/rust:nightly-bookworm image) and resolves dependencies afresh,
+      # because Cargo.lock is not committed. This job does the same, so a change
+      # that would not deploy fails here before it is merged.
+      - run: rustup toolchain install nightly --profile minimal --component clippy
+      - run: sudo apt-get update && sudo apt-get install -y protobuf-compiler libssl-dev libpq-dev pkg-config
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the deployed binaries
+        run: cargo build --bin omnipair-carbon-indexer --bin omnipair-grpc-server
+      # The vendored carbon-core's doc examples do not compile, so doctests are
+      # left out; every library, binary and integration test runs.
+      - name: Test
+        run: cargo test --workspace --lib --bins --tests
+      # The workspace has existing warnings. This lists them without failing.
+      - name: Clippy (report only)
+        run: cargo clippy --workspace --all-targets
+
+  image:
+    name: Image (${{ matrix.dockerfile }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [Dockerfile.indexer, Dockerfile.grpc]
+    steps:
+      - uses: actions/checkout@v4
+      # The exact images Railway builds for Mainnet Indexer and Mainnet gRPC.
+      - run: docker build --file ${{ matrix.dockerfile }} .

@@ -5,6 +5,7 @@ import type { Omnipair } from '@omnipair/program-interface';
 import pool from '../config/database';
 import { ApiResponse } from '../types';
 import { cache } from '../utils/cache';
+import { fetchWalletLpBalances } from '../services/walletLpBalanceService';
 import { fetchPairAccounts, PairAccount, simulateUserPositionGetter } from '../utils/pairSimulation';
 import { SimulationResult } from '../types/pairTypes';
 import { isValidAddress, initializePairStateService, splitPosition } from './helpers/controllerBase';
@@ -183,43 +184,57 @@ export class PositionController {
       }
 
       const cacheKey = `liq_positions:${userAddress || 'all'}:${limit}:${offset}`;
-      // As above, a wallet's own view is never stored so it shows a transaction
-      // as soon as the indexer has recorded it.
+      // Wallet ownership is read from token accounts, independently of indexed deposits.
       const data = await cache.getOrSet(cacheKey, userAddress ? 0 : 10 * 1000, async () => {
-        let countQuery: string;
-        let dataQuery: string;
-        let countParams: any[];
-        let queryParams: any[];
+        let rows: Array<{
+          signer: string; pair: string; token0_mint: string; token1_mint: string;
+          amount0: string; amount1: string; lp_mint: string; lp_amount: string;
+          updated_at: Date | null;
+        }>;
+        let totalCount: number;
 
         if (userAddress) {
-          countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions WHERE signer = $1';
-          countParams = [userAddress];
-          dataQuery = `
-            SELECT signer, pair, token0_mint, token1_mint, amount0, amount1,
-              lp_mint, lp_amount, updated_at
-            FROM user_liquidity_positions
-            WHERE signer = $1
-            ORDER BY updated_at DESC
-            LIMIT $2 OFFSET $3
-          `;
-          queryParams = [userAddress, limit, offset];
+          const holdings = await fetchWalletLpBalances(userAddress);
+          totalCount = holdings.length;
+          const page = holdings.slice(offset, offset + limit);
+          const indexed = page.length > 0 ? await pool.query(
+            `SELECT pair, amount0, amount1, updated_at
+             FROM user_liquidity_positions WHERE signer = $1 AND pair = ANY($2::text[])`,
+            [userAddress, page.map((holding) => holding.pair)]
+          ) : { rows: [] };
+          const indexedByPair = new Map(indexed.rows.map((row) => [row.pair, row]));
+          rows = page.map((holding) => {
+            const previous = indexedByPair.get(holding.pair);
+            return {
+              signer: userAddress,
+              pair: holding.pair,
+              token0_mint: holding.token0Mint,
+              token1_mint: holding.token1Mint,
+              lp_mint: holding.lpMint,
+              lp_amount: holding.lpAmount,
+              amount0: previous?.amount0 ?? '0',
+              amount1: previous?.amount1 ?? '0',
+              updated_at: previous?.updated_at ?? null,
+            };
+          });
         } else {
-          countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions';
-          countParams = [];
-          dataQuery = `
-            SELECT signer, pair, token0_mint, token1_mint, amount0, amount1,
+          const countResult = await pool.query('SELECT COUNT(*) as total_count FROM user_liquidity_positions');
+          totalCount = parseInt(countResult.rows[0].total_count);
+          const result = await pool.query(
+            `SELECT signer, pair, token0_mint, token1_mint, amount0, amount1,
               lp_mint, lp_amount, updated_at
-            FROM user_liquidity_positions
-            ORDER BY updated_at DESC
-            LIMIT $1 OFFSET $2
-          `;
-          queryParams = [limit, offset];
+             FROM user_liquidity_positions
+             ORDER BY updated_at DESC
+             LIMIT $1 OFFSET $2`,
+            [limit, offset]
+          );
+          rows = result.rows;
         }
 
-        const countResult = await pool.query(countQuery, countParams);
-        const totalCount = parseInt(countResult.rows[0].total_count);
-        const result = await pool.query(dataQuery, queryParams);
-        const metricInputs: LiquidityPositionMetricInput[] = result.rows.map((row) => ({
+        if (rows.length === 0) {
+          return { positions: [], pagination: { total: totalCount, limit, offset, hasNext: offset + limit < totalCount } };
+        }
+        const metricInputs: LiquidityPositionMetricInput[] = rows.map((row) => ({
           signer: row.signer,
           pair: row.pair,
           token0Mint: row.token0_mint,
@@ -232,9 +247,9 @@ export class PositionController {
 
         const pairStateService = await initializePairStateService();
         const program = pairStateService.getProgram();
-        const pairAccounts = program ? await readPairAccounts(program, result.rows) : new Map<string, PairAccount | null>();
+        const pairAccounts = program ? await readPairAccounts(program, rows) : new Map<string, PairAccount | null>();
 
-        const enrichedPositions = result.rows.map((row) => {
+        const enrichedPositions = rows.map((row) => {
           const basePosition = {
             signer: row.signer,
             pair: row.pair,

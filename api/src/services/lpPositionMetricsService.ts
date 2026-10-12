@@ -59,7 +59,10 @@ export interface LpPositionMetrics {
 
 export interface LpPositionMetricsOptions {
   currentPrices?: Map<string, TokenPrice>;
-  currentAmountsByPosition?: Map<string, CurrentLpTokenAmounts>;
+  currentAmountsByPosition?: Map<string, Omit<CurrentLpTokenAmounts, 'token0Amount' | 'token1Amount'> & {
+    token0Amount: string | number;
+    token1Amount: string | number;
+  }>;
 }
 
 export type LpEarningsRange = '7D' | '30D' | '90D' | 'ALL';
@@ -283,22 +286,22 @@ function buildCurrentBreakdown({
   token0Price,
   token1Price,
 }: {
-  token0Amount: number;
-  token1Amount: number;
+  token0Amount: string | number;
+  token1Amount: string | number;
   token0Price: TokenPrice | null | undefined;
   token1Price: TokenPrice | null | undefined;
 }): LpAmountBreakdown {
   const { token0CurrentUsd, token1CurrentUsd } = currentTokenUsdBySide(
-    token0Amount,
-    token1Amount,
+    parseNumber(token0Amount),
+    parseNumber(token1Amount),
     token0Price,
     token1Price
   );
   const currentUsd = token0CurrentUsd + token1CurrentUsd;
-  const currentPriceQuality = amountAwarePriceQuality(token0Amount, token1Amount, token0Price, token1Price);
+  const currentPriceQuality = amountAwarePriceQuality(parseNumber(token0Amount), parseNumber(token1Amount), token0Price, token1Price);
   return {
-    token0Amount: numericString(token0Amount),
-    token1Amount: numericString(token1Amount),
+    token0Amount: String(token0Amount),
+    token1Amount: String(token1Amount),
     token0HistoricalUsd: numericString(token0CurrentUsd),
     token1HistoricalUsd: numericString(token1CurrentUsd),
     token0CurrentUsd: numericString(token0CurrentUsd),
@@ -737,8 +740,8 @@ export async function getLpPositionMetricsForRows(
           token1Price,
         }),
         delta: buildCurrentBreakdown({
-          token0Amount: currentToken0 - netToken0,
-          token1Amount: currentToken1 - netToken1,
+          token0Amount: parseNumber(currentToken0) - netToken0,
+          token1Amount: parseNumber(currentToken1) - netToken1,
           token0Price,
           token1Price,
         }),

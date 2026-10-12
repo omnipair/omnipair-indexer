@@ -8,6 +8,7 @@ import * as balances from '../services/walletLpBalanceService';
 import * as metrics from '../services/lpPositionMetricsService';
 import * as helpers from '../controllers/helpers/controllerBase';
 import * as simulation from '../utils/pairSimulation';
+import * as prices from '../services/tokenPriceSnapshotService';
 import { cache } from '../utils/cache';
 
 const key = (value: number) => new PublicKey(new Uint8Array(32).fill(value)).toBase58();
@@ -18,12 +19,18 @@ const holding = (lpAmount: string): balances.WalletLpBalance => ({
   pair, lpAmount, lpMint: key(4), token0Mint: key(5), token1Mint: key(6),
 });
 
-function setup(t: TestContext) {
+function setup(t: TestContext, mockMetrics = true) {
   cache.clear();
   t.after(() => cache.clear());
   t.mock.method(helpers, 'initializePairStateService', async () => ({ getProgram: () => ({}) }));
-  t.mock.method(simulation, 'fetchPairAccounts', async () => new Map());
-  t.mock.method(metrics, 'getLpPositionMetricsForRows', async () => new Map());
+  const pairFetch = t.mock.method(simulation, 'fetchPairAccounts', async (_program: unknown, pairs: string[]) => new Map(
+    pairs.map((address) => [address, {
+      totalSupply: 100n, reserve0: 1000n, reserve1: 2000n,
+      token0: new PublicKey(key(5)), token1: new PublicKey(key(6)),
+    }])
+  ));
+  if (mockMetrics) t.mock.method(metrics, 'getLpPositionMetricsForRows', async () => new Map());
+  return { pairFetch };
 }
 
 async function request(query: Record<string, string>) {
@@ -78,4 +85,23 @@ test('the global listing continues to use indexed positions', async (t) => {
   assert.equal(result.status, 200);
   assert.equal(result.body.data.positions[0].lpAmount, '100');
   assert.equal(result.body.data.pagination.total, 1);
+});
+
+test('raw amounts and current USD value share one batch of live pool states', async (t) => {
+  const { pairFetch } = setup(t, false);
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => [holding('60')]);
+  t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  t.mock.method(prices, 'getCurrentTokenPrices', async () => new Map([
+    [key(5), { priceUsd: 2, decimals: 0, quality: 'current' }],
+    [key(6), { priceUsd: 3, decimals: 0, quality: 'current' }],
+  ]));
+  const result = await request({ userAddress: alice });
+  assert.equal(result.status, 200);
+  const position = result.body.data.positions[0];
+  assert.equal(position.amount0, '600');
+  assert.equal(position.amount1, '1200');
+  assert.equal(position.valueDelta.currentValue.token0Amount, position.amount0);
+  assert.equal(position.valueDelta.currentValue.token1Amount, position.amount1);
+  assert.equal(position.valueDelta.currentValue.usd, '4800');
+  assert.equal(pairFetch.mock.callCount(), 1);
 });

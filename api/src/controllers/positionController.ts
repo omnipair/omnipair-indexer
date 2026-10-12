@@ -6,6 +6,7 @@ import pool from '../config/database';
 import { ApiResponse } from '../types';
 import { cache } from '../utils/cache';
 import { fetchWalletLpBalances } from '../services/walletLpBalanceService';
+import { calculateRawLpTokenAmounts } from '../services/currentLpValuationService';
 import { fetchPairAccounts, PairAccount, simulateUserPositionGetter } from '../utils/pairSimulation';
 import { SimulationResult } from '../types/pairTypes';
 import { isValidAddress, initializePairStateService, splitPosition } from './helpers/controllerBase';
@@ -13,6 +14,7 @@ import {
   getLpPositionMetricKey,
   getLpPositionMetricsForRows,
   LiquidityPositionMetricInput,
+  LpPositionMetricsOptions,
 } from '../services/lpPositionMetricsService';
 
 export class PositionController {
@@ -198,7 +200,7 @@ export class PositionController {
           totalCount = holdings.length;
           const page = holdings.slice(offset, offset + limit);
           const indexed = page.length > 0 ? await pool.query(
-            `SELECT pair, amount0, amount1, updated_at
+            `SELECT pair, updated_at
              FROM user_liquidity_positions WHERE signer = $1 AND pair = ANY($2::text[])`,
             [userAddress, page.map((holding) => holding.pair)]
           ) : { rows: [] };
@@ -212,8 +214,8 @@ export class PositionController {
               token1_mint: holding.token1Mint,
               lp_mint: holding.lpMint,
               lp_amount: holding.lpAmount,
-              amount0: previous?.amount0 ?? '0',
-              amount1: previous?.amount1 ?? '0',
+              amount0: '0',
+              amount1: '0',
               updated_at: previous?.updated_at ?? null,
             };
           });
@@ -234,6 +236,30 @@ export class PositionController {
         if (rows.length === 0) {
           return { positions: [], pagination: { total: totalCount, limit, offset, hasNext: offset + limit < totalCount } };
         }
+        const pairStateService = await initializePairStateService();
+        const program = pairStateService.getProgram();
+        const pairAccounts = userAddress
+          ? await fetchPairAccounts(program!, rows.map((row) => row.pair))
+          : program ? await readPairAccounts(program, rows) : new Map<string, PairAccount | null>();
+        const metricOptions: LpPositionMetricsOptions = {};
+        if (userAddress) {
+          metricOptions.currentAmountsByPosition = new Map();
+          for (const row of rows) {
+            const pairAccount = pairAccounts.get(row.pair);
+            if (!pairAccount) throw new Error(`Pool state unavailable for ${row.pair}`);
+            const amounts = calculateRawLpTokenAmounts(
+              row.lp_amount, pairAccount.totalSupply.toString(),
+              pairAccount.reserve0.toString(), pairAccount.reserve1.toString()
+            );
+            row.amount0 = amounts.token0Amount;
+            row.amount1 = amounts.token1Amount;
+            row.token0_mint = pairAccount.token0.toBase58();
+            row.token1_mint = pairAccount.token1.toBase58();
+            metricOptions.currentAmountsByPosition.set(getLpPositionMetricKey(row.signer, row.pair), {
+              signer: row.signer, pair: row.pair, ...amounts, exact: true,
+            });
+          }
+        }
         const metricInputs: LiquidityPositionMetricInput[] = rows.map((row) => ({
           signer: row.signer,
           pair: row.pair,
@@ -243,11 +269,7 @@ export class PositionController {
           amount1: row.amount1,
           lpAmount: row.lp_amount,
         }));
-        const metricsByPosition = await getLpPositionMetricsForRows(pool, metricInputs);
-
-        const pairStateService = await initializePairStateService();
-        const program = pairStateService.getProgram();
-        const pairAccounts = program ? await readPairAccounts(program, rows) : new Map<string, PairAccount | null>();
+        const metricsByPosition = await getLpPositionMetricsForRows(pool, metricInputs, metricOptions);
 
         const enrichedPositions = rows.map((row) => {
           const basePosition = {

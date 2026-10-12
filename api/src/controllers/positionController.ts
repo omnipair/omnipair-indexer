@@ -19,6 +19,10 @@ import {
 
 export class PositionController {
   static async getAllPositions(req: Request, res: Response): Promise<void> {
+    if (req.query.type === 'liquidity') {
+      await PositionController.getAllLiquidityPositions(req, res);
+      return;
+    }
     try {
       const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 100);
       const offset = Math.min(Math.max(parseInt(req.query.offset as string) || 0, 0), 10000);
@@ -179,13 +183,23 @@ export class PositionController {
       const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 100);
       const offset = Math.min(Math.max(parseInt(req.query.offset as string) || 0, 0), 10000);
       const userAddress = req.query.userAddress as string | undefined;
+      const poolAddress = req.query.poolAddress as string | undefined;
 
-      if (userAddress && !isValidAddress(userAddress)) {
+      if (userAddress !== undefined && !isPublicKey(userAddress)) {
         res.status(400).json({ success: false, error: 'Invalid user address format' });
         return;
       }
 
-      const cacheKey = `liq_positions:${userAddress || 'all'}:${limit}:${offset}`;
+      if (poolAddress !== undefined && !isPublicKey(poolAddress)) {
+        res.status(400).json({ success: false, error: 'Invalid pool address format' });
+        return;
+      }
+      if (userAddress && req.query.status !== undefined && !['open', 'all'].includes(req.query.status as string)) {
+        res.status(400).json({ success: false, error: 'Wallet LP positions support status=open or all (current holdings only)' });
+        return;
+      }
+
+      const cacheKey = `liq_positions:${userAddress || 'all'}:${poolAddress || 'all'}:${limit}:${offset}`;
       // Wallet ownership is read from token accounts, independently of indexed deposits.
       const data = await cache.getOrSet(cacheKey, userAddress ? 0 : 10 * 1000, async () => {
         let rows: Array<{
@@ -196,7 +210,9 @@ export class PositionController {
         let totalCount: number;
 
         if (userAddress) {
-          const holdings = await fetchWalletLpBalances(userAddress);
+          const holdings = (await fetchWalletLpBalances(userAddress))
+            .filter((holding) => !poolAddress || holding.pair === poolAddress)
+            .sort((left, right) => left.pair < right.pair ? -1 : left.pair > right.pair ? 1 : 0);
           totalCount = holdings.length;
           const page = holdings.slice(offset, offset + limit);
           const indexed = page.length > 0 ? await pool.query(
@@ -220,15 +236,19 @@ export class PositionController {
             };
           });
         } else {
-          const countResult = await pool.query('SELECT COUNT(*) as total_count FROM user_liquidity_positions');
+          const countResult = await pool.query(
+            'SELECT COUNT(*) as total_count FROM user_liquidity_positions WHERE ($1::text IS NULL OR pair = $1)',
+            [poolAddress ?? null]
+          );
           totalCount = parseInt(countResult.rows[0].total_count);
           const result = await pool.query(
             `SELECT signer, pair, token0_mint, token1_mint, amount0, amount1,
               lp_mint, lp_amount, updated_at
              FROM user_liquidity_positions
-             ORDER BY updated_at DESC
-             LIMIT $1 OFFSET $2`,
-            [limit, offset]
+             WHERE ($1::text IS NULL OR pair = $1)
+             ORDER BY updated_at DESC, pair ASC, signer ASC
+             LIMIT $2 OFFSET $3`,
+            [poolAddress ?? null, limit, offset]
           );
           rows = result.rows;
         }
@@ -330,5 +350,15 @@ async function readPairAccounts(
   } catch (error) {
     console.error('Error fetching pair accounts for positions page:', error);
     return new Map();
+  }
+}
+
+function isPublicKey(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  try {
+    new PublicKey(value);
+    return true;
+  } catch {
+    return false;
   }
 }

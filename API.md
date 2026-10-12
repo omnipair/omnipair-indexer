@@ -222,6 +222,30 @@ Returns price feed data for a specific pair.
 }
 ```
 
+### Current wallet LP positions (v1)
+
+These routes return the same current wallet holdings:
+
+- `GET /api/v1/positions/liquidity?userAddress=WALLET`
+- `GET /api/v1/positions?userAddress=WALLET&type=liquidity`
+- `GET /api/v1/users/WALLET/positions?type=liquidity`
+
+The API discovers positive LP balances from all of the wallet's token accounts,
+including transferred-in tokens without an indexed deposit. `lpAmount`, `amount0`,
+and `amount1` are raw integer strings. The underlying amounts and current USD
+valuation use the wallet's balance and live pool state. `timestamp` remains the
+last indexed position update and is null for a holder without an indexed position.
+
+`poolAddress` optionally filters the holdings. Results are ordered by pool address
+ascending, then paginated with `limit` (default/max 100) and `offset` (default 0,
+max 10000). `pagination.total` counts the matching holdings before pagination.
+`status=open` and `status=all` both return current positive holdings; historical
+closed positions are not supported by this wallet view (other statuses return 400).
+
+Without a wallet filter, liquidity listings continue to use indexed positions.
+Historical earnings, contribution-based deltas, and portfolio snapshots remain
+based on indexed Omnipair events and do not account for LP transfers.
+
 ### GET /users/:userAddress/positions
 Returns user positions.
 

@@ -37,17 +37,22 @@ interface LpPoolRow {
 }
 
 type BalanceConnection = Pick<Connection, 'getTokenAccountsByOwner'>;
+let sharedConnection: BalanceConnection | undefined;
+
+function getBalanceConnection(): BalanceConnection {
+  return sharedConnection ??= createConnection();
+}
 
 /** Discover holdings from token accounts, including wallets with no indexed deposits. */
 export async function fetchWalletLpBalances(
   userAddress: string,
   db: Pick<Pool, 'query'> = pool,
-  connection: BalanceConnection = createConnection()
+  connection?: BalanceConnection
 ): Promise<WalletLpBalanceSnapshot> {
   const owner = new PublicKey(userAddress);
   // Share concurrent lookups across pages/aliases, but retain no completed balance.
   return cache.getOrSet(`wallet_lp_balances:${owner.toBase58()}`, 0, () =>
-    readWalletLpBalances(owner, db, connection)
+    readWalletLpBalances(owner, db, connection ?? getBalanceConnection())
   );
 }
 

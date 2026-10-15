@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { PublicKey, Connection } from '@solana/web3.js';
 import { AccountLayout, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { fetchWalletLpBalances, LiveLpDataUnavailableError } from '../services/walletLpBalanceService';
+import * as programConfig from '../config/program';
 
 const key = (value: number) => new PublicKey(new Uint8Array(32).fill(value));
 const owner = key(1);
@@ -127,4 +128,31 @@ test('moving tokens between accounts owned by the same wallet preserves total ho
   split = true;
   const after = await fetchWalletLpBalances(owner.toBase58(), db as any, connection);
   assert.deepEqual(before.holdings, after.holdings);
+});
+
+test('the default connection is lazy, skipped for coalesced reads, and reused across wallets', async (t) => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const injected = { getTokenAccountsByOwner: async () => {
+    await pending;
+    return { context: { slot: 1 }, value: [] };
+  } };
+  let rpcCalls = 0;
+  const shared = { getTokenAccountsByOwner: async () => {
+    rpcCalls++;
+    return { context: { slot: 2 }, value: [] };
+  } };
+  const create = t.mock.method(programConfig, 'createConnection', () => shared as unknown as Connection);
+  const db = { query: async () => { throw new Error('Unexpected query'); } };
+
+  const first = fetchWalletLpBalances(owner.toBase58(), db as any, injected);
+  const coalesced = fetchWalletLpBalances(owner.toBase58(), db as any);
+  assert.equal(create.mock.callCount(), 0);
+  release();
+  await Promise.all([first, coalesced]);
+
+  await fetchWalletLpBalances(owner.toBase58(), db as any);
+  await fetchWalletLpBalances(key(6).toBase58(), db as any);
+  assert.equal(create.mock.callCount(), 1);
+  assert.equal(rpcCalls, 4);
 });

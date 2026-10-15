@@ -219,7 +219,8 @@ test('balance failures return a retryable 503 without querying stale positions',
   setup(t);
   t.mock.method(console, 'error', () => {});
   t.mock.method(balances, 'fetchWalletLpBalances', async () => {
-    throw new balances.LiveLpDataUnavailableError('RPC unavailable');
+    throw new balances.LiveLpDataUnavailableError('RPC unavailable',
+      Object.assign(new Error('connect timed out'), { code: 'ETIMEDOUT' }));
   });
   const dbQuery = t.mock.method(pool, 'query', async () => { throw new Error('Unexpected stale fallback'); });
   const result = await request({ userAddress: alice });
@@ -231,15 +232,63 @@ test('balance failures return a retryable 503 without querying stale positions',
   assert.equal(dbQuery.mock.callCount(), 0);
 });
 
-test('missing live pool state cannot return indexed token amounts as current valuation', async (t) => {
+test('missing live pool state returns a nonretryable error without stale valuation', async (t) => {
   const { pairFetch } = setup(t);
   pairFetch.mock.mockImplementation(async () => new Map());
   t.mock.method(console, 'error', () => {});
   t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding('60')]));
   t.mock.method(pool, 'query', async () => ({ rows: [{ pair, amount0: '9999', amount1: '9999' }] }));
   const result = await request({ userAddress: alice });
-  assert.equal(result.status, 503);
-  assert.equal(result.body.retryable, true);
+  assert.equal(result.status, 500);
+  assert.equal(result.body.code, 'LIVE_LP_DATA_ERROR');
+  assert.equal(result.body.retryable, false);
+  assert.equal(result.headers['Retry-After'], undefined);
+  assert.equal(result.body.data, undefined);
+});
+
+test('pool RPC outages remain retryable while decoding errors do not', async (t) => {
+  const { pairFetch } = setup(t);
+  t.mock.method(console, 'error', () => {});
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding('60')]));
+  t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  for (const [error, expectedStatus, retryable] of [
+    [new Error('503 Service Unavailable: upstream outage'), 503, true],
+    [new Error('Invalid account discriminator'), 500, false],
+    [new RangeError('Attempt to access memory outside buffer bounds'), 500, false],
+  ] as const) {
+    pairFetch.mock.mockImplementation(async () => { throw error; });
+    const result = await request({ userAddress: alice });
+    assert.equal(result.status, expectedStatus);
+    assert.equal(result.body.retryable, retryable);
+    assert.equal(result.headers['Retry-After'], retryable ? '1' : undefined);
+    assert.equal(result.body.data, undefined);
+  }
+});
+
+test('invalid program configuration is not advertised as a temporary outage', async (t) => {
+  setup(t);
+  t.mock.method(console, 'error', () => {});
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding('60')]));
+  t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  t.mock.method(helpers, 'initializePairStateService', async () => { throw new Error('Omnipair IDL not found'); });
+  const result = await request({ userAddress: alice });
+  assert.equal(result.status, 500);
+  assert.equal(result.body.retryable, false);
+  assert.equal(result.headers['Retry-After'], undefined);
+});
+
+test('permanent token-account failures return no retry hint or partial holdings', async (t) => {
+  setup(t);
+  t.mock.method(console, 'error', () => {});
+  t.mock.method(balances, 'fetchWalletLpBalances', async () => {
+    throw new balances.LiveLpDataUnavailableError('Unable to read wallet LP balances',
+      new Error('401 Unauthorized: invalid RPC key'));
+  });
+  const result = await request({ userAddress: alice });
+  assert.equal(result.status, 500);
+  assert.equal(result.body.code, 'LIVE_LP_DATA_ERROR');
+  assert.equal(result.body.retryable, false);
+  assert.equal(result.headers['Retry-After'], undefined);
   assert.equal(result.body.data, undefined);
 });
 

@@ -246,10 +246,13 @@ Wallet responses include `data.balanceObservation` with `commitment: "confirmed"
 `observedAt` (the API observation time), and `slotsByTokenProgram` (the RPC context
 slot for each token program). These separate reads are not an atomic snapshot of
 both programs. Wallet responses send `Cache-Control: no-store`; concurrent reads
-share in-flight work, but completed balances are not cached. If a token-program
-lookup or required pool-state read fails, the API returns HTTP 503 with
-`code: "LIVE_LP_DATA_UNAVAILABLE"`, `retryable: true`, and `Retry-After: 1`.
-It does not substitute indexed ownership or an empty wallet on RPC failure.
+share in-flight work, but completed balances are not cached. Known temporary RPC
+failures (such as transport timeouts, rate limits, or an unhealthy RPC node) return
+HTTP 503 with `code: "LIVE_LP_DATA_UNAVAILABLE"`, `retryable: true`, and
+`Retry-After: 1`. Missing pool accounts, invalid configuration, decoding failures,
+and other failures without a known transient cause return HTTP 500 with
+`code: "LIVE_LP_DATA_ERROR"`, `retryable: false`, and no `Retry-After` header.
+Neither response substitutes indexed ownership or an empty wallet for failed reads.
 
 Without a wallet filter, liquidity listings continue to use indexed positions.
 Historical earnings, contribution-based deltas, and portfolio snapshots remain

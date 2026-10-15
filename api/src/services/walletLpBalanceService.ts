@@ -4,11 +4,15 @@ import type { Pool } from 'pg';
 import pool from '../config/database';
 import { createConnection } from '../config/program';
 import { cache } from '../utils/cache';
+import { isRetryableRpcError } from '../utils/rpcErrors';
 
 export class LiveLpDataUnavailableError extends Error {
+  readonly retryable: boolean;
+
   constructor(message: string, public readonly cause?: unknown) {
     super(message);
     this.name = 'LiveLpDataUnavailableError';
+    this.retryable = isRetryableRpcError(cause);
   }
 }
 
@@ -51,9 +55,15 @@ export async function fetchWalletLpBalances(
 ): Promise<WalletLpBalanceSnapshot> {
   const owner = new PublicKey(userAddress);
   // Share concurrent lookups across pages/aliases, but retain no completed balance.
-  return cache.getOrSet(`wallet_lp_balances:${owner.toBase58()}`, 0, () =>
-    readWalletLpBalances(owner, db, connection ?? getBalanceConnection())
-  );
+  return cache.getOrSet(`wallet_lp_balances:${owner.toBase58()}`, 0, () => {
+    let rpcConnection: BalanceConnection;
+    try {
+      rpcConnection = connection ?? getBalanceConnection();
+    } catch (error) {
+      throw new LiveLpDataUnavailableError('Unable to initialize the wallet RPC connection', error);
+    }
+    return readWalletLpBalances(owner, db, rpcConnection);
+  });
 }
 
 async function readWalletLpBalances(

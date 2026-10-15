@@ -345,12 +345,14 @@ export class PositionController {
     } catch (error) {
       console.error('Error fetching all liquidity positions:', error);
       if (error instanceof LiveLpDataUnavailableError) {
-        res.setHeader('Retry-After', '1');
-        res.status(503).json({
+        if (error.retryable) res.setHeader('Retry-After', '1');
+        res.status(error.retryable ? 503 : 500).json({
           success: false,
-          error: 'Current LP holdings are temporarily unavailable. Please retry.',
-          code: 'LIVE_LP_DATA_UNAVAILABLE',
-          retryable: true,
+          error: error.retryable
+            ? 'Current LP holdings are temporarily unavailable. Please retry.'
+            : 'Unable to load current LP holdings.',
+          code: error.retryable ? 'LIVE_LP_DATA_UNAVAILABLE' : 'LIVE_LP_DATA_ERROR',
+          retryable: error.retryable,
         });
         return;
       }

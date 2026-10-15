@@ -114,6 +114,31 @@ test('a failed lookup is released so a subsequent request can recover', async ()
   assert.deepEqual((await fetchWalletLpBalances(owner.toBase58(), {} as any, connection)).holdings, []);
 });
 
+test('balance reads distinguish temporary RPC failures from malformed token-account data', async () => {
+  const rpcFailure = { getTokenAccountsByOwner: async () => {
+    throw new Error('429 Too Many Requests: temporarily rate limited');
+  } };
+  await assert.rejects(fetchWalletLpBalances(owner.toBase58(), {} as any, rpcFailure), (error: unknown) => {
+    assert.ok(error instanceof LiveLpDataUnavailableError);
+    assert.equal(error.retryable, true);
+    return true;
+  });
+
+  const malformedAccount = tokenAccount(10, lpMint, 10n);
+  malformedAccount.account.data = Buffer.alloc(1);
+  const invalidData: Pick<Connection, 'getTokenAccountsByOwner'> = {
+    async getTokenAccountsByOwner(_owner, filter) {
+      assert.ok('programId' in filter);
+      return { context: { slot: 2 }, value: filter.programId.equals(TOKEN_PROGRAM_ID) ? [malformedAccount] : [] };
+    },
+  };
+  await assert.rejects(fetchWalletLpBalances(owner.toBase58(), {} as any, invalidData), (error: unknown) => {
+    assert.ok(error instanceof LiveLpDataUnavailableError);
+    assert.equal(error.retryable, false);
+    return true;
+  });
+});
+
 test('moving tokens between accounts owned by the same wallet preserves total holdings', async () => {
   let split = false;
   const connection: Pick<Connection, 'getTokenAccountsByOwner'> = {

@@ -222,6 +222,52 @@ Returns price feed data for a specific pair.
 }
 ```
 
+### Current wallet LP positions (v1)
+
+These routes return the same current wallet holdings:
+
+- `GET /api/v1/positions/liquidity?userAddress=WALLET`
+- `GET /api/v1/positions?userAddress=WALLET&type=liquidity`
+- `GET /api/v1/users/WALLET/positions?type=liquidity`
+
+The API discovers positive LP balances from all of the wallet's token accounts,
+including transferred-in tokens without an indexed deposit. `lpAmount`, `amount0`,
+and `amount1` are raw integer strings. The underlying amounts and current USD
+valuation use the wallet's balance and live pool state. `timestamp` remains the
+last indexed position update and is null for a holder without an indexed position.
+
+`valueDelta.currentValue` contains the current underlying amounts and USD value.
+For every wallet position, `valueDelta.netContributed` and `valueDelta.delta` are
+`null`, with `valueDelta.unavailableReason: "transfer_history_unavailable"`.
+Indexed deposits and withdrawals do not track LP transfers, and indexer lag can
+also leave contributions behind live holdings. Matching live and indexed LP
+balances does not prove a reliable contribution basis. These fields remain
+unavailable until transfer-aware history is supported; clients must display
+them as unavailable rather than zero or a gain/loss. This does not add RPC calls.
+
+`poolAddress` optionally filters the holdings. Results are ordered by pool address
+ascending, then paginated with `limit` (default/max 100) and `offset` (default 0,
+max 10000). `pagination.total` counts the matching holdings before pagination.
+`status=open` and `status=all` both return current positive holdings; historical
+closed positions are not supported by this wallet view (other statuses return 400).
+
+Wallet responses include `data.balanceObservation` with `commitment: "confirmed"`,
+`observedAt` (the API observation time), and `slotsByTokenProgram` (the RPC context
+slot for each token program). These separate reads are not an atomic snapshot of
+both programs. Wallet responses send `Cache-Control: no-store`; concurrent reads
+share in-flight work, but completed balances are not cached. Known temporary RPC
+failures (such as transport timeouts, rate limits, or an unhealthy RPC node) return
+HTTP 503 with `code: "LIVE_LP_DATA_UNAVAILABLE"`, `retryable: true`, and
+`Retry-After: 1`. Missing pool accounts, invalid configuration, decoding failures,
+and other failures without a known transient cause return HTTP 500 with
+`code: "LIVE_LP_DATA_ERROR"`, `retryable: false`, and no `Retry-After` header.
+Neither response substitutes indexed ownership or an empty wallet for failed reads.
+
+Without a wallet filter, liquidity listings continue to use indexed positions.
+Their contribution-based deltas retain the existing behavior. Historical earnings
+and portfolio snapshots remain based on indexed Omnipair events and do not account
+for LP transfers.
+
 ### GET /users/:userAddress/positions
 Returns user positions.
 

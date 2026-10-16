@@ -51,15 +51,25 @@ export interface LpPositionMetrics {
     totalEarned: LpAmountBreakdown;
   };
   valueDelta: {
-    netContributed: LpAmountBreakdown;
     currentValue: LpAmountBreakdown;
+  } & ({
+    netContributed: LpAmountBreakdown;
     delta: LpAmountBreakdown;
-  };
+    unavailableReason?: never;
+  } | {
+    netContributed: null;
+    delta: null;
+    unavailableReason: 'transfer_history_unavailable';
+  });
 }
 
 export interface LpPositionMetricsOptions {
+  holdingsSource?: 'indexed' | 'wallet';
   currentPrices?: Map<string, TokenPrice>;
-  currentAmountsByPosition?: Map<string, CurrentLpTokenAmounts>;
+  currentAmountsByPosition?: Map<string, Omit<CurrentLpTokenAmounts, 'token0Amount' | 'token1Amount'> & {
+    token0Amount: string | number;
+    token1Amount: string | number;
+  }>;
 }
 
 export type LpEarningsRange = '7D' | '30D' | '90D' | 'ALL';
@@ -283,22 +293,22 @@ function buildCurrentBreakdown({
   token0Price,
   token1Price,
 }: {
-  token0Amount: number;
-  token1Amount: number;
+  token0Amount: string | number;
+  token1Amount: string | number;
   token0Price: TokenPrice | null | undefined;
   token1Price: TokenPrice | null | undefined;
 }): LpAmountBreakdown {
   const { token0CurrentUsd, token1CurrentUsd } = currentTokenUsdBySide(
-    token0Amount,
-    token1Amount,
+    parseNumber(token0Amount),
+    parseNumber(token1Amount),
     token0Price,
     token1Price
   );
   const currentUsd = token0CurrentUsd + token1CurrentUsd;
-  const currentPriceQuality = amountAwarePriceQuality(token0Amount, token1Amount, token0Price, token1Price);
+  const currentPriceQuality = amountAwarePriceQuality(parseNumber(token0Amount), parseNumber(token1Amount), token0Price, token1Price);
   return {
-    token0Amount: numericString(token0Amount),
-    token1Amount: numericString(token1Amount),
+    token0Amount: String(token0Amount),
+    token1Amount: String(token1Amount),
     token0HistoricalUsd: numericString(token0CurrentUsd),
     token1HistoricalUsd: numericString(token1CurrentUsd),
     token0CurrentUsd: numericString(token0CurrentUsd),
@@ -638,9 +648,12 @@ export async function getLpPositionMetricsForRows(
   positions: LiquidityPositionMetricInput[],
   options: LpPositionMetricsOptions = {}
 ): Promise<Map<string, LpPositionMetrics>> {
+  // Deposit/withdrawal events cannot establish the contribution basis of live
+  // holdings without transfer history, even when live and indexed balances match.
+  const useIndexedContributions = options.holdingsSource !== 'wallet';
   const [earningsByPosition, contributionsByPosition, currentPrices] = await Promise.all([
     loadEarnings(db, positions),
-    loadNetContributions(db, positions),
+    useIndexedContributions ? loadNetContributions(db, positions) : new Map<string, ContributionRow>(),
     options.currentPrices
       ? Promise.resolve(options.currentPrices)
       : getCurrentTokenPrices(positions.flatMap((position) => [position.token0Mint, position.token1Mint])),
@@ -724,23 +737,29 @@ export async function getLpPositionMetricsForRows(
         }),
       },
       valueDelta: {
-        netContributed: buildCurrentBreakdown({
-          token0Amount: netToken0,
-          token1Amount: netToken1,
-          token0Price,
-          token1Price,
-        }),
         currentValue: buildCurrentBreakdown({
           token0Amount: currentToken0,
           token1Amount: currentToken1,
           token0Price,
           token1Price,
         }),
-        delta: buildCurrentBreakdown({
-          token0Amount: currentToken0 - netToken0,
-          token1Amount: currentToken1 - netToken1,
-          token0Price,
-          token1Price,
+        ...(useIndexedContributions ? {
+          netContributed: buildCurrentBreakdown({
+            token0Amount: netToken0,
+            token1Amount: netToken1,
+            token0Price,
+            token1Price,
+          }),
+          delta: buildCurrentBreakdown({
+            token0Amount: parseNumber(currentToken0) - netToken0,
+            token1Amount: parseNumber(currentToken1) - netToken1,
+            token0Price,
+            token1Price,
+          }),
+        } : {
+          netContributed: null,
+          delta: null,
+          unavailableReason: 'transfer_history_unavailable' as const,
         }),
       },
     });

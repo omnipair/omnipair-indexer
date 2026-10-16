@@ -5,6 +5,8 @@ import type { Omnipair } from '@omnipair/program-interface';
 import pool from '../config/database';
 import { ApiResponse } from '../types';
 import { cache } from '../utils/cache';
+import { fetchWalletLpBalances, LiveLpDataUnavailableError, WalletLpBalanceSnapshot } from '../services/walletLpBalanceService';
+import { calculateRawLpTokenAmounts } from '../services/currentLpValuationService';
 import { fetchPairAccounts, PairAccount, simulateUserPositionGetter } from '../utils/pairSimulation';
 import { SimulationResult } from '../types/pairTypes';
 import { isValidAddress, initializePairStateService, splitPosition } from './helpers/controllerBase';
@@ -12,10 +14,15 @@ import {
   getLpPositionMetricKey,
   getLpPositionMetricsForRows,
   LiquidityPositionMetricInput,
+  LpPositionMetricsOptions,
 } from '../services/lpPositionMetricsService';
 
 export class PositionController {
   static async getAllPositions(req: Request, res: Response): Promise<void> {
+    if (req.query.type === 'liquidity') {
+      await PositionController.getAllLiquidityPositions(req, res);
+      return;
+    }
     try {
       const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 100);
       const offset = Math.min(Math.max(parseInt(req.query.offset as string) || 0, 0), 10000);
@@ -172,54 +179,125 @@ export class PositionController {
   }
 
   static async getAllLiquidityPositions(req: Request, res: Response): Promise<void> {
+    if (req.query.userAddress !== undefined) res.setHeader('Cache-Control', 'no-store');
     try {
       const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 100);
       const offset = Math.min(Math.max(parseInt(req.query.offset as string) || 0, 0), 10000);
       const userAddress = req.query.userAddress as string | undefined;
+      const poolAddress = req.query.poolAddress as string | undefined;
 
-      if (userAddress && !isValidAddress(userAddress)) {
+      if (userAddress !== undefined && !isPublicKey(userAddress)) {
         res.status(400).json({ success: false, error: 'Invalid user address format' });
         return;
       }
 
-      const cacheKey = `liq_positions:${userAddress || 'all'}:${limit}:${offset}`;
-      // As above, a wallet's own view is never stored so it shows a transaction
-      // as soon as the indexer has recorded it.
+      if (poolAddress !== undefined && !isPublicKey(poolAddress)) {
+        res.status(400).json({ success: false, error: 'Invalid pool address format' });
+        return;
+      }
+      if (userAddress && req.query.status !== undefined && !['open', 'all'].includes(req.query.status as string)) {
+        res.status(400).json({ success: false, error: 'Wallet LP positions support status=open or all (current holdings only)' });
+        return;
+      }
+
+      const cacheKey = `liq_positions:${userAddress || 'all'}:${poolAddress || 'all'}:${limit}:${offset}`;
+      // Wallet ownership is read from token accounts, independently of indexed deposits.
       const data = await cache.getOrSet(cacheKey, userAddress ? 0 : 10 * 1000, async () => {
-        let countQuery: string;
-        let dataQuery: string;
-        let countParams: any[];
-        let queryParams: any[];
+        let rows: Array<{
+          signer: string; pair: string; token0_mint: string; token1_mint: string;
+          amount0: string; amount1: string; lp_mint: string; lp_amount: string;
+          updated_at: Date | null;
+        }>;
+        let totalCount: number;
+        let balanceObservation: WalletLpBalanceSnapshot['observation'] | undefined;
 
         if (userAddress) {
-          countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions WHERE signer = $1';
-          countParams = [userAddress];
-          dataQuery = `
-            SELECT signer, pair, token0_mint, token1_mint, amount0, amount1,
-              lp_mint, lp_amount, updated_at
-            FROM user_liquidity_positions
-            WHERE signer = $1
-            ORDER BY updated_at DESC
-            LIMIT $2 OFFSET $3
-          `;
-          queryParams = [userAddress, limit, offset];
+          const snapshot = await fetchWalletLpBalances(userAddress);
+          balanceObservation = snapshot.observation;
+          const holdings = snapshot.holdings
+            .filter((holding) => !poolAddress || holding.pair === poolAddress)
+            .sort((left, right) => left.pair < right.pair ? -1 : left.pair > right.pair ? 1 : 0);
+          totalCount = holdings.length;
+          const page = holdings.slice(offset, offset + limit);
+          const indexed = page.length > 0 ? await pool.query(
+            `SELECT pair, updated_at
+             FROM user_liquidity_positions WHERE signer = $1 AND pair = ANY($2::text[])`,
+            [userAddress, page.map((holding) => holding.pair)]
+          ) : { rows: [] };
+          const indexedByPair = new Map(indexed.rows.map((row) => [row.pair, row]));
+          rows = page.map((holding) => {
+            const previous = indexedByPair.get(holding.pair);
+            return {
+              signer: userAddress,
+              pair: holding.pair,
+              token0_mint: holding.token0Mint,
+              token1_mint: holding.token1Mint,
+              lp_mint: holding.lpMint,
+              lp_amount: holding.lpAmount,
+              amount0: '0',
+              amount1: '0',
+              updated_at: previous?.updated_at ?? null,
+            };
+          });
         } else {
-          countQuery = 'SELECT COUNT(*) as total_count FROM user_liquidity_positions';
-          countParams = [];
-          dataQuery = `
-            SELECT signer, pair, token0_mint, token1_mint, amount0, amount1,
+          const countResult = await pool.query(
+            'SELECT COUNT(*) as total_count FROM user_liquidity_positions WHERE ($1::text IS NULL OR pair = $1)',
+            [poolAddress ?? null]
+          );
+          totalCount = parseInt(countResult.rows[0].total_count);
+          const result = await pool.query(
+            `SELECT signer, pair, token0_mint, token1_mint, amount0, amount1,
               lp_mint, lp_amount, updated_at
-            FROM user_liquidity_positions
-            ORDER BY updated_at DESC
-            LIMIT $1 OFFSET $2
-          `;
-          queryParams = [limit, offset];
+             FROM user_liquidity_positions
+             WHERE ($1::text IS NULL OR pair = $1)
+             ORDER BY updated_at DESC, pair ASC, signer ASC
+             LIMIT $2 OFFSET $3`,
+            [poolAddress ?? null, limit, offset]
+          );
+          rows = result.rows;
         }
 
-        const countResult = await pool.query(countQuery, countParams);
-        const totalCount = parseInt(countResult.rows[0].total_count);
-        const result = await pool.query(dataQuery, queryParams);
-        const metricInputs: LiquidityPositionMetricInput[] = result.rows.map((row) => ({
+        if (rows.length === 0) {
+          return { positions: [], balanceObservation, pagination: { total: totalCount, limit, offset, hasNext: offset + limit < totalCount } };
+        }
+        let pairAccounts: Map<string, PairAccount | null>;
+        const metricOptions: LpPositionMetricsOptions = {
+          holdingsSource: userAddress ? 'wallet' : 'indexed',
+        };
+        if (userAddress) {
+          try {
+            const pairStateService = await initializePairStateService();
+            const program = pairStateService.getProgram();
+            if (!program) throw new Error('Omnipair program unavailable');
+            pairAccounts = await fetchPairAccounts(program, rows.map((row) => row.pair));
+            metricOptions.currentAmountsByPosition = new Map();
+            for (const row of rows) {
+              const pairAccount = pairAccounts.get(row.pair);
+              if (!pairAccount) throw new Error(`Pool state unavailable for ${row.pair}`);
+              if (!pairAccount.lpMint.equals(new PublicKey(row.lp_mint))) {
+                throw new Error(`LP mint mismatch for ${row.pair}`);
+              }
+              const amounts = calculateRawLpTokenAmounts(
+                row.lp_amount, pairAccount.totalSupply.toString(),
+                pairAccount.reserve0.toString(), pairAccount.reserve1.toString()
+              );
+              row.amount0 = amounts.token0Amount;
+              row.amount1 = amounts.token1Amount;
+              row.token0_mint = pairAccount.token0.toBase58();
+              row.token1_mint = pairAccount.token1.toBase58();
+              metricOptions.currentAmountsByPosition.set(getLpPositionMetricKey(row.signer, row.pair), {
+                signer: row.signer, pair: row.pair, ...amounts, exact: true,
+              });
+            }
+          } catch (error) {
+            throw new LiveLpDataUnavailableError('Unable to value current LP holdings', error);
+          }
+        } else {
+          const pairStateService = await initializePairStateService();
+          const program = pairStateService.getProgram();
+          pairAccounts = program ? await readPairAccounts(program, rows) : new Map();
+        }
+        const metricInputs: LiquidityPositionMetricInput[] = rows.map((row) => ({
           signer: row.signer,
           pair: row.pair,
           token0Mint: row.token0_mint,
@@ -228,13 +306,9 @@ export class PositionController {
           amount1: row.amount1,
           lpAmount: row.lp_amount,
         }));
-        const metricsByPosition = await getLpPositionMetricsForRows(pool, metricInputs);
+        const metricsByPosition = await getLpPositionMetricsForRows(pool, metricInputs, metricOptions);
 
-        const pairStateService = await initializePairStateService();
-        const program = pairStateService.getProgram();
-        const pairAccounts = program ? await readPairAccounts(program, result.rows) : new Map<string, PairAccount | null>();
-
-        const enrichedPositions = result.rows.map((row) => {
+        const enrichedPositions = rows.map((row) => {
           const basePosition = {
             signer: row.signer,
             pair: row.pair,
@@ -262,6 +336,7 @@ export class PositionController {
 
         return {
           positions: enrichedPositions,
+          balanceObservation,
           pagination: {
             total: totalCount,
             limit,
@@ -274,6 +349,18 @@ export class PositionController {
       res.json({ success: true, data });
     } catch (error) {
       console.error('Error fetching all liquidity positions:', error);
+      if (error instanceof LiveLpDataUnavailableError) {
+        if (error.retryable) res.setHeader('Retry-After', '1');
+        res.status(error.retryable ? 503 : 500).json({
+          success: false,
+          error: error.retryable
+            ? 'Current LP holdings are temporarily unavailable. Please retry.'
+            : 'Unable to load current LP holdings.',
+          code: error.retryable ? 'LIVE_LP_DATA_UNAVAILABLE' : 'LIVE_LP_DATA_ERROR',
+          retryable: error.retryable,
+        });
+        return;
+      }
       const response: ApiResponse = {
         success: false,
         error: 'Failed to fetch all liquidity positions'
@@ -293,5 +380,15 @@ async function readPairAccounts(
   } catch (error) {
     console.error('Error fetching pair accounts for positions page:', error);
     return new Map();
+  }
+}
+
+function isPublicKey(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  try {
+    new PublicKey(value);
+    return true;
+  } catch {
+    return false;
   }
 }

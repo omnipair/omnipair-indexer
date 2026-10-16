@@ -22,6 +22,25 @@ export function currentLpValuationKey(signer: string, pair: string): string {
   return `${signer}:${pair}`;
 }
 
+/** Floor each underlying amount to raw token units without floating-point rounding. */
+export function calculateRawLpTokenAmounts(
+  lpAmount: string,
+  totalSupply: string,
+  reserve0: string,
+  reserve1: string
+): { token0Amount: string; token1Amount: string } {
+  const balance = BigInt(lpAmount);
+  const supply = BigInt(totalSupply);
+  const reserves = [BigInt(reserve0), BigInt(reserve1)];
+  if (balance < 0n || supply <= 0n || reserves.some((reserve) => reserve < 0n)) {
+    throw new Error('Invalid LP balance or pool state');
+  }
+  return {
+    token0Amount: (reserves[0] * balance / supply).toString(),
+    token1Amount: (reserves[1] * balance / supply).toString(),
+  };
+}
+
 export function calculateCurrentLpTokenAmounts(
   lpAmount: unknown,
   totalSupply: unknown,

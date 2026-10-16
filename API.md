@@ -236,6 +236,15 @@ and `amount1` are raw integer strings. The underlying amounts and current USD
 valuation use the wallet's balance and live pool state. `timestamp` remains the
 last indexed position update and is null for a holder without an indexed position.
 
+`valueDelta.currentValue` contains the current underlying amounts and USD value.
+For every wallet position, `valueDelta.netContributed` and `valueDelta.delta` are
+`null`, with `valueDelta.unavailableReason: "transfer_history_unavailable"`.
+Indexed deposits and withdrawals do not track LP transfers, and indexer lag can
+also leave contributions behind live holdings. Matching live and indexed LP
+balances does not prove a reliable contribution basis. These fields remain
+unavailable until transfer-aware history is supported; clients must display
+them as unavailable rather than zero or a gain/loss. This does not add RPC calls.
+
 `poolAddress` optionally filters the holdings. Results are ordered by pool address
 ascending, then paginated with `limit` (default/max 100) and `offset` (default 0,
 max 10000). `pagination.total` counts the matching holdings before pagination.
@@ -255,8 +264,9 @@ and other failures without a known transient cause return HTTP 500 with
 Neither response substitutes indexed ownership or an empty wallet for failed reads.
 
 Without a wallet filter, liquidity listings continue to use indexed positions.
-Historical earnings, contribution-based deltas, and portfolio snapshots remain
-based on indexed Omnipair events and do not account for LP transfers.
+Their contribution-based deltas retain the existing behavior. Historical earnings
+and portfolio snapshots remain based on indexed Omnipair events and do not account
+for LP transfers.
 
 ### GET /users/:userAddress/positions
 Returns user positions.

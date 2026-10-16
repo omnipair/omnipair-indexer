@@ -120,6 +120,54 @@ test('raw amounts and current USD value share one batch of live pool states', as
   assert.equal(pairFetch.mock.callCount(), 1);
 });
 
+for (const scenario of [
+  { name: 'transfer recipient without deposits', liveLp: '40', indexedLp: null, net0: '0', net1: '0', currentUsd: '1200' },
+  { name: 'partial transfer sender', liveLp: '60', indexedLp: '100', net0: '1000', net1: '2000', currentUsd: '1800' },
+  { name: 'deposit before indexer catch-up', liveLp: '200', indexedLp: '100', net0: '1000', net1: '2000', currentUsd: '6000' },
+  { name: 'withdrawal before indexer catch-up', liveLp: '80', indexedLp: '100', net0: '1000', net1: '2000', currentUsd: '2400' },
+  { name: 'matching balances after a transfer and a later deposit', liveLp: '100', indexedLp: '100', net0: '600', net1: '1200', currentUsd: '3000' },
+  { name: 'matching balances without verified transfer history', liveLp: '100', indexedLp: '100', net0: '1000', net1: '2000', currentUsd: '3000' },
+]) {
+  test(`wallet value delta is unavailable for a ${scenario.name}`, async (t) => {
+    const { pairFetch } = setup(t, false);
+    pairFetch.mock.mockImplementation(async () => new Map([[pair, {
+      totalSupply: 1000n, reserve0: 10000n, reserve1: 20000n,
+      lpMint: new PublicKey(key(4)), token0: new PublicKey(key(5)), token1: new PublicKey(key(6)),
+    }]]));
+    t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding(scenario.liveLp)]));
+    const dbQuery = t.mock.method(pool, 'query', async (sql: string) => {
+      if (sql.includes('FROM user_liquidity_positions')) return { rows: scenario.indexedLp === null ? [] : [{
+        pair, lp_amount: scenario.indexedLp, updated_at: new Date('2026-01-01'),
+      }] };
+      if (sql.includes('FROM adjust_liquidity')) return { rows: [{
+        pair, signer: alice, net_amount0: scenario.net0, net_amount1: scenario.net1,
+      }] };
+      if (sql.includes('FROM lp_position_earnings')) return { rows: [{
+        pair, signer: alice, accrued_interest0: '2', swap_fees1: '3', total_earned_usd: '5',
+      }] };
+      throw new Error(`Unexpected query: ${sql}`);
+    });
+    t.mock.method(prices, 'getCurrentTokenPrices', async () => new Map([
+      [key(5), { priceUsd: 1, decimals: 0, quality: 'current' }],
+      [key(6), { priceUsd: 1, decimals: 0, quality: 'current' }],
+    ]));
+
+    const result = await request({ userAddress: alice });
+    assert.equal(result.status, 200);
+    const position = result.body.data.positions[0];
+    assert.equal(position.lpAmount, scenario.liveLp);
+    assert.equal(position.valueDelta.currentValue.usd, scenario.currentUsd);
+    assert.equal(position.valueDelta.currentValue.token0Amount, position.amount0);
+    assert.equal(position.valueDelta.currentValue.token1Amount, position.amount1);
+    assert.equal(position.valueDelta.netContributed, null);
+    assert.equal(position.valueDelta.delta, null);
+    assert.equal(position.valueDelta.unavailableReason, 'transfer_history_unavailable');
+    assert.equal(position.earnings.totalEarned.usd, '5');
+    assert.equal(pairFetch.mock.callCount(), 1);
+    assert.equal(dbQuery.mock.calls.some((call) => call.arguments[0].includes('FROM adjust_liquidity')), false);
+  });
+}
+
 test('wallet filtering and deterministic sorting precede totals and pagination', async (t) => {
   setup(t);
   const holdings = [7, 3, 8].map((value) => ({ ...holding('10'), pair: key(value) }));
@@ -154,12 +202,13 @@ test('invalid public keys and unsupported wallet status fail before any RPC look
 });
 
 test('all wallet liquidity route aliases use the same holdings implementation', async (t) => {
-  setup(t);
+  setup(t, false);
   t.mock.method(balances, 'fetchWalletLpBalances', async (wallet: string) => {
     assert.equal(wallet, alice);
     return snapshot([holding('60')]);
   });
   t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  t.mock.method(prices, 'getCurrentTokenPrices', async () => new Map());
   const app = express();
   app.use('/api/v1/positions', positionsRoutes);
   app.use('/api/v1/users', usersRoutes);
@@ -178,6 +227,10 @@ test('all wallet liquidity route aliases use the same holdings implementation', 
     const body = await response.json() as any;
     assert.equal(body.data.positions[0].lpAmount, '60');
     assert.equal(body.data.positions[0].signer, alice);
+    assert.equal(body.data.positions[0].valueDelta.currentValue.token0Amount, '600');
+    assert.equal(body.data.positions[0].valueDelta.netContributed, null);
+    assert.equal(body.data.positions[0].valueDelta.delta, null);
+    assert.equal(body.data.positions[0].valueDelta.unavailableReason, 'transfer_history_unavailable');
   }
 });
 

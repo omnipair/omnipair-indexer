@@ -261,7 +261,9 @@ export class PositionController {
           return { positions: [], balanceObservation, pagination: { total: totalCount, limit, offset, hasNext: offset + limit < totalCount } };
         }
         let pairAccounts: Map<string, PairAccount | null>;
-        const metricOptions: LpPositionMetricsOptions = {};
+        const metricOptions: LpPositionMetricsOptions = {
+          holdingsSource: userAddress ? 'wallet' : 'indexed',
+        };
         if (userAddress) {
           try {
             const pairStateService = await initializePairStateService();

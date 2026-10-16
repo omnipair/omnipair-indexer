@@ -36,6 +36,7 @@ function setup(t: TestContext, mockMetrics = true) {
   const pairFetch = t.mock.method(simulation, 'fetchPairAccounts', async (_program: unknown, pairs: string[]) => new Map(
     pairs.map((address) => [address, {
       totalSupply: 100n, reserve0: 1000n, reserve1: 2000n,
+      lpMint: new PublicKey(key(4)),
       token0: new PublicKey(key(5)), token1: new PublicKey(key(6)),
     }])
   ));
@@ -246,6 +247,30 @@ test('missing live pool state returns a nonretryable error without stale valuati
   assert.equal(result.body.data, undefined);
 });
 
+test('a mismatched LP mint rejects valuation without extra reads or a retry hint', async (t) => {
+  const { pairFetch } = setup(t, false);
+  t.mock.method(console, 'error', () => {});
+  const lookup = t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([
+    { ...holding('60'), lpMint: key(7) },
+  ]));
+  const dbQuery = t.mock.method(pool, 'query', async () => ({ rows: [] }));
+  const metricRead = t.mock.method(metrics, 'getLpPositionMetricsForRows', async () => {
+    throw new Error('Unexpected valuation of mismatched LP mint');
+  });
+
+  const result = await request({ userAddress: alice });
+  assert.equal(result.status, 500);
+  assert.equal(result.body.success, false);
+  assert.equal(result.body.code, 'LIVE_LP_DATA_ERROR');
+  assert.equal(result.body.retryable, false);
+  assert.equal(result.headers['Retry-After'], undefined);
+  assert.equal(result.body.data, undefined);
+  assert.equal(lookup.mock.callCount(), 1);
+  assert.equal(pairFetch.mock.callCount(), 1);
+  assert.equal(dbQuery.mock.callCount(), 1);
+  assert.equal(metricRead.mock.callCount(), 0);
+});
+
 test('pool RPC outages remain retryable while decoding errors do not', async (t) => {
   const { pairFetch } = setup(t);
   t.mock.method(console, 'error', () => {});
@@ -296,6 +321,7 @@ test('large underlying balances remain exact in both raw and current-value respo
   const { pairFetch } = setup(t, false);
   pairFetch.mock.mockImplementation(async () => new Map([[pair, {
     totalSupply: 100n, reserve0: 9007199254740997n, reserve1: 18446744073709551615n,
+    lpMint: new PublicKey(key(4)),
     token0: new PublicKey(key(5)), token1: new PublicKey(key(6)),
   }]]));
   t.mock.method(balances, 'fetchWalletLpBalances', async () => snapshot([holding('100')]));

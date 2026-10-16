@@ -272,6 +272,9 @@ export class PositionController {
             for (const row of rows) {
               const pairAccount = pairAccounts.get(row.pair);
               if (!pairAccount) throw new Error(`Pool state unavailable for ${row.pair}`);
+              if (!pairAccount.lpMint.equals(new PublicKey(row.lp_mint))) {
+                throw new Error(`LP mint mismatch for ${row.pair}`);
+              }
               const amounts = calculateRawLpTokenAmounts(
                 row.lp_amount, pairAccount.totalSupply.toString(),
                 pairAccount.reserve0.toString(), pairAccount.reserve1.toString()

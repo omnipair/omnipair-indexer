@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/database';
 import { ApiResponse, PoolRow } from '../types';
 import { cache } from '../utils/cache';
+import { OVERVIEW_CACHE_POLICY } from '../config/cachePolicies';
 import { calculateEmaFromPoolData, fromNad } from '../utils/emaCalculator';
 import { generateOgCardSvg, formatLargeNumber, fetchImageAsBase64 } from '../services/ogCardService';
 import { fetchTokenPrices } from '../services/jupiterPriceService';
@@ -368,10 +369,10 @@ export class PoolController {
     }
   }
 
-  static async fetchAllPools(showAll: boolean): Promise<any[]> {
+  static async fetchAllPools(showAll: boolean, allowStale = true): Promise<any[]> {
     const cacheKey = `pools:enriched:${showAll ? 'all' : 'visible'}`;
 
-    return cache.getOrSet(cacheKey, 60_000, async () => {
+    return cache.getOrSet(cacheKey, { ...OVERVIEW_CACHE_POLICY, allowStale }, async () => {
       const visibilityFilter = showAll ? '' : 'WHERE visible = TRUE';
 
       const result = await pool.query(`

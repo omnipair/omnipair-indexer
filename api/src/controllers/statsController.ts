@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 import { cache } from '../utils/cache';
+import { OVERVIEW_CACHE_POLICY, STATS_CHART_CACHE_POLICY } from '../config/cachePolicies';
 import { PoolController } from './poolController';
 import { fetchTokenPrices } from '../services/jupiterPriceService';
 
@@ -8,7 +9,7 @@ export class StatsController {
   static async getStats(_req: Request, res: Response): Promise<void> {
     try {
       const [tvlData, volumeData, feesData, interestData, swapCountData] = await Promise.all([
-        StatsController.computeTvlAndDeposits(),
+        cache.getOrSet('stats:tvl', OVERVIEW_CACHE_POLICY, () => StatsController.computeTvlAndDeposits()),
         StatsController.computeVolume(),
         StatsController.computeFees(),
         StatsController.computeInterest(),
@@ -50,7 +51,8 @@ export class StatsController {
     totalDeposited: number;
     poolCount: number;
   }> {
-    const allPools = await PoolController.fetchAllPools(false);
+    // Do not stamp a stale pool response as a freshly computed TVL snapshot.
+    const allPools = await PoolController.fetchAllPools(false, false);
 
     const uniqueMints = new Set<string>();
     for (const p of allPools) {
@@ -121,7 +123,7 @@ export class StatsController {
     const interval = intervalMap[timeframe as Timeframe];
 
     try {
-      const data = await cache.getOrSet(`stats:volume_chart_${timeframe}`, 60_000, async () => {
+      const data = await cache.getOrSet(`stats:volume_chart_${timeframe}`, STATS_CHART_CACHE_POLICY, async () => {
         const whereClause = interval ? `WHERE timestamp >= now() - interval '${interval}'` : '';
         const result = await pool.query(`
           SELECT
@@ -165,7 +167,7 @@ export class StatsController {
     const interval = intervalMap[timeframe as Timeframe];
 
     try {
-      const data = await cache.getOrSet(`stats:fees_chart_${timeframe}`, 60_000, async () => {
+      const data = await cache.getOrSet(`stats:fees_chart_${timeframe}`, STATS_CHART_CACHE_POLICY, async () => {
         const whereClause = interval ? `WHERE timestamp >= now() - interval '${interval}'` : '';
         const result = await pool.query(`
           SELECT
@@ -195,7 +197,7 @@ export class StatsController {
   }
 
   private static async computeVolume(): Promise<{ totalVolume: number; volume24h: number }> {
-    return cache.getOrSet('stats:volume', 15_000, async () => {
+    return cache.getOrSet('stats:volume', OVERVIEW_CACHE_POLICY, async () => {
       const now = Math.floor(Date.now() / 1000);
       const oneDayAgo = now - 24 * 60 * 60;
 
@@ -218,7 +220,7 @@ export class StatsController {
     totalLpFees: number; lpFees24h: number;
     totalProtocolFees: number; protocolFees24h: number;
   }> {
-    return cache.getOrSet('stats:fees', 15_000, async () => {
+    return cache.getOrSet('stats:fees', OVERVIEW_CACHE_POLICY, async () => {
       const now = Math.floor(Date.now() / 1000);
       const oneDayAgo = now - 24 * 60 * 60;
 
@@ -260,7 +262,7 @@ export class StatsController {
     total_protocol_interest_usd: number;
     protocol_interest_24h_usd: number;
   }> {
-    return cache.getOrSet('stats:interest', 15_000, async () => {
+    return cache.getOrSet('stats:interest', OVERVIEW_CACHE_POLICY, async () => {
       const now = Math.floor(Date.now() / 1000);
       const oneDayAgo = now - 24 * 60 * 60;
 
@@ -327,7 +329,7 @@ export class StatsController {
   }
 
   private static async computeSwapCount(): Promise<{ totalSwaps: number; swaps24h: number }> {
-    return cache.getOrSet('stats:swap_count', 15_000, async () => {
+    return cache.getOrSet('stats:swap_count', OVERVIEW_CACHE_POLICY, async () => {
       const now = Math.floor(Date.now() / 1000);
       const oneDayAgo = now - 24 * 60 * 60;
 
@@ -364,7 +366,7 @@ export class StatsController {
     const interval = intervalMap[timeframe as Timeframe];
 
     try {
-      const data = await cache.getOrSet(`stats:swap_count_chart_${timeframe}`, 60_000, async () => {
+      const data = await cache.getOrSet(`stats:swap_count_chart_${timeframe}`, STATS_CHART_CACHE_POLICY, async () => {
         const whereClause = interval ? `WHERE timestamp >= now() - interval '${interval}'` : '';
         const result = await pool.query(`
           SELECT
@@ -408,7 +410,7 @@ export class StatsController {
     const interval = intervalMap[timeframe as Timeframe];
 
     try {
-      const data = await cache.getOrSet(`stats:interest_chart_${timeframe}`, 60_000, async () => {
+      const data = await cache.getOrSet(`stats:interest_chart_${timeframe}`, STATS_CHART_CACHE_POLICY, async () => {
         const whereClause = interval ? `WHERE e.timestamp >= now() - interval '${interval}'` : '';
         const result = await pool.query(`
           SELECT

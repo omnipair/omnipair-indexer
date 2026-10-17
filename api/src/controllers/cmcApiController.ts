@@ -283,7 +283,7 @@ export class CmcApiController {
         'cmc:api:summary',
         CACHE_TTL_MS,
         async () => {
-          const allPools = await PoolController.fetchAllPools(false);
+          const allPools = await PoolController.fetchAllPools(false, false);
           const [highLowResult, openPricesResult] = await Promise.all([
             pool.query(`
               SELECT
@@ -383,7 +383,7 @@ export class CmcApiController {
         'cmc:api:assets:ucid',
         CACHE_TTL_MS,
         async () => {
-          const allPools = await PoolController.fetchAllPools(false);
+          const allPools = await PoolController.fetchAllPools(false, false);
           const assets: Record<
             string,
             {
@@ -426,7 +426,7 @@ export class CmcApiController {
         'cmc:api:ticker:ucid',
         CACHE_TTL_MS,
         async () => {
-          const allPools = await PoolController.fetchAllPools(false);
+          const allPools = await PoolController.fetchAllPools(false, false);
 
           const out: Record<
             string,

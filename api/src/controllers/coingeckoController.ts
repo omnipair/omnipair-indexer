@@ -23,7 +23,7 @@ export class CoinGeckoController {
   static async getTickers(_req: Request, res: Response): Promise<void> {
     try {
       const tickers = await cache.getOrSet<CoinGeckoTicker[]>('coingecko:tickers', 60_000, async () => {
-        const allPools = await PoolController.fetchAllPools(false);
+        const allPools = await PoolController.fetchAllPools(false, false);
 
         const uniqueMints = new Set<string>();
         for (const p of allPools) {

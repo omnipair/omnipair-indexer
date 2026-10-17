@@ -60,7 +60,8 @@ export class StatsController {
       if (p.token1.address) uniqueMints.add(p.token1.address);
     }
 
-    const prices = await fetchTokenPrices(Array.from(uniqueMints));
+    // A failed price lookup must not replace the last successful TVL with zero.
+    const prices = await fetchTokenPrices(Array.from(uniqueMints), { throwOnError: true });
 
     let cashReserveTvl = 0;
     let virtualReserveTvl = 0;

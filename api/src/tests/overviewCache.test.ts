@@ -144,6 +144,38 @@ test('summary stats serve cached TVL and prices while waiting for a fresh pool s
   assert.equal(current.total_volume, 3);
 });
 
+test('TVL retains its last good value through a price outage, backs off, and recovers', { timeout: 2000 }, async (t) => {
+  const fetchPrices = pricing.fetchTokenPrices;
+  const { state, prices } = setup(t);
+  prices.mock.mockImplementation(fetchPrices);
+  t.mock.method(console, 'warn', () => {});
+  let unavailable = false;
+  let price = 1;
+  t.mock.method(globalThis, 'fetch', async () => unavailable
+    ? new Response('{}', { status: 503 })
+    : new Response(JSON.stringify({ a: { usdPrice: price, decimals: 6 }, b: { usdPrice: price, decimals: 6 } })));
+
+  assert.equal((await request(StatsController.getStats)).tvl, 2);
+  // Expire both the overview cache and the price service's local quotes.
+  state.now += 31_000;
+  unavailable = true;
+  assert.equal((await request(StatsController.getStats)).tvl, 2);
+  await flush();
+  assert.equal(cache.get('stats:tvl'), null); // The failed refresh must not become fresh.
+
+  unavailable = false;
+  price = 2;
+  const callsAfterFailure = prices.mock.callCount();
+  state.now += 4_999;
+  assert.equal((await request(StatsController.getStats)).tvl, 2);
+  assert.equal(prices.mock.callCount(), callsAfterFailure);
+
+  state.now++;
+  assert.equal((await request(StatsController.getStats)).tvl, 2);
+  await flush();
+  assert.equal((await request(StatsController.getStats)).tvl, 4);
+});
+
 for (const [name, handler] of [
   ['volume', StatsController.getVolumeChart],
   ['fees', StatsController.getFeesChart],

@@ -118,6 +118,39 @@ bun run api:dev
 
 ## 📡 API Endpoints
 
+### Pool USD valuations
+
+`GET /api/v1/pools` includes USD quotes and per-token valuations in each
+`data.pools` entry, alongside the existing token metadata and pool fields:
+
+```json
+{
+  "token0": { "address": "...", "price_usd": 150 },
+  "token1": { "address": "...", "price_usd": 1 },
+  "reserves_usd": { "token0": 1500, "token1": 2000 },
+  "total_debts_usd": { "token0": 150, "token1": 500 },
+  "tvl_usd": 3500,
+  "total_debt_usd": 650,
+  "valuation_updated_at": "2026-10-19T09:00:00.000Z"
+}
+```
+
+- `token0.price_usd` and `token1.price_usd` are USD prices per whole token.
+- `reserves_usd` values the existing `reserves`, which are already in whole-token
+  units. `tvl_usd` is the sum of these two USD values and excludes debt.
+- `total_debts_usd` converts the raw `total_debts` using each mint's decimals,
+  then values the amounts in USD. `total_debt_usd` is the sum of these two values.
+- Prices, breakdowns, and totals use the same fetched price map and are cached
+  together. `valuation_updated_at` records when that pool valuation was built,
+  not when the upstream price was last updated. Cached valuations retain it.
+- A missing or invalid price is `null`. A known zero balance is worth `0` even
+  without a price; a nonzero balance without a price is worth `null`. A total is
+  `null` if either required side is unavailable, while the priced side's
+  breakdown remains available. If pool state cannot be loaded, the quote and
+  valuation fields above, including the timestamp, are `null`.
+
+`oracle_prices` remains a separate pair-relative quote and is not a USD price.
+
 ### Health and Status
 
 #### GET `/health`

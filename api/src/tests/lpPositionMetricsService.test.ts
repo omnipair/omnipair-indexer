@@ -88,6 +88,9 @@ test('LP position metrics expose historical and current USD earnings values', as
   assert.equal(positionMetrics?.earnings.totalEarned.priceBasis, 'historical');
   assert.equal(positionMetrics?.valueDelta.currentValue.usd, '13');
   assert.equal(positionMetrics?.valueDelta.currentValue.priceBasis, 'current');
+  assert.equal(positionMetrics?.valueDelta.netContributed?.usd, '7');
+  assert.equal(positionMetrics?.valueDelta.delta?.usd, '6');
+  assert.equal(positionMetrics?.valueDelta.unavailableReason, undefined);
 });
 
 test('ranged LP earnings aggregate event-time and current USD values server-side', async () => {

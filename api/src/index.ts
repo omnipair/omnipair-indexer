@@ -3,8 +3,11 @@ import pool from './config/database';
 import { startActivityInvalidationListener, stopActivityInvalidationListener } from './services/activityInvalidationService';
 import { startPoolInvalidationListener, stopPoolInvalidationListener } from './services/poolInvalidationService';
 import { perfMetrics } from './utils/perfMetrics';
+import { getTokenLogoService } from './services/tokenLogoService';
 
 const PORT = process.env.PORT || 3000;
+const tokenLogos = getTokenLogoService();
+tokenLogos?.start();
 
 let server: any;
 
@@ -18,6 +21,7 @@ const gracefulShutdown = async (signal: string) => {
   if (server) {
     server.close(async () => {
       console.log('HTTP server closed');
+      await tokenLogos?.stop();
       await pool.end();
       console.log('Database pool closed');
       process.exit(0);
@@ -29,6 +33,7 @@ const gracefulShutdown = async (signal: string) => {
       process.exit(1);
     }, 10000);
   } else {
+    await tokenLogos?.stop();
     await pool.end();
     process.exit(0);
   }
@@ -56,6 +61,7 @@ process.on('unhandledRejection', (err: any) => {
   console.error('Unhandled Promise Rejection:', err);
   if (server) {
     server.close(async () => {
+      await tokenLogos?.stop();
       await pool.end();
       process.exit(1);
     });

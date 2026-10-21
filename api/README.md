@@ -624,6 +624,59 @@ ALLOWED_ORIGINS=https://yourdomain.com
 RATE_LIMIT_MAX_REQUESTS=1000
 ```
 
+### Token logo cache
+
+The optional logo cache stores private objects at `logos/<token_mint>.webp` in a
+Railway Bucket. It needs no database migration: the worker reads the distinct
+token mints in `pools` and uses each object's `LastModified` timestamp to decide
+when to refresh it.
+
+Run both services with Node.js 22 or newer. Configure the API and a separate
+worker service with the same bucket variables from `.env.example`:
+
+```bash
+TOKEN_LOGO_CACHE_ENABLED=true
+TOKEN_LOGO_API_ORIGIN=https://api.indexer.omnipair.fi
+TOKEN_LOGO_S3_ENDPOINT=<bucket endpoint>
+TOKEN_LOGO_S3_BUCKET=<bucket name>
+TOKEN_LOGO_S3_REGION=auto
+TOKEN_LOGO_S3_ACCESS_KEY_ID=<bucket access key>
+TOKEN_LOGO_S3_SECRET_ACCESS_KEY=<bucket secret key>
+```
+
+The worker also needs the existing `DATABASE_URL` and Solana RPC configuration
+used by `PairStateService`. Keep credentials in Railway service variables, never
+in source control. The bucket remains private; clients only see the indexer URL.
+
+Build from the `api` directory with `npm ci && npm run build`. Start the worker
+with `npm run start:token-logo-worker`. It scans on startup and every five minutes
+after the previous scan finishes, downloads missing logos, and refreshes objects
+older than 24 hours. Images become 128×128 WebP files with transparent padding.
+Downloads have time, byte, and pixel limits and use the existing SSRF-safe fetcher.
+Failed refreshes keep the last good image and retry on a later scan.
+
+For an initial backfill, run `npm run backfill-token-logos` with the worker's
+environment. This exits after one scan; a nonzero exit can mean some tokens had
+unavailable metadata or images. Successfully cached logos are retained.
+
+The API serves `GET /api/v1/tokens/:mint/icon` (also `HEAD` and conditional GET)
+with `Content-Type: image/webp` and `Cache-Control: public, max-age=86400`.
+Logo requests have a separate limit of 600 per IP per minute and permit
+cross-origin embedding. Invalid mints return 400, missing or disabled logos 404,
+and bucket errors 503. Error responses use `Cache-Control: no-store`.
+
+`/api/v1/pools` replaces each token's `icon` with the indexer URL only after its
+object appears in the API's in-memory bucket inventory. The inventory loads at
+startup and refreshes every five minutes; pool requests never download images
+or query the bucket. Until an object exists, the original metadata URL remains
+available. A bucket listing failure retains the last known inventory.
+
+Deployment order: create the bucket, configure and start the worker, run or wait
+for the first scan, then deploy the API with the cache enabled. Existing webapp
+logo fallbacks continue to work without a frontend change. Set
+`TOKEN_LOGO_CACHE_ENABLED=false` and restart the API to restore original URLs.
+Updated images may remain in a browser's cache for up to one day.
+
 ### Health Checks
 
 Railway health check endpoint: `GET /health`

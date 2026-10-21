@@ -32,11 +32,21 @@ interface JupiterV3PriceData {
 
 export type PriceResult = { price: number; decimals: number };
 
+interface FetchTokenPricesOptions {
+  /** Reject failed requests so callers can preserve a previously cached valuation. */
+  throwOnError?: boolean;
+}
+
 /**
  * Fetch prices for unique token mints in Jupiter V3 batches of at most 50.
  * Results are cached individually. Returns a map of mint -> price data.
+ * With throwOnError, any failed batch rejects instead of returning partial results.
+ * Mints omitted from a successful response still remain unavailable.
  */
-export async function fetchTokenPrices(mints: string[]): Promise<Map<string, PriceResult>> {
+export async function fetchTokenPrices(
+  mints: string[],
+  options: FetchTokenPricesOptions = {},
+): Promise<Map<string, PriceResult>> {
   mints = [...new Set(mints)];
   const results = new Map<string, PriceResult>();
 
@@ -74,6 +84,9 @@ export async function fetchTokenPrices(mints: string[]): Promise<Map<string, Pri
       });
 
       if (!response.ok) {
+        if (options.throwOnError) {
+          throw new Error(`Jupiter Price V3 returned ${response.status} for mints: ${ids}`);
+        }
         console.warn(`Jupiter Price V3 returned ${response.status} for mints: ${ids}`);
         return;
       }
@@ -92,6 +105,9 @@ export async function fetchTokenPrices(mints: string[]): Promise<Map<string, Pri
         }
       }
     } catch (error: any) {
+      if (options.throwOnError) {
+        throw error;
+      }
       if (error.name === 'AbortError') {
         console.warn(`Jupiter Price V3 timeout for mints: ${batch.join(',')}`);
       } else {

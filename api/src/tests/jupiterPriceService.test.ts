@@ -43,3 +43,28 @@ test('invalid upstream prices and network failures remain unavailable', async (t
   t.mock.method(globalThis, 'fetch', async () => { throw new Error('offline'); });
   assert.equal((await fetchTokenPrices(['offline-mint'])).size, 0);
 });
+
+test('strict price reads reject a failed batch even when other batches succeed', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (url: string) => {
+    const ids = new URL(url).searchParams.get('ids')!.split(',');
+    if (ids.length === 1) return new Response('{}', { status: 503 });
+    return new Response(JSON.stringify(Object.fromEntries(ids.map(id => [id, { usdPrice: 3, decimals: 6 }]))));
+  });
+  const mints = Array.from({ length: 51 }, (_, i) => `strict-failure-mint-${i}`);
+  await assert.rejects(fetchTokenPrices(mints, { throwOnError: true }), /503/);
+});
+
+for (const error of [new Error('offline'), Object.assign(new Error('timed out'), { name: 'AbortError' })]) {
+  test(`strict price reads propagate ${error.name}: ${error.message}`, async (t) => {
+    t.mock.method(globalThis, 'fetch', async () => { throw error; });
+    await assert.rejects(
+      fetchTokenPrices([`strict-${error.name}`], { throwOnError: true }),
+      (actual) => actual === error,
+    );
+  });
+}
+
+test('strict price reads allow unpriced tokens in a successful response', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('{}'));
+  assert.equal((await fetchTokenPrices(['unpriced-mint'], { throwOnError: true })).size, 0);
+});

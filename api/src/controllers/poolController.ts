@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/database';
 import { ApiResponse, PoolRow } from '../types';
 import { cache } from '../utils/cache';
+import { OVERVIEW_CACHE_POLICY } from '../config/cachePolicies';
 import { calculateEmaFromPoolData, fromNad } from '../utils/emaCalculator';
 import { generateOgCardSvg, formatLargeNumber, fetchImageAsBase64 } from '../services/ogCardService';
 import { fetchTokenPrices } from '../services/jupiterPriceService';
@@ -368,10 +369,10 @@ export class PoolController {
     }
   }
 
-  static async fetchAllPools(showAll: boolean): Promise<any[]> {
+  static async fetchAllPools(showAll: boolean, allowStale = true): Promise<any[]> {
     const cacheKey = `pools:enriched:${showAll ? 'all' : 'visible'}`;
 
-    return cache.getOrSet(cacheKey, 60_000, async () => {
+    return cache.getOrSet(cacheKey, { ...OVERVIEW_CACHE_POLICY, allowStale }, async () => {
       const visibilityFilter = showAll ? '' : 'WHERE visible = TRUE';
 
       const result = await pool.query(`
@@ -402,6 +403,10 @@ export class PoolController {
               calculateSwapVolume(pairAddress)
             ]);
 
+            const { token_prices_usd, ...valuation } = calculatePoolValuation(
+              { ...pairState, total_debts: pairState.totalDebts }, prices,
+            );
+
             return {
               id: poolData.id,
               pair_address: pairAddress,
@@ -410,14 +415,16 @@ export class PoolController {
                 name: pairState.token0.name,
                 decimals: pairState.token0.decimals,
                 address: pairState.token0.address,
-                icon: pairState.token0.iconUrl || null
+                icon: pairState.token0.iconUrl || null,
+                price_usd: token_prices_usd.token0
               },
               token1: {
                 symbol: pairState.token1.symbol,
                 name: pairState.token1.name,
                 decimals: pairState.token1.decimals,
                 address: pairState.token1.address,
-                icon: pairState.token1.iconUrl || null
+                icon: pairState.token1.iconUrl || null,
+                price_usd: token_prices_usd.token1
               },
               reserves: {
                 token0: pairState.reserves.token0,
@@ -443,7 +450,7 @@ export class PoolController {
                 token0: pairState.totalDebts.token0,
                 token1: pairState.totalDebts.token1
               },
-              ...calculatePoolValuation({ ...pairState, total_debts: pairState.totalDebts }, prices),
+              ...valuation,
               valuation_updated_at: new Date().toISOString(),
               total_collaterals: {
                 token0: pairState.totalCollaterals.token0,
@@ -470,14 +477,16 @@ export class PoolController {
             return {
               id: poolData.id,
               pair_address: pairAddress,
-              token0: { symbol: 'Unknown', name: 'Unknown', decimals: 0, address: token0Address, icon: null },
-              token1: { symbol: 'Unknown', name: 'Unknown', decimals: 0, address: token1Address, icon: null },
+              token0: { symbol: 'Unknown', name: 'Unknown', decimals: 0, address: token0Address, icon: null, price_usd: null },
+              token1: { symbol: 'Unknown', name: 'Unknown', decimals: 0, address: token1Address, icon: null, price_usd: null },
               reserves: { token0: '0', token1: '0' },
               cash_reserves: { token0: '0', token1: '0' },
               oracle_prices: { token0: '0', token1: '0' },
               spot_prices: { token0: '0', token1: '0' },
               interest_rates: { token0: 0, token1: 0 },
               total_debts: { token0: '0', token1: '0' },
+              reserves_usd: { token0: null, token1: null },
+              total_debts_usd: { token0: null, token1: null },
               tvl_usd: null,
               total_debt_usd: null,
               valuation_updated_at: null,

@@ -104,9 +104,10 @@ both fields are `null`.
 `valuation_updated_at` is an ISO timestamp for the valuation assembly, or
 `null` when pool state could not be loaded. It is not the upstream quote time:
 the proxy may serve retained prices while refreshing. Values use the same
-60-second pool-list cache and event invalidation as the existing pool fields.
-Cache hits do not fetch prices. Cache misses batch unique mints in groups of
-up to 50, using the existing 30-second local price cache.
+pool-list cache and event invalidation as the existing pool fields. Fresh
+cache hits do not fetch prices. Cache misses and background refreshes batch
+unique mints in groups of up to 50, using the existing 30-second local price
+cache.
 
 The price service defaults to `https://jup-proxy-production-eff9.up.railway.app`;
 `JUPITER_API_URL` overrides it (set it to this proxy on deployments that
@@ -114,6 +115,40 @@ already specify a different URL). `JUPITER_TIMEOUT_MS` defaults to 3000 and
 `PRICE_CACHE_TTL_MS` to 30000. Price failures leave unavailable totals `null`
 without failing the pool response. Clients must consume the new fields to
 avoid waiting for their own price lookup for these totals.
+
+### Pool-list and stats caching
+
+The API uses request-driven stale-while-revalidate for shared overview data:
+
+| Data | Fresh period | Maximum stale age |
+| --- | --- | --- |
+| Pool lists (visible and all) | 15 seconds | No age cutoff |
+| `/api/v1/stats` calculations, including TVL | 15 seconds | No age cutoff |
+| Stats volume, fees, interest and swap-count charts | 60 seconds | No age cutoff |
+
+After the fresh period, a request returns the cached value immediately and
+starts one background refresh per key per API process. Concurrent requests
+continue receiving that value, even if it is 200 seconds old or older. Only
+missing entries wait for a result, sharing any fetch already in progress.
+Cleanup does not discard these entries because of age; they remain available
+until replaced, explicitly invalidated, evicted by the 10,000-entry capacity
+limit, or lost on process restart. No refresh runs without a request. Fresh
+periods describe response assembly age; underlying prices, pair state and
+APR retain their own cache lifetimes.
+
+A failed background refresh preserves the previous value regardless of age
+without marking it fresh, and retries on a later request after a five-second backoff.
+`pool_updates` notifications immediately remove pool lists, individual pool
+info and stats TVL, including pending cache writes, so visibility changes
+force a fresh read. Reads started before invalidation may finish for their
+original callers, but cannot repopulate the cache or be joined by new requests.
+Stats TVL refreshes wait for fresh pool-list data instead of re-caching a stale
+pool response.
+
+Wallet-filtered borrow and LP position endpoints remain fresh reads: TTL zero
+does not store responses and only deduplicates simultaneous requests. Other
+endpoints retain their existing blocking TTL behavior. All caches are local
+to each process and reset on restart.
 
 ### GET /pairs
 Returns all Omnipair pairs.

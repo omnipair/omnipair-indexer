@@ -1,9 +1,10 @@
-type CacheOutcome = 'hit' | 'miss' | 'coalesced';
+import type { CacheLookupStatus } from './cache';
 
 interface CounterSet {
   hit: number;
   miss: number;
   coalesced: number;
+  stale: number;
 }
 
 class RollingLatencyStore {
@@ -58,7 +59,7 @@ class PerfMetrics {
   private getCounter(endpoint: string): CounterSet {
     let counter = this.cacheByEndpoint.get(endpoint);
     if (!counter) {
-      counter = { hit: 0, miss: 0, coalesced: 0 };
+      counter = { hit: 0, miss: 0, coalesced: 0, stale: 0 };
       this.cacheByEndpoint.set(endpoint, counter);
     }
     return counter;
@@ -72,7 +73,7 @@ class PerfMetrics {
     this.getLatencyStore(this.dbLatencies, queryName).add(durationMs);
   }
 
-  recordCacheLookup(endpoint: string, status: CacheOutcome): void {
+  recordCacheLookup(endpoint: string, status: CacheLookupStatus): void {
     const counter = this.getCounter(endpoint);
     counter[status] += 1;
   }
@@ -99,13 +100,13 @@ class PerfMetrics {
     }
 
     for (const [endpoint, counter] of this.cacheByEndpoint.entries()) {
-      const total = counter.hit + counter.miss + counter.coalesced;
+      const total = counter.hit + counter.miss + counter.coalesced + counter.stale;
       if (total === 0) {
         continue;
       }
-      const hitRate = Math.round(((counter.hit + counter.coalesced) / total) * 10000) / 100;
+      const hitRate = Math.round(((counter.hit + counter.coalesced + counter.stale) / total) * 10000) / 100;
       console.log(
-        `[metrics][cache] endpoint=${endpoint} hit=${counter.hit} coalesced=${counter.coalesced} miss=${counter.miss} hit_rate_pct=${hitRate}`
+        `[metrics][cache] endpoint=${endpoint} hit=${counter.hit} coalesced=${counter.coalesced} stale=${counter.stale} miss=${counter.miss} hit_rate_pct=${hitRate}`
       );
     }
   }

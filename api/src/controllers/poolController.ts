@@ -7,6 +7,7 @@ import { calculateEmaFromPoolData, fromNad } from '../utils/emaCalculator';
 import { generateOgCardSvg, formatLargeNumber, fetchImageAsBase64 } from '../services/ogCardService';
 import { fetchTokenPrices } from '../services/jupiterPriceService';
 import { calculatePoolValuation } from '../services/poolValuation';
+import { getTokenLogoService, withCachedTokenLogos } from '../services/tokenLogoService';
 import {
   isValidAddress,
   KNOWN_TOKEN_ICONS,
@@ -372,7 +373,7 @@ export class PoolController {
   static async fetchAllPools(showAll: boolean, allowStale = true): Promise<any[]> {
     const cacheKey = `pools:enriched:${showAll ? 'all' : 'visible'}`;
 
-    return cache.getOrSet(cacheKey, { ...OVERVIEW_CACHE_POLICY, allowStale }, async () => {
+    const pools = await cache.getOrSet(cacheKey, { ...OVERVIEW_CACHE_POLICY, allowStale }, async () => {
       const visibilityFilter = showAll ? '' : 'WHERE visible = TRUE';
 
       const result = await pool.query(`
@@ -505,6 +506,8 @@ export class PoolController {
         })
       );
     });
+    const tokenLogos = getTokenLogoService();
+    return pools.map((value) => withCachedTokenLogos(value, tokenLogos));
   }
 
   static async getPools(req: Request, res: Response): Promise<void> {

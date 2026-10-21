@@ -13,6 +13,7 @@ import {
 import { simulatePairGetter } from '../utils/pairSimulation';
 import { cache } from '../utils/cache';
 import { safeFetch } from '../utils/safeFetch';
+import { resolveIpfsUrl } from '../utils/ipfs';
 import type { Omnipair } from '@omnipair/program-interface';
 
 const PLACEHOLDER_ICON = 'https://placehold.net/400x400.png';
@@ -96,8 +97,9 @@ export class PairStateService {
    * Public wrapper around the internal token metadata fetcher. Accepts a mint
    * address as a string for convenience. Results are cached for 24h.
    */
-  public async getTokenMetadata(mintAddress: string): Promise<TokenMetadata> {
-    return this.fetchTokenMetadata(new PublicKey(mintAddress));
+  public async getTokenMetadata(mintAddress: string, options?: { refresh?: boolean; metadataTimeoutMs?: number }): Promise<TokenMetadata> {
+    if (options?.refresh) cache.delete(`token_metadata_${mintAddress}`);
+    return this.fetchTokenMetadata(new PublicKey(mintAddress), options?.metadataTimeoutMs);
   }
 
   /**
@@ -117,7 +119,7 @@ export class PairStateService {
     });
   }
 
-  private async fetchTokenMetadata(mint: PublicKey): Promise<TokenMetadata> {
+  private async fetchTokenMetadata(mint: PublicKey, metadataTimeoutMs = FETCH_TIMEOUT_MS): Promise<TokenMetadata> {
     const mintStr = mint.toString();
     return cache.getOrSet(`token_metadata_${mintStr}`, ONE_DAY_MS, async () => {
       try {
@@ -135,8 +137,8 @@ export class PairStateService {
         let iconUrl: string | undefined;
         if (asset.metadata?.uri && asset.metadata.uri.trim() !== '') {
           try {
-            const metadataResponse = await safeFetch(asset.metadata.uri, {
-              timeoutMs: FETCH_TIMEOUT_MS,
+            const metadataResponse = await safeFetch(resolveIpfsUrl(asset.metadata.uri), {
+              timeoutMs: metadataTimeoutMs,
               maxBytes: MAX_METADATA_BYTES,
             });
             if (metadataResponse.ok) {

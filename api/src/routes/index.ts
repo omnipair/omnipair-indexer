@@ -24,6 +24,9 @@ router.get('/', (req, res) => {
     version: '1.0.0',
     baseUrl: '/api/v1',
     endpoints: {
+      tokens: {
+        icon: 'GET /api/v1/tokens/{mint}/icon — cached WebP logo',
+      },
       pools: {
         'list-pools': 'GET /api/v1/pools?token0=ADDR&token1=ADDR&limit=100&offset=0&sortBy=tvl&sortOrder=desc',
         'pool-tvl': 'GET /api/v1/pools/tvl',

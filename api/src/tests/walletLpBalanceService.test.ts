@@ -93,9 +93,11 @@ test('concurrent wallet lookups share requests, while the next lookup reads new 
   const db = { query: async () => ({ rows: [{ pair_address: 'pair', lp_mint: lpMint.toBase58(), token0: 'a', token1: 'b' }] }) };
   const first = fetchWalletLpBalances(owner.toBase58(), db as any, connection);
   const concurrent = fetchWalletLpBalances(owner.toBase58(), db as any, connection);
-  assert.equal(calls, 2);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  const callsWhilePending = calls;
   release();
   const results = await Promise.all([first, concurrent]);
+  assert.equal(callsWhilePending, 2);
   assert.equal(results[0], results[1]);
   assert.equal(results[0].holdings[0].lpAmount, '100');
   amount = 60n;

@@ -261,9 +261,11 @@ test('concurrent identical requests share work and are not retained afterward', 
   t.mock.method(pool, 'query', async () => ({ rows: [] }));
   const first = request({ userAddress: alice });
   const second = request({ userAddress: alice });
-  assert.equal(lookup.mock.callCount(), 1);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  const callsWhilePending = lookup.mock.callCount();
   release();
   const responses = await Promise.all([first, second]);
+  assert.equal(callsWhilePending, 1);
   assert.deepEqual(responses[0].body, responses[1].body);
   await request({ userAddress: alice });
   assert.equal(lookup.mock.callCount(), 2);

@@ -653,6 +653,8 @@ with `npm run start:token-logo-worker`. It scans on startup and every five minut
 after the previous scan finishes, downloads missing logos, and refreshes objects
 older than 24 hours. Images become 128×128 WebP files with transparent padding.
 Downloads have time, byte, and pixel limits and use the existing SSRF-safe fetcher.
+The worker allows 15 seconds for metadata and image downloads; interactive API
+metadata requests retain their existing three-second timeout.
 Failed refreshes keep the last good image and retry on a later scan.
 
 For an initial backfill, run `npm run backfill-token-logos` with the worker's

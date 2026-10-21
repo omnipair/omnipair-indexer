@@ -28,7 +28,8 @@ async function main(): Promise<void> {
           mints: result.rows.map((row) => row.mint),
           shouldStop: () => stopping,
           resolveSource: async (mint) => {
-            const token = await metadata.getTokenMetadata(mint, { refresh: true });
+            // Background scans can wait longer for IPFS than interactive API requests.
+            const token = await metadata.getTokenMetadata(mint, { refresh: true, metadataTimeoutMs: 15_000 });
             return token.iconUrl && !token.iconUrl.includes('placehold.net/')
               ? token.iconUrl : KNOWN_TOKEN_ICONS[mint];
           },

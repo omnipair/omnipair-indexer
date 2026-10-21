@@ -97,9 +97,9 @@ export class PairStateService {
    * Public wrapper around the internal token metadata fetcher. Accepts a mint
    * address as a string for convenience. Results are cached for 24h.
    */
-  public async getTokenMetadata(mintAddress: string, options?: { refresh?: boolean }): Promise<TokenMetadata> {
+  public async getTokenMetadata(mintAddress: string, options?: { refresh?: boolean; metadataTimeoutMs?: number }): Promise<TokenMetadata> {
     if (options?.refresh) cache.delete(`token_metadata_${mintAddress}`);
-    return this.fetchTokenMetadata(new PublicKey(mintAddress));
+    return this.fetchTokenMetadata(new PublicKey(mintAddress), options?.metadataTimeoutMs);
   }
 
   /**
@@ -119,7 +119,7 @@ export class PairStateService {
     });
   }
 
-  private async fetchTokenMetadata(mint: PublicKey): Promise<TokenMetadata> {
+  private async fetchTokenMetadata(mint: PublicKey, metadataTimeoutMs = FETCH_TIMEOUT_MS): Promise<TokenMetadata> {
     const mintStr = mint.toString();
     return cache.getOrSet(`token_metadata_${mintStr}`, ONE_DAY_MS, async () => {
       try {
@@ -138,7 +138,7 @@ export class PairStateService {
         if (asset.metadata?.uri && asset.metadata.uri.trim() !== '') {
           try {
             const metadataResponse = await safeFetch(resolveIpfsUrl(asset.metadata.uri), {
-              timeoutMs: FETCH_TIMEOUT_MS,
+              timeoutMs: metadataTimeoutMs,
               maxBytes: MAX_METADATA_BYTES,
             });
             if (metadataResponse.ok) {

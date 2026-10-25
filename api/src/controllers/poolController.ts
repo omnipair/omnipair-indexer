@@ -8,6 +8,7 @@ import { generateOgCardSvg, formatLargeNumber, fetchImageAsBase64 } from '../ser
 import { fetchTokenPrices } from '../services/jupiterPriceService';
 import { calculatePoolValuation } from '../services/poolValuation';
 import { getTokenLogoService, withCachedTokenLogos } from '../services/tokenLogoService';
+import { fetchPairAccounts } from '../utils/pairSimulation';
 import {
   isValidAddress,
   KNOWN_TOKEN_ICONS,
@@ -389,6 +390,21 @@ export class PoolController {
         fetchTokenPrices(result.rows.flatMap((poolData: PoolRow) => [poolData.token0, poolData.token1])),
       ]);
 
+      // Only cache misses join this batch. Defer the read one microtask so all
+      // per-pool cache fetchers below can register; cache hits and in-flight
+      // reads keep sharing their existing state without another account read.
+      const pairsToFetch: string[] = [];
+      let pairAccounts: ReturnType<typeof fetchPairAccounts> | undefined;
+      const loadPairAccount = (pairAddress: string) => {
+        pairsToFetch.push(pairAddress);
+        pairAccounts ??= Promise.resolve().then(() => {
+          const program = pairService.getProgram();
+          if (!program) throw new Error('Pair state program not initialized');
+          return fetchPairAccounts(program, pairsToFetch);
+        });
+        return pairAccounts.then((accounts) => accounts.get(pairAddress) ?? null);
+      };
+
       return Promise.all(
         result.rows.map(async (poolData: PoolRow) => {
           const pairAddress = poolData.pair_address;
@@ -398,7 +414,7 @@ export class PoolController {
 
           try {
             const [pairState, aprData, feesData, volumeData] = await Promise.all([
-              fetchCachedPairState(pairService, pairAddress),
+              fetchCachedPairState(pairService, pairAddress, () => loadPairAccount(pairAddress)),
               calculateAPR(pairAddress),
               calculateTotalFeesPaid(pairAddress),
               calculateSwapVolume(pairAddress)

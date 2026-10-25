@@ -15,7 +15,11 @@ const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 async function setup(t: TestContext, count = 3) {
   cache.clear();
-  t.after(() => cache.clear());
+  simulation.clearSimulationCache();
+  t.after(() => {
+    cache.clear();
+    simulation.clearSimulationCache();
+  });
   const state = {
     now: 1000,
     missing: new Set<string>(),
@@ -77,19 +81,27 @@ async function setup(t: TestContext, count = 3) {
   const singleRead = t.mock.method(service.getConnection(), 'getAccountInfoAndContext', async () => ({
     context: { slot: 1 }, value: accountInfo,
   }));
-  const simulations = t.mock.method(simulation, 'simulatePairGetter', async (...args: Parameters<typeof simulation.simulatePairGetter>) => ({
-    label: Object.keys(args[4])[0], value0: '1000000000', value1: '2000000000', value2: '0',
+  const simulations = t.mock.method(service.getConnection(), 'simulateTransaction', async () => ({
+    context: { slot: 1 },
+    value: {
+      err: null,
+      logs: [
+        'Program log: EmaPrice0Nad: (U64(1000000000), OptionalU64(None), OptionalU64(None))',
+        'Program log: EmaPrice1Nad: (U64(1000000000), OptionalU64(None), OptionalU64(None))',
+        'Program log: GetRates: (U64(1000000000), U64(2000000000), OptionalU64(None))',
+      ],
+    },
   }));
   return { state, service, rows, batchRead, singleRead, simulations };
 }
 
-test('pool refresh batches 100 account reads into two RPCs and preserves enrichment', async (t) => {
+test('100 pools use two account reads and 100 combined simulations with unchanged enrichment', async (t) => {
   const { rows, batchRead, singleRead, simulations } = await setup(t, 100);
   const pools = await PoolController.fetchAllPools(false);
 
   assert.deepEqual(batchRead.mock.calls.map((call) => call.arguments[0].length), [99, 1]);
   assert.equal(singleRead.mock.callCount(), 0);
-  assert.equal(simulations.mock.callCount(), 300);
+  assert.equal(simulations.mock.callCount(), 100);
   assert.deepEqual(pools.map((value) => value.pair_address), rows.map((row) => row.pair_address));
   assert.deepEqual(pools[0].reserves, { token0: '10', token1: '20' });
   assert.deepEqual(pools[0].cash_reserves, { token0: '9', token1: '18' });
@@ -104,7 +116,7 @@ test('pool refresh batches 100 account reads into two RPCs and preserves enrichm
 
   assert.deepEqual(await PoolController.fetchAllPools(false), pools);
   assert.equal(batchRead.mock.callCount(), 2);
-  assert.equal(simulations.mock.callCount(), 300);
+  assert.equal(simulations.mock.callCount(), 100);
 });
 
 test('pool refresh skips cached pair states and shares them with individual callers until expiry', async (t) => {
@@ -113,14 +125,14 @@ test('pool refresh skips cached pair states and shares them with individual call
   assert.equal(singleRead.mock.callCount(), 1);
   await PoolController.fetchAllPools(false);
   assert.deepEqual(batchRead.mock.calls[0].arguments[0].map((key) => key.toBase58()), rows.slice(1).map((row) => row.pair_address));
-  assert.equal(simulations.mock.callCount(), 9);
+  assert.equal(simulations.mock.callCount(), 3);
   assert.deepEqual(await helpers.fetchCachedPairState(service, rows[0].pair_address), first);
 
   cache.deleteByPrefix('pools:enriched:');
   await PoolController.fetchAllPools(false);
   assert.equal(batchRead.mock.callCount(), 1);
   assert.equal(singleRead.mock.callCount(), 1);
-  assert.equal(simulations.mock.callCount(), 9);
+  assert.equal(simulations.mock.callCount(), 3);
 
   state.now += 5_000;
   cache.deleteByPrefix('pools:enriched:');
@@ -128,7 +140,7 @@ test('pool refresh skips cached pair states and shares them with individual call
   assert.equal(batchRead.mock.callCount(), 2);
   assert.equal(batchRead.mock.calls[1].arguments[0].length, 3);
   assert.equal(singleRead.mock.callCount(), 1);
-  assert.equal(simulations.mock.callCount(), 18);
+  assert.equal(simulations.mock.callCount(), 6);
 });
 
 test('concurrent visible and all-pool refreshes share in-flight pair reads', async (t) => {
@@ -146,7 +158,7 @@ test('concurrent visible and all-pool refreshes share in-flight pair reads', asy
   assert.equal(callsBeforeRelease, 1);
   assert.equal(batchRead.mock.callCount(), 1);
   assert.equal(singleRead.mock.callCount(), 0);
-  assert.equal(simulations.mock.callCount(), 9);
+  assert.equal(simulations.mock.callCount(), 3);
   assert.deepEqual(visiblePools, allPools);
 });
 
@@ -157,7 +169,7 @@ test('a missing account falls back only for its pool without individual retries'
   assert.deepEqual(pools.map((value) => value.tvl_usd), [80, null, 80]);
   assert.equal(batchRead.mock.callCount(), 1);
   assert.equal(singleRead.mock.callCount(), 0);
-  assert.equal(simulations.mock.callCount(), 6);
+  assert.equal(simulations.mock.callCount(), 2);
 });
 
 test('batch failures use existing pool fallbacks and retry on the next refresh', async (t) => {
@@ -181,4 +193,20 @@ test('an empty pool list makes no account reads or simulations', async (t) => {
   assert.equal(batchRead.mock.callCount(), 0);
   assert.equal(singleRead.mock.callCount(), 0);
   assert.equal(simulations.mock.callCount(), 0);
+});
+
+test('a failed combined simulation retains the spot-price fallback without individual retries', async (t) => {
+  const { simulations } = await setup(t);
+  t.mock.method(console, 'warn', () => {});
+  simulations.mock.mockImplementationOnce(async () => ({
+    context: { slot: 1 },
+    value: { err: { InstructionError: [3, 'ComputationalBudgetExceeded'] }, logs: [] },
+  }));
+  const pools = await PoolController.fetchAllPools(false);
+  assert.equal(simulations.mock.callCount(), 3);
+  assert.deepEqual(pools[0].oracle_prices, { token0: '2', token1: '0.5' });
+  assert.deepEqual(pools[0].interest_rates, { token0: 0, token1: 0 });
+  assert.equal(pools[0].tvl_usd, 80);
+  assert.deepEqual(pools[1].oracle_prices, { token0: '1', token1: '1' });
+  assert.deepEqual(pools[1].interest_rates, { token0: 100, token1: 200 });
 });

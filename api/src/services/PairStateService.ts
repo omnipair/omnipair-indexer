@@ -10,7 +10,7 @@ import {
   loadProgram,
   getOmnipairProgram
 } from '../config/program';
-import { simulatePairGetter, PairAccount } from '../utils/pairSimulation';
+import { simulatePairGetters, PairAccount } from '../utils/pairSimulation';
 import { cache } from '../utils/cache';
 import { safeFetch } from '../utils/safeFetch';
 import { resolveIpfsUrl } from '../utils/ipfs';
@@ -267,11 +267,10 @@ export class PairStateService {
           throw new Error('Program not initialized');
         }
         
-        const [emaPrice0Result, emaPrice1Result, ratesResult] = await Promise.all([
-          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice0Nad: {} }),
-          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { emaPrice1Nad: {} }),
-          simulatePairGetter(this.program, this.connection, pairPda, rateModelPda, { getRates: {} }),
-        ]);
+        const [emaPrice0Result, emaPrice1Result, ratesResult] = await simulatePairGetters(
+          this.program, this.connection, pairPda, rateModelPda,
+          [{ emaPrice0Nad: {} }, { emaPrice1Nad: {} }, { getRates: {} }]
+        );
 
         // Parse EMA prices (stored as NAD - 9 decimals)
         emaPrice0 = Number(emaPrice0Result.value0) / Math.pow(10, 9);

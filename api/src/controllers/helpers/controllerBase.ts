@@ -3,6 +3,7 @@ import { cache } from '../../utils/cache';
 import { PairStateService, PairState } from '../../services/PairStateService';
 import { loadOmnipairIdl } from '../../config/idl-loader';
 import { fetchTokenPrices } from '../../services/jupiterPriceService';
+import type { PairAccount } from '../../utils/pairSimulation';
 
 export const KNOWN_TOKEN_ICONS: Record<string, string> = {
   'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
@@ -39,10 +40,11 @@ export async function initializePairStateService(): Promise<PairStateService> {
 
 export async function fetchCachedPairState(
   pairService: PairStateService,
-  pairAddress: string
+  pairAddress: string,
+  loadPairAccount?: () => Promise<PairAccount | null>
 ): Promise<PairState> {
-  return cache.getOrSet(`pair_state_${pairAddress}`, 5 * 1000, () =>
-    pairService.fetchPairState(pairAddress)
+  return cache.getOrSet(`pair_state_${pairAddress}`, 5 * 1000, async () =>
+    pairService.fetchPairState(pairAddress, loadPairAccount ? await loadPairAccount() : undefined)
   );
 }
 

@@ -10,7 +10,7 @@ import {
   loadProgram,
   getOmnipairProgram
 } from '../config/program';
-import { simulatePairGetter } from '../utils/pairSimulation';
+import { simulatePairGetter, PairAccount } from '../utils/pairSimulation';
 import { cache } from '../utils/cache';
 import { safeFetch } from '../utils/safeFetch';
 import { resolveIpfsUrl } from '../utils/ipfs';
@@ -194,16 +194,22 @@ export class PairStateService {
    * Fetch the complete pair state
    */
   public async fetchPairState(
-    pairAddress: string
+    pairAddress: string,
+    prefetchedPairAccount?: PairAccount | null
   ): Promise<PairState> {
     if (!this.program) {
       throw new Error('Program not initialized. Call initializeProgram() first.');
     }
 
     try {
-      // Convert pair address to PublicKey and fetch pair account directly
+      // Pool lists supply a batched read; individual callers still fetch directly.
       const pairPda = new PublicKey(pairAddress);
-      const pairAccount = await this.program.account.pair.fetch(pairPda);
+      const pairAccount = prefetchedPairAccount === undefined
+        ? await this.program.account.pair.fetch(pairPda)
+        : prefetchedPairAccount;
+      if (!pairAccount) {
+        throw new Error(`Pair account not found: ${pairAddress}`);
+      }
 
       // Extract token addresses and LP mint from the pair account
       const token0Mint = new PublicKey(pairAccount.token0);

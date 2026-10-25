@@ -113,6 +113,17 @@ test('numeric TTLs keep blocking refresh behavior, including at the expiry bound
   assert.equal(await request, 'new');
 });
 
+test('TTL zero bypasses an existing cached value and never replaces it', async (t) => {
+  t.mock.method(Date, 'now', () => 1000);
+  const cache = new SimpleCache();
+  cache.set('positions:wallet', 'old position', 10000);
+  let reads = 0;
+  const fetcher = async () => ++reads;
+  assert.equal(await cache.getOrSet('positions:wallet', 0, fetcher), 1);
+  assert.equal(await cache.getOrSet('positions:wallet', 0, fetcher), 2);
+  assert.equal(cache.get('positions:wallet'), 'old position');
+});
+
 test('TTL zero only coalesces in-flight reads, even within the same millisecond', async (t) => {
   t.mock.method(Date, 'now', () => 1000);
   const cache = new SimpleCache();

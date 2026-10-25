@@ -8,13 +8,13 @@ import { GENERIC_READONLY_PUBKEY } from '../config/program';
  * Cache for simulation results
  */
 interface CacheEntry {
-  result: SimulationResult;
+  result: SimulationResult[];
   timestamp: number;
 }
 
 const SIMULATE_CACHE_DURATION = 5000; // 5 seconds cache
 const simulateCache = new Map<string, CacheEntry>();
-const inFlightRequests = new Map<string, Promise<SimulationResult>>();
+const inFlightRequests = new Map<string, Promise<SimulationResult[]>>();
 
 // In-flight requests for user position getters
 const userPositionInFlightRequests = new Map<string, Promise<SimulationResult>>();
@@ -89,8 +89,28 @@ export async function simulatePairGetter(
   getter: GetterType,
   args?: EmitValueArgs
 ): Promise<SimulationResult> {
+  const [result] = await simulatePairGetters(program, connection, pairPda, rateModelPda, [getter], args);
+  return result;
+}
+
+/**
+ * Run related pair getters in one simulation. Each view instruction updates a
+ * private copy of the pair, so all getters observe the same bank and clock
+ * without applying interest repeatedly to shared state.
+ */
+export async function simulatePairGetters(
+  program: Program<Omnipair>,
+  connection: Connection,
+  pairPda: PublicKey,
+  rateModelPda: PublicKey,
+  getters: GetterType[],
+  args?: EmitValueArgs
+): Promise<SimulationResult[]> {
+  if (getters.length === 0) return [];
+
   // Create cache key based on parameters
-  const getterKey = Object.keys(getter)[0];
+  const labels = getters.map((getter) => Object.keys(getter)[0]);
+  const getterKey = labels.join(',');
   const argsKey = args ? JSON.stringify(args) : 'default';
   const cacheKey = `pair:${pairPda.toString()}:${getterKey}:${argsKey}`;
 
@@ -109,39 +129,36 @@ export async function simulatePairGetter(
   // Create new request promise
   const requestPromise = (async () => {
     try {
-      // Create the instruction
-      const ix = await program.methods
+      const instructions = await Promise.all(getters.map((getter) => program.methods
         .viewPairData(
           getter,
           args || { amount: null, tokenMint: null, debtAmount: null }
         )
         .accounts({ pair: pairPda, rateModel: rateModelPda })
-        .instruction();
+        .instruction()));
 
       // Create transaction with increased compute budget and fee payer
       const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 });
-      const tx = new Transaction().add(computeBudgetIx, ix);
+      const tx = new Transaction().add(computeBudgetIx, ...instructions);
       tx.feePayer = program.provider.publicKey ?? GENERIC_READONLY_PUBKEY;
 
       // Simulate transaction
       const simResult = await connection.simulateTransaction(tx);
 
       const logs = simResult.value.logs ?? [];
-      const label = Object.keys(getter)[0]; // e.g. "emaPrice0Nad"
 
       // Check for simulation error
       if (simResult.value.err) {
         const errorDetail = JSON.stringify(simResult.value.err);
         const relevantLogs = logs.slice(-5).join('\n');
         throw new Error(
-          `Simulation error for ${label}: ${errorDetail}\nLast logs:\n${relevantLogs}`
+          `Simulation error for ${getterKey}: ${errorDetail}\nLast logs:\n${relevantLogs}`
         );
       }
 
-      // Parse logs to extract values
-      const { value0, value1, value2 } = parseSimulationLogs(logs, label);
-
-      const result: SimulationResult = { label, value0, value1, value2 };
+      // Validate every result before caching so truncated logs cannot leave a
+      // partially refreshed set of prices and rates.
+      const result = labels.map((label) => ({ label, ...parseSimulationLogs(logs, label) }));
 
       // Cache the result
       simulateCache.set(cacheKey, { result, timestamp: Date.now() });

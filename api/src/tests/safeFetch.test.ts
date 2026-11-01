@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import dns from 'node:dns/promises';
+import https from 'node:https';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
 import { isBlockedAddress, safeFetch, SafeFetchError } from '../utils/safeFetch';
 
 test('isBlockedAddress rejects loopback, private and link-local IPv4', () => {
@@ -47,6 +51,61 @@ test('isBlockedAddress fails closed on unparseable input', () => {
 
 test('isBlockedAddress allows public IPv6', () => {
   assert.equal(isBlockedAddress('2606:4700::1111'), false);
+});
+
+test('safeFetch rejects IPv6 translation and non-global ranges', () => {
+  for (const address of ['2002:7f00:1::', '2001::1', '64:ff9b:1::1', '::127.0.0.1', '3fff::1']) {
+    assert.equal(isBlockedAddress(address), true);
+  }
+});
+
+test('safeFetch includes DNS resolution in its overall deadline', async (t) => {
+  t.mock.method(dns, 'lookup', () => new Promise(() => {}));
+  await assert.rejects(safeFetch('https://example.com/', { timeoutMs: 20, maxBytes: 1024 }), /deadline/);
+});
+
+test('safeFetch rejects mixed public/private DNS and URL credentials', async (t) => {
+  t.mock.method(dns, 'lookup', async () => [{ address: '1.1.1.1', family: 4 }, { address: '127.0.0.1', family: 4 }]);
+  await assert.rejects(safeFetch('https://example.com/', { timeoutMs: 100, maxBytes: 1024 }), /blocked address/);
+  await assert.rejects(safeFetch('https://user:pass@example.com/', { timeoutMs: 100, maxBytes: 1024 }), /credentials/);
+});
+
+test('safeFetch validates redirects and pins the socket to the checked DNS address', async (t) => {
+  t.mock.method(dns, 'lookup', async () => [{ address: '1.1.1.1', family: 4 }]);
+  let calls = 0;
+  t.mock.method(https, 'request', (options: any, callback: (value: any) => void) => {
+    calls++;
+    options.lookup('example.com', {}, (_error: Error | null, address: string) => assert.equal(address, '1.1.1.1'));
+    const req = new EventEmitter() as any;
+    req.destroy = (error?: Error) => { if (error) req.emit('error', error); req.emit('close'); };
+    req.end = () => queueMicrotask(() => {
+      const response = new PassThrough() as any;
+      response.statusCode = 302;
+      response.headers = { location: 'https://169.254.169.254/private' };
+      callback(response);
+    });
+    return req;
+  });
+  await assert.rejects(safeFetch('https://example.com/', { timeoutMs: 100, maxBytes: 1024 }), /blocked address/);
+  assert.equal(calls, 1);
+});
+
+test('safeFetch aborts slow-drip bodies at the absolute deadline', async (t) => {
+  t.mock.method(dns, 'lookup', async () => [{ address: '1.1.1.1', family: 4 }]);
+  t.mock.method(https, 'request', (_options: any, callback: (value: any) => void) => {
+    const req = new EventEmitter() as any;
+    const response = new PassThrough() as any;
+    response.statusCode = 200; response.headers = {};
+    let drip: NodeJS.Timeout;
+    req.destroy = (error?: Error) => {
+      clearInterval(drip); response.destroy();
+      if (error) req.emit('error', error);
+      req.emit('close');
+    };
+    req.end = () => queueMicrotask(() => { callback(response); drip = setInterval(() => response.write('a'), 2); });
+    return req;
+  });
+  await assert.rejects(safeFetch('https://example.com/', { timeoutMs: 30, maxBytes: 1024 }), /deadline/);
 });
 
 test('safeFetch rejects non-https schemes', async () => {

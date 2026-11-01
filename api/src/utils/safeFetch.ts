@@ -77,6 +77,9 @@ const BLOCKED_V6: ReadonlyArray<readonly [string, number]> = [
   ['64:ff9b::', 96],
   ['100::', 64],
   ['2001:db8::', 32],
+  ['2001::', 23], // Special-purpose ranges, including Teredo translation.
+  ['2002::', 16], // 6to4 embeds an IPv4 destination.
+  ['3fff::', 20], // Documentation range.
   ['fc00::', 7],
   ['fe80::', 10],
   ['ff00::', 8],
@@ -180,7 +183,7 @@ export function isBlockedAddress(address: string): boolean {
     return BLOCKED_V4.some((cidr) => inCidr(v6.subarray(12), cidr));
   }
 
-  return BLOCKED_V6.some((cidr) => inCidr(v6, cidr));
+  return !inCidr(v6, ['2000::', 3]) || BLOCKED_V6.some((cidr) => inCidr(v6, cidr));
 }
 
 function sniffImageType(body: Buffer): string | null {
@@ -235,6 +238,7 @@ async function validateTarget(url: URL): Promise<{ address: string; family: 4 | 
   if (url.protocol !== 'https:') {
     throw new SafeFetchError(`blocked scheme: ${url.protocol}`);
   }
+  if (url.username || url.password) throw new SafeFetchError('blocked URL credentials');
 
   const host = bareHostname(url);
   if (host === '') {
@@ -352,6 +356,11 @@ function requestHop(
       request.destroy(new SafeFetchError(`request timed out after ${timeoutMs}ms`));
     });
     request.on('error', (error) => reject(error));
+    // Socket inactivity timeouts alone allow a slow-drip body to run forever.
+    const deadlineTimer = setTimeout(() => {
+      request.destroy(new SafeFetchError('request deadline exceeded'));
+    }, timeoutMs);
+    request.once('close', () => clearTimeout(deadlineTimer));
     request.end();
   });
 }
@@ -373,8 +382,18 @@ export async function safeFetch(rawUrl: string, options: SafeFetchOptions): Prom
       throw new SafeFetchError('timed out before completing redirect chain');
     }
 
-    const pinned = await validateTarget(current);
-    const response = await requestHop(current, pinned, remaining, options.maxBytes);
+    // Include DNS resolution in the overall deadline. A late DNS result must
+    // never start an outbound connection after this race has timed out.
+    let dnsTimer: NodeJS.Timeout | undefined;
+    const pinned = await Promise.race([
+      validateTarget(current),
+      new Promise<never>((_resolve, reject) => {
+        dnsTimer = setTimeout(() => reject(new SafeFetchError('DNS deadline exceeded')), remaining);
+      }),
+    ]).finally(() => { if (dnsTimer) clearTimeout(dnsTimer); });
+    const requestBudget = deadline - Date.now();
+    if (requestBudget <= 0) throw new SafeFetchError('request deadline exceeded');
+    const response = await requestHop(current, pinned, requestBudget, options.maxBytes);
 
     if (REDIRECT_STATUSES.has(response.status) && response.location) {
       let next: URL;

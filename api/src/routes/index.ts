@@ -6,6 +6,7 @@ import statsRoutes from './v1/statsRoutes';
 import coingeckoRoutes from './v1/coingeckoRoutes';
 import cmcApiRoutes from './v1/cmcApiRoutes';
 import geckoTerminalRoutes from './v1/geckoTerminalRoutes';
+import lpAssetsRoutes from './v1/lpAssetsRoutes';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/api/v1/positions', positionsRoutes);
 router.use('/api/v1/stats', statsRoutes);
 router.use('/api/v1/coingecko', coingeckoRoutes);
 router.use('/api/v1/gecko', geckoTerminalRoutes);
+router.use('/api/v1/lp-assets', lpAssetsRoutes);
 
 router.get('/', (req, res) => {
   res.json({

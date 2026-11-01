@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "api/**"
+      - "database/migrations/**"
       - ".github/workflows/api.yml"
   push:
     branches: [main]
     paths:
       - "api/**"
+      - "database/migrations/**"
       - ".github/workflows/api.yml"
 
 permissions:
@@ -22,6 +24,19 @@ jobs:
   test:
     name: Build and unit tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: lp_assets_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: api
@@ -35,3 +50,6 @@ jobs:
       - run: npm ci
       # Compiles with tsc, then runs every dist/tests/*.test.js with node --test.
       - run: npm run test:unit
+      - run: npm run test:lp-assets:integration
+        env:
+          LP_ASSETS_TEST_DATABASE_URL: postgresql://postgres:test-only@127.0.0.1:5432/lp_assets_test

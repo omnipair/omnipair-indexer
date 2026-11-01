@@ -693,3 +693,8 @@ Railway health check endpoint: `GET /health`
 ---
 
 **Note**: This API server is currently in active development. Authentication, advanced caching, and WebSocket endpoints are planned for future releases.
+
+## Server-owned LP assets
+
+The opt-in LP assets API and separate worker generate canonical icons and metadata
+with durable PostgreSQL caching. See [setup, API contract, safety limits, and tests](docs/lp-assets.md).

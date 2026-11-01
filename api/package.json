@@ -16,6 +16,8 @@
     "start:lp-earnings-worker": "node dist/scripts/lpEarningsWorker.js",
     "start:lp-valuation-reconciler": "node dist/scripts/lpValuationReconciler.js",
     "start:token-logo-worker": "node dist/scripts/tokenLogoWorker.js",
+    "start:lp-assets-worker": "node dist/scripts/lpAssetsWorker.js",
+    "test:lp-assets:integration": "npm run build && node --test dist/tests/lpAssets.integration.js",
     "backfill-token-logos": "node dist/scripts/tokenLogoWorker.js --once",
     "backfill-volume": "npm run build && node dist/scripts/backfillVolume.js",
     "backfill-token-prices": "npm run build && node dist/scripts/backfillTokenPrices.js",

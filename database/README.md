@@ -36,6 +36,7 @@ Migrations are in `./migrations/` and applied in alphabetical order:
 | `015_add_token_categories.sql` | Adds normalized token category tables and invalidates pool cache when assignments change |
 | `016_add_pool_category_assignments.sql` | Adds explicit pool-level category assignments and backfills legacy token/pool tags |
 | `017_add_market_activity_indexes.sql` | Adds pair/time indexes for market-scoped activity history |
+| `018_add_lp_asset_jobs.sql` | Adds durable LP icon/metadata jobs, cached results, retry state and worker leases (opt-in API feature) |
 
 ### Apply a single migration
 
